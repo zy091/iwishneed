@@ -1,5 +1,6 @@
 import { useAuth } from '../hooks/use-auth'
 import { Button } from './ui/button'
+import { ENV } from '../config/env'
 
 interface MainAppLinkProps {
   label?: string
@@ -62,14 +63,13 @@ export function MainAppLink({ label = '跳转到需求管理系统', className }
     const encoded = toBase64Url(userPayload)
     console.log('编码后的用户信息:', encoded)
 
-    // 根据环境选择正确的 URL
-    if (window.location.hostname === 'localhost') {
-      // 开发环境
-      window.location.href = `http://localhost:5173/auth/bridge?external_user=${encoded}`
-    } else {
-      // 生产环境
-      window.location.href = `https://iwishneed.netlify.app/auth/bridge?external_user=${encoded}`
-    }
+    // 通过环境变量显式指定子项目地址（优先使用），未配置则默认生产域名
+    const base =
+      (ENV.CHILD_APP_URL && ENV.CHILD_APP_URL.replace(/\/$/, '')) ||
+      'https://iwishneed.netlify.app'
+
+    console.log('跳转目标：', base)
+    window.location.href = `${base}/auth/bridge?external_user=${encoded}`
   }
 
   return (
