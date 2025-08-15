@@ -1,0 +1,9 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# 处理客户端路由，将所有路径重定向到 index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
