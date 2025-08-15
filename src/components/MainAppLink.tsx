@@ -62,11 +62,14 @@ export function MainAppLink({ label = '跳转到需求管理系统', className }
     const encoded = toBase64Url(userPayload)
     console.log('编码后的用户信息:', encoded)
 
-    // 开发环境
-    window.location.href = `http://localhost:5173/auth/bridge?external_user=${encoded}`
-
-    // 生产环境（取消注释并替换为实际域名）
-    // window.location.href = `https://iwishneed.netlify.app/auth/bridge?external_user=${encoded}`
+    // 根据环境选择正确的 URL
+    if (window.location.hostname === 'localhost') {
+      // 开发环境
+      window.location.href = `http://localhost:5173/auth/bridge?external_user=${encoded}`
+    } else {
+      // 生产环境
+      window.location.href = `https://iwishneed.netlify.app/auth/bridge?external_user=${encoded}`
+    }
   }
 
   return (
