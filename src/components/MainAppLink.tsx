@@ -19,12 +19,13 @@ export function MainAppLink({ label = '跳转到需求管理系统', className }
       return
     }
 
-    // Base64URL 编码函数
+    // Base64URL 编码函数，支持中文
     const toBase64Url = (json: any) => {
       const s = typeof json === 'string' ? json : JSON.stringify(json)
-      return btoa(encodeURIComponent(s).replace(/%([0-9A-F]{2})/g, (_, p1) => 
-        String.fromCharCode(parseInt(p1, 16))
-      )).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      // 使用 encodeURIComponent 处理 UTF-8 字符
+      const encoded = btoa(unescape(encodeURIComponent(s)))
+      // 转换为 Base64URL 格式
+      return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     }
 
     // 构造用户信息载荷

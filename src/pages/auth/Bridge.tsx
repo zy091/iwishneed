@@ -23,9 +23,17 @@ function isEmailAllowed(email: string | null | undefined) {
 }
 
 function b64UrlDecode(s: string) {
+  // 转换回标准 Base64
   let t = s.replace(/-/g, '+').replace(/_/g, '/')
   while (t.length % 4) t += '='
-  return atob(t)
+  
+  // 解码 Base64 并处理 UTF-8 字符
+  try {
+    return decodeURIComponent(escape(atob(t)))
+  } catch (e) {
+    console.error('Base64URL 解码失败:', e)
+    throw e
+  }
 }
 
 export default function Bridge() {
