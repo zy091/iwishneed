@@ -5,6 +5,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 
 type Role = 'admin' | 'manager' | 'developer' | 'submitter'
+type DebugInfo = {
+  url: string
+  ref: string
+  allowed: string[]
+  disable: boolean
+  hasParam: boolean
+  len: number
+}
 
 function isAllowedOrigin(origin: string | null | undefined) {
   if (ENV.DISABLE_ORIGIN_CHECK) {
@@ -86,6 +94,7 @@ export default function Bridge() {
   const navigate = useNavigate()
   const [search] = useSearchParams()
   const [status, setStatus] = useState('准备接入主项目会话...')
+  const [debug, setDebug] = useState<DebugInfo | null>(null)
   const { setExternalUser } = useAuth()
 
   useEffect(() => {
@@ -97,6 +106,16 @@ export default function Bridge() {
 
     // 优先处理 external_user（Base64URL JSON）方案
     const externalUserParam = (search.get('external_user') || '').trim()
+
+    // 填充调试信息（直接显示在页面，避免依赖控制台）
+    setDebug({
+      url: window.location.href,
+      ref: document.referrer || '',
+      allowed: ENV.MAIN_APP_ORIGINS,
+      disable: ENV.DISABLE_ORIGIN_CHECK,
+      hasParam: !!externalUserParam,
+      len: externalUserParam.length,
+    })
     console.log('Bridge 启动，当前 URL:', window.location.href)
     console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
     if (externalUserParam) {
@@ -286,6 +305,20 @@ export default function Bridge() {
           {ENV.ALLOWED_EMAIL_DOMAIN && ENV.ALLOWED_EMAIL_DOMAIN !== 'iwishweb.com' && ENV.ALLOWED_EMAIL_DOMAIN !== 'iwishcloud.com' && 
             `, @${ENV.ALLOWED_EMAIL_DOMAIN}`}
         </p>
+
+        {/* 调试信息面板（只读显示，便于定位 external_user/来源问题） */}
+        <div className="mt-4 text-left text-xs text-gray-500 bg-gray-50 border rounded p-3 space-y-1">
+          <div>联调模式（禁用来源校验）：{ENV.DISABLE_ORIGIN_CHECK ? '已开启' : '关闭'}</div>
+          {debug && (
+            <>
+              <div>当前URL：<span className="break-all">{debug.url}</span></div>
+              <div>Referrer：<span className="break-all">{debug.ref || '(空)'}</span></div>
+              <div>白名单：{debug.allowed.length > 0 ? debug.allowed.join(', ') : '(空)'}</div>
+              <div>是否检测到 external_user：{debug.hasParam ? '是' : '否'}（长度：{debug.len}）</div>
+              {!debug.hasParam && <div className="text-amber-600">提示：未检测到 external_user 参数。请确认主项目跳转 URL 是否携带 external_user=...</div>}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
