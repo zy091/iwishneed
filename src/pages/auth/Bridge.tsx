@@ -17,9 +17,22 @@ function isAllowedOrigin(origin: string | null | undefined) {
 
 function isEmailAllowed(email: string | null | undefined) {
   if (!email) return false
-  const domain = ENV.ALLOWED_EMAIL_DOMAIN?.toLowerCase().trim()
-  if (!domain) return true
-  return email.toLowerCase().endsWith(`@${domain}`)
+  
+  // 如果没有设置域名限制，则允许所有邮箱
+  if (!ENV.ALLOWED_EMAIL_DOMAIN) return true
+  
+  // 支持多个域名（iwishweb.com 和 iwishcloud.com）
+  const allowedDomains = ['iwishweb.com', 'iwishcloud.com']
+  
+  // 如果环境变量中设置了域名，也加入到允许列表
+  const configDomain = ENV.ALLOWED_EMAIL_DOMAIN?.toLowerCase().trim()
+  if (configDomain && !allowedDomains.includes(configDomain)) {
+    allowedDomains.push(configDomain)
+  }
+  
+  // 检查邮箱是否以任一允许的域名结尾
+  const emailLower = email.toLowerCase()
+  return allowedDomains.some(domain => emailLower.endsWith(`@${domain}`))
 }
 
 function b64UrlDecode(s: string) {
@@ -106,27 +119,15 @@ export default function Bridge() {
         setStatus('会话已建立，跳转中...')
         console.log('跳转到首页')
         
-        // 强制跳转到首页，使用更长的延迟并添加更多调试
+        // 直接使用 window.location 进行跳转，避免 React Router 导航问题
+        console.log('准备跳转到首页...')
+        
+        // 使用 setTimeout 确保状态更新和日志输出完成
         setTimeout(() => {
-          console.log('执行导航跳转...')
-          try {
-            // 尝试使用 navigate
-            navigate('/', { replace: true })
-            console.log('navigate 已调用')
-            
-            // 备用方案：如果 navigate 不起作用，使用 window.location
-            setTimeout(() => {
-              if (window.location.pathname.includes('/auth/bridge')) {
-                console.log('导航未成功，使用 window.location 备用方案')
-                window.location.href = '/'
-              }
-            }, 500)
-          } catch (e) {
-            console.error('导航出错:', e)
-            // 最后的备用方案
-            window.location.href = '/'
-          }
-        }, 300)
+          console.log('执行跳转')
+          // 直接使用 window.location.href 进行硬跳转
+          window.location.href = window.location.origin + '/'
+        }, 500)
         return
       } catch (e) {
         console.error('external_user 解析失败', e)
@@ -205,23 +206,10 @@ export default function Bridge() {
           setExternalUser(u)
           setStatus('会话已建立，跳转中...')
           
-          // 同样增强 postMessage 方式的导航
+          // 直接使用 window.location 进行跳转
           setTimeout(() => {
-            console.log('执行 postMessage 导航跳转...')
-            try {
-              navigate('/', { replace: true })
-              
-              // 备用方案
-              setTimeout(() => {
-                if (window.location.pathname.includes('/auth/bridge')) {
-                  window.location.href = '/'
-                }
-              }, 500)
-            } catch (e) {
-              console.error('导航出错:', e)
-              window.location.href = '/'
-            }
-          }, 300)
+            window.location.href = window.location.origin + '/'
+          }, 500)
         } catch (e) {
           console.error('EXTERNAL_USER 处理失败', e)
           setStatus('处理主项目用户数据失败')
@@ -236,7 +224,8 @@ export default function Bridge() {
   // 添加强制跳转按钮
   const forceNavigate = () => {
     console.log('用户点击强制跳转')
-    window.location.href = '/'
+    // 使用完整的 URL，包括协议和域名
+    window.location.href = window.location.origin + '/'
   }
 
   return (
@@ -259,9 +248,11 @@ export default function Bridge() {
         ) : (
           <p className="text-xs text-rose-500 mt-3">未设置 VITE_MAIN_APP_ORIGINS，默认拒绝外部来源</p>
         )}
-        {ENV.ALLOWED_EMAIL_DOMAIN && (
-          <p className="text-xs text-gray-400 mt-1">邮箱域名限制：@{ENV.ALLOWED_EMAIL_DOMAIN}</p>
-        )}
+        <p className="text-xs text-gray-400 mt-1">
+          邮箱域名限制：@iwishweb.com, @iwishcloud.com
+          {ENV.ALLOWED_EMAIL_DOMAIN && ENV.ALLOWED_EMAIL_DOMAIN !== 'iwishweb.com' && ENV.ALLOWED_EMAIL_DOMAIN !== 'iwishcloud.com' && 
+            `, @${ENV.ALLOWED_EMAIL_DOMAIN}`}
+        </p>
       </div>
     </div>
   )
