@@ -106,10 +106,27 @@ export default function Bridge() {
         setStatus('会话已建立，跳转中...')
         console.log('跳转到首页')
         
-        // 添加延迟，确保日志完全输出
+        // 强制跳转到首页，使用更长的延迟并添加更多调试
         setTimeout(() => {
-          navigate('/', { replace: true })
-        }, 100)
+          console.log('执行导航跳转...')
+          try {
+            // 尝试使用 navigate
+            navigate('/', { replace: true })
+            console.log('navigate 已调用')
+            
+            // 备用方案：如果 navigate 不起作用，使用 window.location
+            setTimeout(() => {
+              if (window.location.pathname.includes('/auth/bridge')) {
+                console.log('导航未成功，使用 window.location 备用方案')
+                window.location.href = '/'
+              }
+            }, 500)
+          } catch (e) {
+            console.error('导航出错:', e)
+            // 最后的备用方案
+            window.location.href = '/'
+          }
+        }, 300)
         return
       } catch (e) {
         console.error('external_user 解析失败', e)
@@ -187,7 +204,24 @@ export default function Bridge() {
           }
           setExternalUser(u)
           setStatus('会话已建立，跳转中...')
-          navigate('/', { replace: true })
+          
+          // 同样增强 postMessage 方式的导航
+          setTimeout(() => {
+            console.log('执行 postMessage 导航跳转...')
+            try {
+              navigate('/', { replace: true })
+              
+              // 备用方案
+              setTimeout(() => {
+                if (window.location.pathname.includes('/auth/bridge')) {
+                  window.location.href = '/'
+                }
+              }, 500)
+            } catch (e) {
+              console.error('导航出错:', e)
+              window.location.href = '/'
+            }
+          }, 300)
         } catch (e) {
           console.error('EXTERNAL_USER 处理失败', e)
           setStatus('处理主项目用户数据失败')
@@ -199,11 +233,25 @@ export default function Bridge() {
     return () => window.removeEventListener('message', handler)
   }, [navigate, search])
 
+  // 添加强制跳转按钮
+  const forceNavigate = () => {
+    console.log('用户点击强制跳转')
+    window.location.href = '/'
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="bg-white shadow rounded p-6 w-full max-w-md text-center">
         <h2 className="text-xl font-semibold mb-2">正在桥接主项目会话</h2>
         <p className="text-gray-600">{status}</p>
+        
+        {/* 添加手动跳转按钮 */}
+        <button 
+          onClick={forceNavigate}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          点击此处手动跳转到首页
+        </button>
         {ENV.MAIN_APP_ORIGINS.length > 0 ? (
           <p className="text-xs text-gray-400 mt-3">
             允许来源：{ENV.MAIN_APP_ORIGINS.join(', ')}
