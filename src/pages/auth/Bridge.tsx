@@ -7,27 +7,34 @@ import { useAuth } from '@/hooks/use-auth'
 type Role = 'admin' | 'manager' | 'developer' | 'submitter'
 
 function isAllowedOrigin(origin: string | null | undefined) {
+  if (ENV.DISABLE_ORIGIN_CHECK) {
+    console.warn('来源校验已禁用（联调模式）: 放行', origin)
+    return true
+  }
+
   // 调试信息
   console.log('检查来源:', origin)
   console.log('允许的来源列表:', ENV.MAIN_APP_ORIGINS)
-  
-  // 如果没有设置来源，暂时放行（用于调试）
+
+  // 严格模式：来源缺失直接拒绝
   if (!origin) {
-    console.log('来源为空，暂时放行')
-    return true
+    console.warn('来源为空，严格模式下拒绝')
+    return false
   }
-  
-  // 如果白名单为空，暂时放行所有来源（用于调试）
+
+  // 严格模式：白名单为空直接拒绝
   if (ENV.MAIN_APP_ORIGINS.length === 0) {
-    console.log('白名单为空，暂时放行所有来源')
-    return true
+    console.warn('白名单为空，严格模式下拒绝')
+    return false
   }
-  
-  // 检查来源是否在白名单中
-  const isAllowed = ENV.MAIN_APP_ORIGINS.some(allowed => 
-    origin === allowed || origin.startsWith(allowed)
-  )
-  console.log('来源验证结果:', isAllowed)
+
+  // 规范化对比（去掉末尾斜杠）
+  const isAllowed = ENV.MAIN_APP_ORIGINS.some((allowed) => {
+    const a = allowed.replace(/\/$/, '')
+    const o = origin.replace(/\/$/, '')
+    return o === a
+  })
+  console.log('来源验证结果:', isAllowed, '来源:', origin, '白名单:', ENV.MAIN_APP_ORIGINS)
   return isAllowed
 }
 
@@ -90,6 +97,8 @@ export default function Bridge() {
 
     // 优先处理 external_user（Base64URL JSON）方案
     const externalUserParam = (search.get('external_user') || '').trim()
+    console.log('Bridge 启动，当前 URL:', window.location.href)
+    console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
     if (externalUserParam) {
       try {
         // 获取来源
@@ -254,6 +263,9 @@ export default function Bridge() {
       <div className="bg-white shadow rounded p-6 w-full max-w-md text-center">
         <h2 className="text-xl font-semibold mb-2">正在桥接主项目会话</h2>
         <p className="text-gray-600">{status}</p>
+        {ENV.DISABLE_ORIGIN_CHECK && (
+          <p className="text-xs text-amber-500 mt-2">已关闭来源校验（联调模式）</p>
+        )}
         
         {/* 添加手动跳转按钮 */}
         <button 

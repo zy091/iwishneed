@@ -8,6 +8,7 @@ const EnvSchema = z.object({
   VITE_SSO_PROVIDER: z.string().optional(),
   VITE_SUPABASE_URL: z.string(),
   VITE_SUPABASE_ANON_KEY: z.string(),
+  VITE_DISABLE_ORIGIN_CHECK: z.string().optional(),
 })
 
 const parsed = EnvSchema.safeParse({
@@ -18,6 +19,7 @@ const parsed = EnvSchema.safeParse({
   VITE_SSO_PROVIDER: import.meta.env.VITE_SSO_PROVIDER,
   VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
   VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  VITE_DISABLE_ORIGIN_CHECK: import.meta.env.VITE_DISABLE_ORIGIN_CHECK,
 })
 
 if (!parsed.success) {
@@ -37,6 +39,11 @@ const mainOrigins =
       : toOrigins(parsed.data.VITE_MAIN_APP_ORIGIN)
     : []
 
+const disableOriginCheck =
+  parsed.success
+    ? ['1', 'true', 'yes', 'on'].includes(String(parsed.data.VITE_DISABLE_ORIGIN_CHECK || '').toLowerCase())
+    : false
+
 export const ENV = {
   AUTH_MODE: (parsed.success ? parsed.data.VITE_AUTH_MODE : 'standalone') as 'standalone' | 'sso',
   MAIN_APP_ORIGINS: mainOrigins,
@@ -44,4 +51,5 @@ export const ENV = {
   SSO_PROVIDER: parsed.success ? parsed.data.VITE_SSO_PROVIDER : undefined,
   SUPABASE_URL: parsed.success ? parsed.data.VITE_SUPABASE_URL : '',
   SUPABASE_ANON_KEY: parsed.success ? parsed.data.VITE_SUPABASE_ANON_KEY : '',
+  DISABLE_ORIGIN_CHECK: disableOriginCheck,
 }
