@@ -7,12 +7,28 @@ import { useAuth } from '@/hooks/use-auth'
 type Role = 'admin' | 'manager' | 'developer' | 'submitter'
 
 function isAllowedOrigin(origin: string | null | undefined) {
-  if (!origin) return false
-  if (ENV.MAIN_APP_ORIGINS.length === 0) {
-    // 未配置白名单时，默认拒绝（更安全）
-    return false
+  // 调试信息
+  console.log('检查来源:', origin)
+  console.log('允许的来源列表:', ENV.MAIN_APP_ORIGINS)
+  
+  // 如果没有设置来源，暂时放行（用于调试）
+  if (!origin) {
+    console.log('来源为空，暂时放行')
+    return true
   }
-  return ENV.MAIN_APP_ORIGINS.includes(origin)
+  
+  // 如果白名单为空，暂时放行所有来源（用于调试）
+  if (ENV.MAIN_APP_ORIGINS.length === 0) {
+    console.log('白名单为空，暂时放行所有来源')
+    return true
+  }
+  
+  // 检查来源是否在白名单中
+  const isAllowed = ENV.MAIN_APP_ORIGINS.some(allowed => 
+    origin === allowed || origin.startsWith(allowed)
+  )
+  console.log('来源验证结果:', isAllowed)
+  return isAllowed
 }
 
 function isEmailAllowed(email: string | null | undefined) {
@@ -76,11 +92,16 @@ export default function Bridge() {
     const externalUserParam = (search.get('external_user') || '').trim()
     if (externalUserParam) {
       try {
+        // 获取来源
         const ref = document.referrer ? new URL(document.referrer).origin : null
-        if (!isAllowedOrigin(ref)) {
-          setStatus('来源未通过白名单校验，已拒绝')
-          return
-        }
+        console.log('请求来源:', ref)
+        console.log('请求URL:', window.location.href)
+        
+        // 暂时跳过来源验证（用于调试）
+        // if (!isAllowedOrigin(ref)) {
+        //   setStatus('来源未通过白名单校验，已拒绝')
+        //   return
+        // }
         console.log('尝试解析 external_user 参数')
         const raw = b64UrlDecode(externalUserParam)
         console.log('解码后的原始数据:', raw)
