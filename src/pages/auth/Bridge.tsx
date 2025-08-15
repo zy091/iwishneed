@@ -217,17 +217,12 @@ export default function Bridge() {
         setStatus('会话已建立，跳转中...')
         console.log('跳转到首页')
         
-        // 直接使用 window.location 进行跳转，避免 React Router 导航问题
-        console.log('准备跳转到首页...')
+        // 清理 window.name，避免泄漏
+        try { window.name = '' } catch (_) {}
         
-        // 使用 setTimeout 确保状态更新和日志输出完成
-        setTimeout(() => {
-          console.log('执行跳转')
-          // 清理 window.name，避免泄漏
-          try { window.name = '' } catch (_) {}
-          // 直接使用 window.location.href 进行硬跳转
-          window.location.href = window.location.origin + '/'
-        }, 500)
+        // 使用 React Router 进行导航
+        console.log('执行跳转到首页')
+        navigate('/', { replace: true })
         return
       } catch (e) {
         console.error('external_user 解析失败', e)
@@ -306,11 +301,11 @@ export default function Bridge() {
           setExternalUser(u)
           setStatus('会话已建立，跳转中...')
           
-          // 直接使用 window.location 进行跳转
-          setTimeout(() => {
-            try { window.name = '' } catch (_) {}
-            window.location.href = window.location.origin + '/'
-          }, 500)
+          // 清理 window.name，避免泄漏
+          try { window.name = '' } catch (_) {}
+          
+          // 使用 React Router 进行导航
+          navigate('/', { replace: true })
         } catch (e) {
           console.error('EXTERNAL_USER 处理失败', e)
           setStatus('处理主项目用户数据失败')
@@ -328,7 +323,7 @@ export default function Bridge() {
   // 添加强制跳转与测试登录按钮
   const forceNavigate = () => {
     console.log('用户点击强制跳转')
-    window.location.href = window.location.origin + '/'
+    navigate('/', { replace: true })
   }
 
   const loginAsTestUser = () => {
@@ -342,9 +337,7 @@ export default function Bridge() {
     }
     setExternalUser(u as any)
     setStatus('联调模式：使用测试用户登录，跳转中...')
-    setTimeout(() => {
-      window.location.href = window.location.origin + '/'
-    }, 300)
+    navigate('/', { replace: true })
   }
 
   return (
