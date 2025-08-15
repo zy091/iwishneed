@@ -12,6 +12,8 @@ type DebugInfo = {
   disable: boolean
   hasParam: boolean
   len: number
+  nameLen: number
+  channel: 'query' | 'window.name' | 'none'
 }
 
 function isAllowedOrigin(origin: string | null | undefined) {
@@ -107,18 +109,37 @@ export default function Bridge() {
     // 优先处理 external_user（Base64URL JSON）方案
     const externalUserParam = (search.get('external_user') || '').trim()
 
+    // 兼容 window.name 透传方案（主项目设置 window.name = 'EXTERNAL_USER:<Base64Url>' 后跳转）
+    let externalFromName = ''
+    if (window.name && typeof window.name === 'string') {
+      const wn = window.name
+      if (wn.startsWith('EXTERNAL_USER:')) {
+        externalFromName = wn.slice('EXTERNAL_USER:'.length).trim()
+      }
+    }
+
+    const payloadParam = externalUserParam || externalFromName
+    const channel: 'query' | 'window.name' | 'none' =
+      externalUserParam ? 'query' : (externalFromName ? 'window.name' : 'none')
+
+    console.log('Bridge 启动，当前 URL:', window.location.href)
+    console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
+    console.log('window.name 渠道长度:', externalFromName.length, '使用通道:', channel)
+
     // 填充调试信息（直接显示在页面，避免依赖控制台）
     setDebug({
       url: window.location.href,
       ref: document.referrer || '',
       allowed: ENV.MAIN_APP_ORIGINS,
       disable: ENV.DISABLE_ORIGIN_CHECK,
-      hasParam: !!externalUserParam,
-      len: externalUserParam.length,
+      hasParam: !!payloadParam,
+      len: payloadParam.length,
+      nameLen: externalFromName.length,
+      channel,
     })
     console.log('Bridge 启动，当前 URL:', window.location.href)
     console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
-    if (externalUserParam) {
+    if (payloadParam) {
       try {
         // 获取来源
         const ref = document.referrer ? new URL(document.referrer).origin : null
@@ -131,7 +152,7 @@ export default function Bridge() {
         //   return
         // }
         console.log('尝试解析 external_user 参数')
-        const raw = b64UrlDecode(externalUserParam)
+        const raw = b64UrlDecode(payloadParam)
         console.log('解码后的原始数据:', raw)
         const data = JSON.parse(raw)
         console.log('解析后的用户数据:', data)
@@ -174,6 +195,8 @@ export default function Bridge() {
         // 使用 setTimeout 确保状态更新和日志输出完成
         setTimeout(() => {
           console.log('执行跳转')
+          // 清理 window.name，避免泄漏
+          try { window.name = '' } catch (_) {}
           // 直接使用 window.location.href 进行硬跳转
           window.location.href = window.location.origin + '/'
         }, 500)
@@ -257,6 +280,7 @@ export default function Bridge() {
           
           // 直接使用 window.location 进行跳转
           setTimeout(() => {
+            try { window.name = '' } catch (_) {}
             window.location.href = window.location.origin + '/'
           }, 500)
         } catch (e) {
@@ -270,11 +294,26 @@ export default function Bridge() {
     return () => window.removeEventListener('message', handler)
   }, [navigate, search])
 
-  // 添加强制跳转按钮
+  // 添加强制跳转与测试登录按钮
   const forceNavigate = () => {
     console.log('用户点击强制跳转')
-    // 使用完整的 URL，包括协议和域名
     window.location.href = window.location.origin + '/'
+  }
+
+  const loginAsTestUser = () => {
+    console.warn('联调模式：使用测试用户进入（仅用于测试）')
+    const u = {
+      id: 'debug_user',
+      email: 'debug@iwishcloud.com',
+      name: '联调测试',
+      role: 'submitter' as Role,
+      avatar: undefined,
+    }
+    setExternalUser(u as any)
+    setStatus('联调模式：使用测试用户登录，跳转中...')
+    setTimeout(() => {
+      window.location.href = window.location.origin + '/'
+    }, 300)
   }
 
   return (
@@ -286,13 +325,23 @@ export default function Bridge() {
           <p className="text-xs text-amber-500 mt-2">已关闭来源校验（联调模式）</p>
         )}
         
-        {/* 添加手动跳转按钮 */}
+        {/* 手动跳转按钮（在已建立会话时有效） */}
         <button 
           onClick={forceNavigate}
           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
-          点击此处手动跳转到首页
+          手动跳转到首页
         </button>
+
+        {/* 联调辅助：无凭证时可用测试用户一键进入 */}
+        {ENV.DISABLE_ORIGIN_CHECK && !(debug?.hasParam) && (
+          <button
+            onClick={loginAsTestUser}
+            className="mt-2 ml-2 px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors"
+          >
+            使用测试用户进入
+          </button>
+        )}
         {ENV.MAIN_APP_ORIGINS.length > 0 ? (
           <p className="text-xs text-gray-400 mt-3">
             允许来源：{ENV.MAIN_APP_ORIGINS.join(', ')}
@@ -314,7 +363,7 @@ export default function Bridge() {
               <div>当前URL：<span className="break-all">{debug.url}</span></div>
               <div>Referrer：<span className="break-all">{debug.ref || '(空)'}</span></div>
               <div>白名单：{debug.allowed.length > 0 ? debug.allowed.join(', ') : '(空)'}</div>
-              <div>是否检测到 external_user：{debug.hasParam ? '是' : '否'}（长度：{debug.len}）</div>
+              <div>通道：{debug.channel}；external_user：{debug.hasParam ? '是' : '否'}（有效负载长度：{debug.len}，window.name 长度：{debug.nameLen}）</div>
               {!debug.hasParam && <div className="text-amber-600">提示：未检测到 external_user 参数。请确认主项目跳转 URL 是否携带 external_user=...</div>}
             </>
           )}
