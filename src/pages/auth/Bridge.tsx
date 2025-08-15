@@ -29,7 +29,17 @@ function b64UrlDecode(s: string) {
   
   // 解码 Base64 并处理 UTF-8 字符
   try {
-    return decodeURIComponent(escape(atob(t)))
+    // 方法一：使用 decodeURIComponent + escape
+    const decoded1 = decodeURIComponent(escape(atob(t)))
+    console.log('解码方法1结果:', decoded1)
+    
+    // 方法二：直接使用 TextDecoder
+    const bytes = Uint8Array.from(atob(t), c => c.charCodeAt(0))
+    const decoded2 = new TextDecoder('utf-8').decode(bytes)
+    console.log('解码方法2结果:', decoded2)
+    
+    // 返回方法二的结果，通常更可靠处理 UTF-8
+    return decoded2
   } catch (e) {
     console.error('Base64URL 解码失败:', e)
     throw e
@@ -63,6 +73,12 @@ export default function Bridge() {
         console.log('解码后的原始数据:', raw)
         const data = JSON.parse(raw)
         console.log('解析后的用户数据:', data)
+        
+        // 调试用户名编码
+        if (data.name) {
+          console.log('用户名原始值:', data.name)
+          console.log('用户名字节表示:', Array.from(new TextEncoder().encode(data.name)).map(b => b.toString(16)).join(' '))
+        }
 
         const role: Role = (['admin', 'manager', 'developer', 'submitter'].includes(data.role)
           ? data.role
@@ -89,7 +105,11 @@ export default function Bridge() {
         setExternalUser(u)
         setStatus('会话已建立，跳转中...')
         console.log('跳转到首页')
-        navigate('/', { replace: true })
+        
+        // 添加延迟，确保日志完全输出
+        setTimeout(() => {
+          navigate('/', { replace: true })
+        }, 100)
         return
       } catch (e) {
         console.error('external_user 解析失败', e)

@@ -22,10 +22,29 @@ export function MainAppLink({ label = '跳转到需求管理系统', className }
     // Base64URL 编码函数，支持中文
     const toBase64Url = (json: any) => {
       const s = typeof json === 'string' ? json : JSON.stringify(json)
-      // 使用 encodeURIComponent 处理 UTF-8 字符
-      const encoded = btoa(unescape(encodeURIComponent(s)))
-      // 转换为 Base64URL 格式
-      return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      
+      // 使用 TextEncoder 处理 UTF-8 字符（更可靠的方法）
+      try {
+        // 方法1: 使用 encodeURIComponent + unescape
+        const encoded1 = btoa(unescape(encodeURIComponent(s)))
+        console.log('编码方法1结果:', encoded1)
+        
+        // 方法2: 使用 TextEncoder（更现代的方法）
+        const bytes = new TextEncoder().encode(s)
+        let binary = ''
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i])
+        }
+        const encoded2 = btoa(binary)
+        console.log('编码方法2结果:', encoded2)
+        
+        // 转换为 Base64URL 格式（使用方法1的结果）
+        return encoded1.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      } catch (e) {
+        console.error('编码失败:', e)
+        // 降级处理，尝试不处理中文直接编码
+        return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      }
     }
 
     // 构造用户信息载荷
@@ -37,19 +56,22 @@ export function MainAppLink({ label = '跳转到需求管理系统', className }
       avatar: user.avatar
     }
 
+    console.log('准备编码的用户信息:', userPayload)
+    
     // 编码并跳转
     const encoded = toBase64Url(userPayload)
-    
+    console.log('编码后的用户信息:', encoded)
+
     // 开发环境
     window.location.href = `http://localhost:5173/auth/bridge?external_user=${encoded}`
-    
+
     // 生产环境（取消注释并替换为实际域名）
-    // window.location.href = `https://你的子项目域名/auth/bridge?external_user=${encoded}`
+    // window.location.href = `https://iwishneed.netlify.app/auth/bridge?external_user=${encoded}`
   }
 
   return (
-    <Button 
-      onClick={handleClick} 
+    <Button
+      onClick={handleClick}
       className={className}
     >
       {label}
