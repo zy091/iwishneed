@@ -13,7 +13,9 @@ type DebugInfo = {
   hasParam: boolean
   len: number
   nameLen: number
-  channel: 'query' | 'window.name' | 'none'
+  hashLen: number
+  opener: boolean
+  channel: 'query' | 'window.name' | 'hash' | 'none'
 }
 
 function isAllowedOrigin(origin: string | null | undefined) {
@@ -118,13 +120,21 @@ export default function Bridge() {
       }
     }
 
-    const payloadParam = externalUserParam || externalFromName
-    const channel: 'query' | 'window.name' | 'none' =
-      externalUserParam ? 'query' : (externalFromName ? 'window.name' : 'none')
+    // 兼容 Hash 透传方案（/#external_user=...）
+    const externalFromHash = (() => {
+      const h = window.location.hash || ''
+      const m = h.match(/external_user=([^&]+)/)
+      return m ? decodeURIComponent(m[1]) : ''
+    })()
+
+    const payloadParam = externalUserParam || externalFromName || externalFromHash
+    const channel: 'query' | 'window.name' | 'hash' | 'none' =
+      externalUserParam ? 'query' : (externalFromName ? 'window.name' : (externalFromHash ? 'hash' : 'none'))
 
     console.log('Bridge 启动，当前 URL:', window.location.href)
     console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
-    console.log('window.name 渠道长度:', externalFromName.length, '使用通道:', channel)
+    console.log('window.name 渠道长度:', externalFromName.length)
+    console.log('hash 渠道长度:', externalFromHash.length, '使用通道:', channel)
 
     // 填充调试信息（直接显示在页面，避免依赖控制台）
     setDebug({
@@ -135,8 +145,26 @@ export default function Bridge() {
       hasParam: !!payloadParam,
       len: payloadParam.length,
       nameLen: externalFromName.length,
+      hashLen: externalFromHash.length,
+      opener: !!window.opener,
       channel,
     })
+
+    // 如无负载且存在 opener，则主动请求主项目发送凭证（兼容旧版本 postMessage 协议）
+    let reqTimer: number | undefined
+    if (!payloadParam && window.opener) {
+      console.log('检测到 window.opener，向主项目请求凭证...')
+      const sendReq = () => {
+        try {
+          window.opener?.postMessage?.({ type: 'REQUEST_EXTERNAL_USER' }, '*')
+        } catch (e) {
+          console.warn('向 opener 请求凭证失败:', e)
+        }
+      }
+      sendReq()
+      reqTimer = window.setInterval(sendReq, 800) // 重试请求
+      setStatus('已向主项目请求凭证...')
+    }
     console.log('Bridge 启动，当前 URL:', window.location.href)
     console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
     if (payloadParam) {
@@ -291,7 +319,10 @@ export default function Bridge() {
     }
 
     window.addEventListener('message', handler)
-    return () => window.removeEventListener('message', handler)
+    return () => {
+      window.removeEventListener('message', handler)
+      if (reqTimer) window.clearInterval(reqTimer)
+    }
   }, [navigate, search])
 
   // 添加强制跳转与测试登录按钮
@@ -363,7 +394,7 @@ export default function Bridge() {
               <div>当前URL：<span className="break-all">{debug.url}</span></div>
               <div>Referrer：<span className="break-all">{debug.ref || '(空)'}</span></div>
               <div>白名单：{debug.allowed.length > 0 ? debug.allowed.join(', ') : '(空)'}</div>
-              <div>通道：{debug.channel}；external_user：{debug.hasParam ? '是' : '否'}（有效负载长度：{debug.len}，window.name 长度：{debug.nameLen}）</div>
+              <div>通道：{debug.channel}；external_user：{debug.hasParam ? '是' : '否'}（有效负载长度：{debug.len}，window.name 长度：{debug.nameLen}，hash 长度：{debug.hashLen}，opener：{debug.opener ? '存在' : '不存在'}）</div>
               {!debug.hasParam && <div className="text-amber-600">提示：未检测到 external_user 参数。请确认主项目跳转 URL 是否携带 external_user=...</div>}
             </>
           )}

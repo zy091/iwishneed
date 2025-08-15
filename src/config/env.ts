@@ -9,6 +9,7 @@ const EnvSchema = z.object({
   VITE_SUPABASE_URL: z.string(),
   VITE_SUPABASE_ANON_KEY: z.string(),
   VITE_DISABLE_ORIGIN_CHECK: z.string().optional(),
+  VITE_CHILD_APP_URL: z.string().optional(),
 })
 
 const parsed = EnvSchema.safeParse({
@@ -20,6 +21,7 @@ const parsed = EnvSchema.safeParse({
   VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
   VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
   VITE_DISABLE_ORIGIN_CHECK: import.meta.env.VITE_DISABLE_ORIGIN_CHECK,
+  VITE_CHILD_APP_URL: import.meta.env.VITE_CHILD_APP_URL,
 })
 
 if (!parsed.success) {
@@ -52,4 +54,5 @@ export const ENV = {
   SUPABASE_URL: parsed.success ? parsed.data.VITE_SUPABASE_URL : '',
   SUPABASE_ANON_KEY: parsed.success ? parsed.data.VITE_SUPABASE_ANON_KEY : '',
   DISABLE_ORIGIN_CHECK: disableOriginCheck,
+  CHILD_APP_URL: parsed.success ? parsed.data.VITE_CHILD_APP_URL : undefined,
 }
