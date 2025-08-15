@@ -99,7 +99,16 @@ export default function Bridge() {
   const [search] = useSearchParams()
   const [status, setStatus] = useState('准备接入主项目会话...')
   const [debug, setDebug] = useState<DebugInfo | null>(null)
-  const { setExternalUser } = useAuth()
+  const [shouldNavigate, setShouldNavigate] = useState(false)
+  const { setExternalUser, isAuthenticated } = useAuth()
+
+  // 监听认证状态变化，认证成功后自动跳转
+  useEffect(() => {
+    if (shouldNavigate && isAuthenticated) {
+      console.log('认证状态已更新，执行跳转到首页')
+      navigate('/', { replace: true })
+    }
+  }, [shouldNavigate, isAuthenticated, navigate])
 
   useEffect(() => {
     if (ENV.AUTH_MODE !== 'sso') {
@@ -215,14 +224,12 @@ export default function Bridge() {
         console.log('设置外部用户:', u)
         setExternalUser(u)
         setStatus('会话已建立，跳转中...')
-        console.log('跳转到首页')
         
         // 清理 window.name，避免泄漏
         try { window.name = '' } catch (_) {}
         
-        // 使用 React Router 进行导航
-        console.log('执行跳转到首页')
-        navigate('/', { replace: true })
+        // 设置跳转标志，让 useEffect 监听认证状态变化后跳转
+        setShouldNavigate(true)
         return
       } catch (e) {
         console.error('external_user 解析失败', e)
@@ -304,8 +311,8 @@ export default function Bridge() {
           // 清理 window.name，避免泄漏
           try { window.name = '' } catch (_) {}
           
-          // 使用 React Router 进行导航
-          navigate('/', { replace: true })
+          // 设置跳转标志，让 useEffect 监听认证状态变化后跳转
+          setShouldNavigate(true)
         } catch (e) {
           console.error('EXTERNAL_USER 处理失败', e)
           setStatus('处理主项目用户数据失败')
@@ -337,7 +344,7 @@ export default function Bridge() {
     }
     setExternalUser(u as any)
     setStatus('联调模式：使用测试用户登录，跳转中...')
-    navigate('/', { replace: true })
+    setShouldNavigate(true)
   }
 
   return (
