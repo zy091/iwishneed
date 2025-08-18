@@ -22,6 +22,11 @@ export interface Requirement {
   updatedAt: string;
   dueDate: string;
   tags: string[];
+  type?: 'tech' | 'creative';
+  extra?: {
+    raw?: Record<string, string>;
+    source?: { fileName: string; importedAt: string };
+  };
   attachments?: {
     id: string;
     name: string;
@@ -347,7 +352,7 @@ export class RequirementService {
         };
         
         if (requirementData.assignee) {
-          newRequirement.history.push({
+          (newRequirement.history ||= []).push({
             id: uuidv4(),
             action: `分配给${requirementData.assignee.name}`,
             user: currentUser.name,

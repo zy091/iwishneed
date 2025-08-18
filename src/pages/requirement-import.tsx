@@ -83,6 +83,7 @@ export default function RequirementImport() {
       : ''
 
   const department = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : '未分配'
+  const type: Requirement['type'] = base === '/tech' ? 'tech' : base === '/creative' ? 'creative' : undefined
   const departmentLabel = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : '通用'
 
   const handleFile = (file: File) => {
@@ -112,7 +113,15 @@ export default function RequirementImport() {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]
       const title = (row[0] || '').trim() || `未命名-${i + 1}`
-      // 将整行 CSV 转成可读文本放入描述，保留原始信息
+
+      // 原始列字典
+      const raw: Record<string, string> = {}
+      headers.forEach((h, idx) => {
+        const key = h || `第${idx + 1}列`
+        raw[key] = row[idx] || ''
+      })
+
+      // 描述拼接友好可读文本
       const descLines = headers.map((h, idx) => {
         const key = h || `第${idx + 1}列`
         const val = row[idx] || ''
@@ -135,6 +144,7 @@ export default function RequirementImport() {
         },
         assignee: null,
         department,
+        type,
         createdAt: todayStr,
         updatedAt: todayStr,
         dueDate: '',
@@ -149,6 +159,13 @@ export default function RequirementImport() {
             timestamp: new Date().toLocaleString(),
           },
         ],
+        extra: {
+          raw,
+          source: {
+            fileName,
+            importedAt: new Date().toISOString(),
+          },
+        },
       }
 
       all.push(item)
