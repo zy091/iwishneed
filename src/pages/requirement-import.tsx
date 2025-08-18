@@ -160,7 +160,7 @@ export default function RequirementImport() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">导入需求（CSV） - {departmentLabel}</h1>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate(`${base}/requirements` || '/requirements`)}>
+          <Button variant="secondary" onClick={() => navigate((base || '') + '/requirements')}>
             返回列表
           </Button>
           <Button onClick={handleImport} disabled={disableImport}>
@@ -232,7 +232,7 @@ export default function RequirementImport() {
               ))}
             </ul>
             <div className="mt-4">
-              <Button onClick={() => navigate(`${base}/requirements` || '/requirements')}>查看需求列表</Button>
+              <Button onClick={() => navigate((base || '') + '/requirements')}>查看需求列表</Button>
             </div>
           </CardContent>
         </Card>
