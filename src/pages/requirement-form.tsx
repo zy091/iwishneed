@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -62,7 +62,7 @@ const formSchema = z.object({
   priority: z.enum(['high', 'medium', 'low']),
   assigneeId: z.string(),
   department: z.string(),
-  dueDate: z.date({ required_error: '请选择截止日期' }),
+  dueDate: z.date(),
   tags: z.string().optional()
 })
 
@@ -75,6 +75,14 @@ export default function RequirementForm() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isEditMode = !!id
+  const location = useLocation()
+  const base =
+    location.pathname.startsWith('/tech')
+      ? '/tech'
+      : location.pathname.startsWith('/creative')
+      ? '/creative'
+      : ''
+  const presetDepartment = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : ''
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,7 +92,7 @@ export default function RequirementForm() {
       status: 'pending',
       priority: 'medium',
       assigneeId: 'unassigned',
-      department: '',
+      department: presetDepartment || '',
       tags: ''
     }
   })
@@ -109,7 +117,7 @@ export default function RequirementForm() {
           })
         } else {
           console.error('需求不存在')
-          navigate('/requirements')
+          navigate(`${base}/requirements` || '/requirements')
         }
       } catch (error) {
         console.error('获取需求详情失败:', error)
@@ -174,7 +182,7 @@ export default function RequirementForm() {
         )
       }
       
-      navigate('/requirements')
+      navigate(`${base}/requirements` || '/requirements')
     } catch (error) {
       console.error('保存需求失败:', error)
     } finally {

@@ -32,6 +32,26 @@ export default function App() {
         <Route path="requirements/new" element={<RequirementForm />} />
         <Route path="requirements/:id" element={<RequirementDetail />} />
         <Route path="requirements/:id/edit" element={<RequirementForm />} />
+        {/* 技术部专区 */}
+        <Route path="tech/requirements" element={<RequirementList />} />
+        <Route path="tech/requirements/new" element={<RequirementForm />} />
+        <Route path="tech/requirements/import" element={<RequirementImport />} />
+        <Route path="tech/requirements/:id" element={<RequirementDetail />} />
+        <Route path="tech/requirements/:id/edit" element={<RequirementForm />} />
+        {/* 创意部专区 */}
+        <Route path="creative/requirements" element={<RequirementList />} />
+        <Route path="creative/requirements/new" element={<RequirementForm />} />
+        <Route path="creative/requirements/import" element={<RequirementImport />} />
+        <Route path="creative/requirements/:id" element={<RequirementDetail />} />
+        <Route path="creative/requirements/:id/edit" element={<RequirementForm />} />
+        {/* 技术部专区 */}
+        <Route path="tech/requirements" element={<RequirementList />} />
+        <Route path="tech/requirements/new" element={<RequirementForm />} />
+        <Route path="tech/requirements/import" element={<RequirementImport />} />
+        {/* 创意部专区 */}
+        <Route path="creative/requirements" element={<RequirementList />} />
+        <Route path="creative/requirements/new" element={<RequirementForm />} />
+        <Route path="creative/requirements/import" element={<RequirementImport />} />
       </Route>
     </Routes>
   )

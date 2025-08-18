@@ -11,7 +11,8 @@ import {
   Settings, 
   LogOut, 
   Menu, 
-  X 
+  X,
+  Upload
 } from 'lucide-react'
 import { useAuth } from './hooks/use-auth'
 import { 
@@ -35,7 +36,6 @@ export default function Layout() {
   const handleLogout = () => {
     logout()
     if (isSSO) {
-      // SSO 下退出：清本地会话并回主系统，由主系统统一托管账号体系
       handleBackToMain()
     } else {
       navigate('/login')
@@ -85,9 +85,10 @@ export default function Layout() {
             <LayoutDashboard className="mr-2 h-5 w-5" />
             仪表盘
           </NavLink>
-          
+
+          <div className="px-3 pt-4 pb-1 text-xs text-gray-400">技术部</div>
           <NavLink 
-            to="/requirements" 
+            to="/tech/requirements" 
             end
             className={({ isActive }) => cn(
               "flex items-center px-3 py-2 rounded-md text-sm font-medium",
@@ -99,9 +100,8 @@ export default function Layout() {
             <ClipboardList className="mr-2 h-5 w-5" />
             需求列表
           </NavLink>
-          
           <NavLink 
-            to="/requirements/new" 
+            to="/tech/requirements/new" 
             className={({ isActive }) => cn(
               "flex items-center px-3 py-2 rounded-md text-sm font-medium",
               isActive 
@@ -111,6 +111,57 @@ export default function Layout() {
           >
             <PlusCircle className="mr-2 h-5 w-5" />
             创建需求
+          </NavLink>
+          <NavLink 
+            to="/tech/requirements/import" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <Upload className="mr-2 h-5 w-5" />
+            导入
+          </NavLink>
+
+          <div className="px-3 pt-4 pb-1 text-xs text-gray-400">创意部</div>
+          <NavLink 
+            to="/creative/requirements" 
+            end
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <ClipboardList className="mr-2 h-5 w-5" />
+            需求列表
+          </NavLink>
+          <NavLink 
+            to="/creative/requirements/new" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <PlusCircle className="mr-2 h-5 w-5" />
+            创建需求
+          </NavLink>
+          <NavLink 
+            to="/creative/requirements/import" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <Upload className="mr-2 h-5 w-5" />
+            导入
           </NavLink>
         </nav>
         

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { 
   Table, 
   TableBody, 
@@ -49,6 +49,14 @@ export default function RequirementList() {
   const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const base =
+    location.pathname.startsWith('/tech')
+      ? '/tech'
+      : location.pathname.startsWith('/creative')
+      ? '/creative'
+      : ''
 
   useEffect(() => {
     const fetchRequirements = async () => {
@@ -89,8 +97,15 @@ export default function RequirementList() {
       result = result.filter(req => req.priority === priorityFilter)
     }
 
+    // 部门过滤（按路由前缀）
+    if (base === '/tech') {
+      result = result.filter(req => req.department === '技术部')
+    } else if (base === '/creative') {
+      result = result.filter(req => req.department === '创意部')
+    }
+
     setFilteredRequirements(result)
-  }, [searchTerm, statusFilter, priorityFilter, requirements])
+  }, [searchTerm, statusFilter, priorityFilter, requirements, base])
 
   const handleDelete = async (id: string) => {
     try {
@@ -136,10 +151,10 @@ export default function RequirementList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">需求列表</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/requirements/import')}>
+          <Button variant="outline" onClick={() => navigate(`${base}/requirements/import` || '/requirements/import')}>
             <Upload className="mr-2 h-4 w-4" /> 导入
           </Button>
-          <Button onClick={() => navigate('/requirements/new')}>
+          <Button onClick={() => navigate(`${base}/requirements/new` || '/requirements/new')}>
             <PlusCircle className="mr-2 h-4 w-4" /> 新建需求
           </Button>
         </div>
@@ -220,7 +235,7 @@ export default function RequirementList() {
                   filteredRequirements.map((req) => (
                     <TableRow key={req.id}>
                       <TableCell className="font-medium">
-                        <Link to={`/requirements/${req.id}`} className="hover:underline">
+                        <Link to={`${base}/requirements/${req.id}` || `/requirements/${req.id}`} className="hover:underline">
                           {req.title}
                         </Link>
                       </TableCell>
@@ -254,10 +269,10 @@ export default function RequirementList() {
                       <TableCell>{req.dueDate}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}`)}>
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/requirements/${req.id}` || `/requirements/${req.id}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}/edit`)}>
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/requirements/${req.id}/edit` || `/requirements/${req.id}/edit`)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
