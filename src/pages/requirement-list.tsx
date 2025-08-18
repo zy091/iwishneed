@@ -36,34 +36,54 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card'
-import { RequirementService, Requirement } from '../services/requirement-service'
+import { SupabaseRequirementService, SupabaseRequirement } from '../services/supabase-requirement-service'
 import { useAuth } from '../hooks/use-auth'
-import { PlusCircle, Search, Filter, Trash2, Edit, Eye, Upload } from 'lucide-react'
+import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3 } from 'lucide-react'
 
 export default function RequirementList() {
-  const [requirements, setRequirements] = useState<Requirement[]>([])
-  const [filteredRequirements, setFilteredRequirements] = useState<Requirement[]>([])
+  const [requirements, setRequirements] = useState<SupabaseRequirement[]>([])
+  const [filteredRequirements, setFilteredRequirements] = useState<SupabaseRequirement[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState({
+    total: 0,
+    completed: 0,
+    inProgress: 0,
+    pending: 0,
+    overdue: 0
+  })
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const base =
-    location.pathname.startsWith('/tech')
-      ? '/tech'
-      : location.pathname.startsWith('/creative')
-      ? '/creative'
-      : ''
+  // 判断当前路径
+  const isDepartmentView = location.pathname.startsWith('/departments/')
+  const currentDepartment = isDepartmentView 
+    ? location.pathname.includes('/tech') ? '技术部' 
+    : location.pathname.includes('/creative') ? '创意部' 
+    : ''
+    : ''
 
   useEffect(() => {
     const fetchRequirements = async () => {
       try {
-        const data = await RequirementService.getAllRequirements()
+        let data: SupabaseRequirement[]
+        let statsData
+        
+        if (currentDepartment) {
+          data = await SupabaseRequirementService.getRequirementsByDepartment(currentDepartment)
+          statsData = await SupabaseRequirementService.getRequirementStats(currentDepartment)
+        } else {
+          data = await SupabaseRequirementService.getAllRequirements()
+          statsData = await SupabaseRequirementService.getRequirementStats()
+        }
+        
         setRequirements(data)
         setFilteredRequirements(data)
+        setStats(statsData)
         setIsLoading(false)
       } catch (error) {
         console.error('获取需求列表失败:', error)
@@ -72,7 +92,7 @@ export default function RequirementList() {
     }
 
     fetchRequirements()
-  }, [])
+  }, [currentDepartment])
 
   useEffect(() => {
     let result = requirements
@@ -97,19 +117,17 @@ export default function RequirementList() {
       result = result.filter(req => req.priority === priorityFilter)
     }
 
-    // 部门过滤（按路由前缀）
-    if (base === '/tech') {
-      result = result.filter(req => req.department === '技术部')
-    } else if (base === '/creative') {
-      result = result.filter(req => req.department === '创意部')
+    // 部门过滤（仅在全部需求页面显示）
+    if (!currentDepartment && departmentFilter && departmentFilter !== 'all-department') {
+      result = result.filter(req => req.department === departmentFilter)
     }
 
     setFilteredRequirements(result)
-  }, [searchTerm, statusFilter, priorityFilter, requirements, base])
+  }, [searchTerm, statusFilter, priorityFilter, departmentFilter, requirements, currentDepartment])
 
   const handleDelete = async (id: string) => {
     try {
-      const success = await RequirementService.deleteRequirement(id)
+      const success = await SupabaseRequirementService.deleteRequirement(id)
       if (success) {
         setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
       }
@@ -146,18 +164,110 @@ export default function RequirementList() {
     }
   }
 
+  const getPageTitle = () => {
+    if (currentDepartment) {
+      return `${currentDepartment} - 需求列表`
+    }
+    return '所有需求'
+  }
+
+  const getCreatePath = () => {
+    if (currentDepartment === '技术部') {
+      return '/requirements/new?department=tech'
+    } else if (currentDepartment === '创意部') {
+      return '/requirements/new?department=creative'
+    }
+    return '/requirements/new'
+  }
+
+  const getImportPath = () => {
+    if (currentDepartment === '技术部') {
+      return '/requirements/import?department=tech'
+    } else if (currentDepartment === '创意部') {
+      return '/requirements/import?department=creative'
+    }
+    return '/requirements/import'
+  }
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">需求列表</h1>
+        <h1 className="text-2xl font-bold">{getPageTitle()}</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate(`${base}/requirements/import` || '/requirements/import')}>
-            <Upload className="mr-2 h-4 w-4" /> 导入
+          <Button variant="outline" onClick={() => navigate(getImportPath())}>
+            <Upload className="mr-2 h-4 w-4" /> 批量导入
           </Button>
-          <Button onClick={() => navigate(`${base}/requirements/new` || '/requirements/new')}>
+          <Button onClick={() => navigate(getCreatePath())}>
             <PlusCircle className="mr-2 h-4 w-4" /> 新建需求
           </Button>
         </div>
+      </div>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">总计</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">待处理</p>
+                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-yellow-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">进行中</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">已完成</p>
+                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-green-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">已逾期</p>
+                <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-red-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="mb-6">
@@ -172,7 +282,7 @@ export default function RequirementList() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   type="search"
-                  placeholder="搜索需求..."
+                  placeholder="搜索需求标题、描述或人员..."
                   className="pl-8"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -206,6 +316,22 @@ export default function RequirementList() {
                 </SelectContent>
               </Select>
             </div>
+            {!currentDepartment && (
+              <div className="w-full md:w-48">
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="部门" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-department">全部部门</SelectItem>
+                    <SelectItem value="技术部">技术部</SelectItem>
+                    <SelectItem value="创意部">创意部</SelectItem>
+                    <SelectItem value="产品部">产品部</SelectItem>
+                    <SelectItem value="市场部">市场部</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -223,6 +349,7 @@ export default function RequirementList() {
                   <TableHead>标题</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>优先级</TableHead>
+                  {!currentDepartment && <TableHead>部门</TableHead>}
                   <TableHead>提交人</TableHead>
                   <TableHead>负责人</TableHead>
                   <TableHead>创建日期</TableHead>
@@ -235,12 +362,17 @@ export default function RequirementList() {
                   filteredRequirements.map((req) => (
                     <TableRow key={req.id}>
                       <TableCell className="font-medium">
-                        <Link to={`${base}/requirements/${req.id}` || `/requirements/${req.id}`} className="hover:underline">
+                        <Link to={`/requirements/${req.id}`} className="hover:underline">
                           {req.title}
                         </Link>
                       </TableCell>
                       <TableCell>{getStatusBadge(req.status)}</TableCell>
                       <TableCell>{getPriorityBadge(req.priority)}</TableCell>
+                      {!currentDepartment && (
+                        <TableCell>
+                          <Badge variant="outline">{req.department}</Badge>
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <img 
@@ -265,14 +397,14 @@ export default function RequirementList() {
                           <span className="text-gray-400">未分配</span>
                         )}
                       </TableCell>
-                      <TableCell>{req.createdAt}</TableCell>
-                      <TableCell>{req.dueDate}</TableCell>
+                      <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell>{req.due_date ? new Date(req.due_date).toLocaleDateString() : '-'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/requirements/${req.id}` || `/requirements/${req.id}`)}>
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`${base}/requirements/${req.id}/edit` || `/requirements/${req.id}/edit`)}>
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}/edit`)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
@@ -302,7 +434,7 @@ export default function RequirementList() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={!currentDepartment ? 9 : 8} className="text-center py-8">
                       没有找到符合条件的需求
                     </TableCell>
                   </TableRow>

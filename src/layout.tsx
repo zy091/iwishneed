@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { cn } from './lib/utils'
 import { Button } from './components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar'
@@ -12,7 +12,11 @@ import {
   LogOut, 
   Menu, 
   X,
-  Upload
+  Upload,
+  Users,
+  BarChart3,
+  FileText,
+  Folder
 } from 'lucide-react'
 import { useAuth } from './hooks/use-auth'
 import { 
@@ -23,14 +27,17 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from './components/ui/dropdown-menu'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useMobile } from './hooks/use-mobile'
 import { ENV } from './config/env'
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const isMobile = useMobile()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+  const [activeView, setActiveView] = useState<'overview' | 'user'>('overview')
   const isSSO = ENV.AUTH_MODE === 'sso'
 
   const handleLogout = () => {
@@ -53,6 +60,9 @@ export default function Layout() {
     setSidebarOpen(!sidebarOpen)
   }
 
+  // 判断当前是否在仪表盘页面
+  const isDashboard = location.pathname === '/'
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* 侧边栏 */}
@@ -72,6 +82,7 @@ export default function Layout() {
         </div>
         
         <nav className="flex-1 p-4 space-y-1">
+          {/* 仪表盘 */}
           <NavLink 
             to="/" 
             className={({ isActive }) => cn(
@@ -86,9 +97,11 @@ export default function Layout() {
             仪表盘
           </NavLink>
 
-          <div className="px-3 pt-4 pb-1 text-xs text-gray-400">技术部</div>
+          {/* 需求管理 */}
+          <div className="px-3 pt-4 pb-1 text-xs text-gray-400 uppercase tracking-wider">需求管理</div>
+          
           <NavLink 
-            to="/tech/requirements" 
+            to="/requirements" 
             end
             className={({ isActive }) => cn(
               "flex items-center px-3 py-2 rounded-md text-sm font-medium",
@@ -98,49 +111,11 @@ export default function Layout() {
             )}
           >
             <ClipboardList className="mr-2 h-5 w-5" />
-            需求列表
-          </NavLink>
-          <NavLink 
-            to="/tech/requirements/new" 
-            className={({ isActive }) => cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
-              isActive 
-                ? "bg-blue-100 text-blue-900" 
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-          >
-            <PlusCircle className="mr-2 h-5 w-5" />
-            创建需求
-          </NavLink>
-          <NavLink 
-            to="/tech/requirements/import" 
-            className={({ isActive }) => cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
-              isActive 
-                ? "bg-blue-100 text-blue-900" 
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-          >
-            <Upload className="mr-2 h-5 w-5" />
-            导入
+            所有需求
           </NavLink>
 
-          <div className="px-3 pt-4 pb-1 text-xs text-gray-400">创意部</div>
           <NavLink 
-            to="/creative/requirements" 
-            end
-            className={({ isActive }) => cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
-              isActive 
-                ? "bg-blue-100 text-blue-900" 
-                : "text-gray-700 hover:bg-gray-100"
-            )}
-          >
-            <ClipboardList className="mr-2 h-5 w-5" />
-            需求列表
-          </NavLink>
-          <NavLink 
-            to="/creative/requirements/new" 
+            to="/requirements/new" 
             className={({ isActive }) => cn(
               "flex items-center px-3 py-2 rounded-md text-sm font-medium",
               isActive 
@@ -151,8 +126,9 @@ export default function Layout() {
             <PlusCircle className="mr-2 h-5 w-5" />
             创建需求
           </NavLink>
+
           <NavLink 
-            to="/creative/requirements/import" 
+            to="/requirements/import" 
             className={({ isActive }) => cn(
               "flex items-center px-3 py-2 rounded-md text-sm font-medium",
               isActive 
@@ -161,7 +137,65 @@ export default function Layout() {
             )}
           >
             <Upload className="mr-2 h-5 w-5" />
-            导入
+            批量导入
+          </NavLink>
+
+          {/* 部门分类 */}
+          <div className="px-3 pt-4 pb-1 text-xs text-gray-400 uppercase tracking-wider">部门分类</div>
+          
+          <NavLink 
+            to="/departments/tech" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <Folder className="mr-2 h-5 w-5" />
+            技术部
+          </NavLink>
+
+          <NavLink 
+            to="/departments/creative" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <Folder className="mr-2 h-5 w-5" />
+            创意部
+          </NavLink>
+
+          {/* 报表分析 */}
+          <div className="px-3 pt-4 pb-1 text-xs text-gray-400 uppercase tracking-wider">报表分析</div>
+          
+          <NavLink 
+            to="/reports" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <BarChart3 className="mr-2 h-5 w-5" />
+            数据报表
+          </NavLink>
+
+          <NavLink 
+            to="/analytics" 
+            className={({ isActive }) => cn(
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              isActive 
+                ? "bg-blue-100 text-blue-900" 
+                : "text-gray-700 hover:bg-gray-100"
+            )}
+          >
+            <FileText className="mr-2 h-5 w-5" />
+            统计分析
           </NavLink>
         </nav>
         
@@ -191,7 +225,22 @@ export default function Layout() {
           )}
           
           <div className={cn("flex-1", isMobile ? "ml-4" : "")}>
-            <h2 className="text-lg font-semibold text-gray-800">欢迎回来，{user?.name}</h2>
+            {isDashboard ? (
+              <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'overview' | 'user')}>
+                <TabsList className="grid w-fit grid-cols-2">
+                  <TabsTrigger value="overview" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    概览
+                  </TabsTrigger>
+                  <TabsTrigger value="user" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    用户
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : (
+              <h2 className="text-lg font-semibold text-gray-800">欢迎回来，{user?.name}</h2>
+            )}
           </div>
           
           <div className="flex items-center space-x-4">
@@ -231,7 +280,18 @@ export default function Layout() {
         </header>
         
         <main className="flex-1 p-6 overflow-auto">
-          <Outlet />
+          {isDashboard ? (
+            <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'overview' | 'user')}>
+              <TabsContent value="overview">
+                <Outlet context={{ viewType: 'overview' }} />
+              </TabsContent>
+              <TabsContent value="user">
+                <Outlet context={{ viewType: 'user' }} />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

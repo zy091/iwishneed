@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -73,17 +73,25 @@ export default function RequirementImport() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
 
-  const base =
-    location.pathname.startsWith('/tech')
-      ? '/tech'
-      : location.pathname.startsWith('/creative')
-      ? '/creative'
-      : ''
-
-  const department = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : '未分配'
-  const type: 'tech' | 'creative' | undefined = base === '/tech' ? 'tech' : base === '/creative' ? 'creative' : undefined
-  const departmentLabel = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : '通用'
+  // 从 URL 参数或路径获取部门信息
+  const departmentParam = searchParams.get('department')
+  const isDepartmentView = location.pathname.startsWith('/departments/')
+  
+  const department = departmentParam === 'tech' ? '技术部'
+    : departmentParam === 'creative' ? '创意部'
+    : isDepartmentView && location.pathname.includes('/tech') ? '技术部'
+    : isDepartmentView && location.pathname.includes('/creative') ? '创意部'
+    : '未分配'
+    
+  const type: 'tech' | 'creative' | undefined = department === '技术部' ? 'tech' 
+    : department === '创意部' ? 'creative' 
+    : undefined
+    
+  const departmentLabel = department === '技术部' ? '技术部' 
+    : department === '创意部' ? '创意部' 
+    : '通用'
 
   const handleFile = (file: File) => {
     const reader = new FileReader()
@@ -155,12 +163,21 @@ export default function RequirementImport() {
 
   const disableImport = !headers.length || !rows.length
 
+  const getReturnPath = () => {
+    if (department === '技术部') {
+      return '/departments/tech'
+    } else if (department === '创意部') {
+      return '/departments/creative'
+    }
+    return '/requirements'
+  }
+
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">导入需求（CSV） - {departmentLabel}</h1>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate((base || '') + '/requirements')}>
+          <Button variant="secondary" onClick={() => navigate(getReturnPath())}>
             返回列表
           </Button>
           <Button onClick={handleImport} disabled={disableImport}>
@@ -172,7 +189,7 @@ export default function RequirementImport() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>上传文件</CardTitle>
-          <CardDescription>支持 CSV（UTF-8）。系统将按原始列展示与导入。</CardDescription>
+          <CardDescription>支持 CSV（UTF-8）。系统将按原始列展示与导入到 {departmentLabel}。</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -232,7 +249,7 @@ export default function RequirementImport() {
               ))}
             </ul>
             <div className="mt-4">
-              <Button onClick={() => navigate((base || '') + '/requirements')}>查看需求列表</Button>
+              <Button onClick={() => navigate(getReturnPath())}>查看需求列表</Button>
             </div>
           </CardContent>
         </Card>

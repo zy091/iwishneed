@@ -1,0 +1,6 @@
+﻿## main...origin/main
+?? combined_report.txt
+?? git_report.txt
+?? push_after.txt
+?? push_status.txt
+?? status_check.txt

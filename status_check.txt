@@ -1,0 +1,4 @@
+﻿## main...origin/main [ahead 1]
+?? combined_report.txt
+?? git_report.txt
+?? status_check.txt
