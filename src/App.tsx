@@ -4,6 +4,7 @@ import Dashboard from './pages/dashboard'
 import RequirementList from './pages/requirement-list'
 import RequirementDetail from './pages/requirement-detail'
 import RequirementForm from './pages/requirement-form'
+import RequirementImport from './pages/requirement-import'
 import Login from './pages/login'
 import { useAuth } from './hooks/use-auth'
 import Bridge from './pages/auth/Bridge'
@@ -27,6 +28,7 @@ export default function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="requirements" element={<RequirementList />} />
+        <Route path="requirements/import" element={<RequirementImport />} />
         <Route path="requirements/new" element={<RequirementForm />} />
         <Route path="requirements/:id" element={<RequirementDetail />} />
         <Route path="requirements/:id/edit" element={<RequirementForm />} />

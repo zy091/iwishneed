@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/card'
 import { RequirementService, Requirement } from '../services/requirement-service'
 import { useAuth } from '../hooks/use-auth'
-import { PlusCircle, Search, Filter, Trash2, Edit, Eye } from 'lucide-react'
+import { PlusCircle, Search, Filter, Trash2, Edit, Eye, Upload } from 'lucide-react'
 
 export default function RequirementList() {
   const [requirements, setRequirements] = useState<Requirement[]>([])
@@ -135,9 +135,14 @@ export default function RequirementList() {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">需求列表</h1>
-        <Button onClick={() => navigate('/requirements/new')}>
-          <PlusCircle className="mr-2 h-4 w-4" /> 新建需求
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/requirements/import')}>
+            <Upload className="mr-2 h-4 w-4" /> 导入
+          </Button>
+          <Button onClick={() => navigate('/requirements/new')}>
+            <PlusCircle className="mr-2 h-4 w-4" /> 新建需求
+          </Button>
+        </div>
       </div>
 
       <Card className="mb-6">
