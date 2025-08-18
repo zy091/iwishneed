@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import type { User as SupaUser } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
+import { ENV } from '@/config/env'
 
 interface User {
   id: string
@@ -46,13 +47,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // 初始化会话
     const init = async () => {
+      // SSO 模式优先恢复外部用户的本地状态，避免被 Supabase 空会话覆盖
+      if (ENV.AUTH_MODE === 'sso') {
+        const storedUser = localStorage.getItem('user')
+        if (storedUser) {
+          setUser(JSON.parse(storedUser))
+          setIsAuthenticated(true)
+          return
+        }
+      }
+
+      // 非 SSO 或未有本地外部用户时，再检查 Supabase 会话
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
         setUser(u)
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
-      } else {
+      } else if (ENV.AUTH_MODE !== 'sso') {
         // 兼容已有本地存储（首次接入时不丢状态）
         const storedUser = localStorage.getItem('user')
         if (storedUser) {
@@ -71,6 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
       } else {
+        if (ENV.AUTH_MODE === 'sso') {
+          // 在 SSO 模式下，忽略 Supabase 的空会话清空，保留外部用户状态
+          return
+        }
         setUser(null)
         setIsAuthenticated(false)
         localStorage.removeItem('user')
