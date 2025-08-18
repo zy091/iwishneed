@@ -23,16 +23,25 @@ import {
   DropdownMenuTrigger 
 } from './components/ui/dropdown-menu'
 import { useMobile } from './hooks/use-mobile'
+import { ENV } from './config/env'
 
 export default function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const isMobile = useMobile()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+  const isSSO = ENV.AUTH_MODE === 'sso'
 
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleBackToMain = () => {
+    const stored = sessionStorage.getItem('MAIN_APP_RETURN_URL')
+    const fallback = (ENV.MAIN_APP_ORIGINS[0] || '').replace(/\/$/, '') + '/'
+    const target = stored || fallback || '/'
+    window.location.assign(target)
   }
 
   const toggleSidebar = () => {
@@ -132,6 +141,11 @@ export default function Layout() {
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
             </Button>
+            {isSSO && (
+              <Button variant="outline" onClick={handleBackToMain}>
+                返回主系统
+              </Button>
+            )}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -142,9 +156,14 @@ export default function Layout() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>我的账户</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>个人资料</DropdownMenuItem>
-                <DropdownMenuItem>系统设置</DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {!isSSO && <DropdownMenuItem>个人资料</DropdownMenuItem>}
+                {!isSSO && <DropdownMenuItem>系统设置</DropdownMenuItem>}
+                {isSSO && (
+                  <>
+                    <DropdownMenuItem onClick={handleBackToMain}>返回主系统</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   退出登录

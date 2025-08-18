@@ -182,6 +182,18 @@ export default function Bridge() {
         const ref = document.referrer ? new URL(document.referrer).origin : null
         console.log('请求来源:', ref)
         console.log('请求URL:', window.location.href)
+
+        // 记录“返回主系统”地址：优先使用 referrer 的 origin，其次使用白名单首个
+        try {
+          const from = ref || null
+          const fallback = (ENV.MAIN_APP_ORIGINS[0] || '').replace(/\/$/, '')
+          const back = from ? from : (fallback || '')
+          if (back) {
+            sessionStorage.setItem('MAIN_APP_RETURN_URL', back + '/')
+          }
+        } catch (e) {
+          console.warn('记录主系统返回地址失败:', e)
+        }
         
         // 暂时跳过来源验证（用于调试）
         // if (!isAllowedOrigin(ref)) {
@@ -330,6 +342,18 @@ export default function Bridge() {
   // 添加强制跳转与测试登录按钮
   const forceNavigate = () => {
     console.log('用户点击强制跳转')
+    try {
+      const stored = localStorage.getItem('user')
+      if (stored) {
+        const u = JSON.parse(stored)
+        setExternalUser(u as any)
+        setStatus('已恢复会话，跳转中...')
+        setShouldNavigate(true)
+        return
+      }
+    } catch (e) {
+      console.warn('恢复本地会话失败:', e)
+    }
     navigate('/', { replace: true })
   }
 
