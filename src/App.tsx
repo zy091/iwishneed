@@ -14,7 +14,10 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={ENV.AUTH_MODE === 'sso' ? <Navigate to="/auth/bridge" replace /> : <Login />}
+      />
       <Route path="/auth/bridge" element={<Bridge />} />
       <Route
         path="/"

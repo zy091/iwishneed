@@ -34,7 +34,12 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    if (isSSO) {
+      // SSO 下退出：清本地会话并回主系统，由主系统统一托管账号体系
+      handleBackToMain()
+    } else {
+      navigate('/login')
+    }
   }
 
   const handleBackToMain = () => {
@@ -83,6 +88,7 @@ export default function Layout() {
           
           <NavLink 
             to="/requirements" 
+            end
             className={({ isActive }) => cn(
               "flex items-center px-3 py-2 rounded-md text-sm font-medium",
               isActive 
