@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { v4 as uuidv4 } from 'uuid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Requirement, RequirementService } from '@/services/requirement-service'
+import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/hooks/use-auth'
 
 function detectDelimiter(sample: string): string {
@@ -83,7 +82,7 @@ export default function RequirementImport() {
       : ''
 
   const department = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : '未分配'
-  const type: Requirement['type'] = base === '/tech' ? 'tech' : base === '/creative' ? 'creative' : undefined
+  const type: 'tech' | 'creative' | undefined = base === '/tech' ? 'tech' : base === '/creative' ? 'creative' : undefined
   const departmentLabel = base === '/tech' ? '技术部' : base === '/creative' ? '创意部' : '通用'
 
   const handleFile = (file: File) => {
@@ -101,17 +100,8 @@ export default function RequirementImport() {
 
   const handleImport = async () => {
     if (!headers.length || !rows.length) return
-    const all = await RequirementService.getAllRequirements()
 
-    let created = 0
-    const today = new Date()
-    const yyyy = today.getFullYear()
-    const mm = String(today.getMonth() + 1).padStart(2, '0')
-    const dd = String(today.getDate()).padStart(2, '0')
-    const todayStr = `${yyyy}-${mm}-${dd}`
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
+    const payload = rows.map((row, i) => {
       const title = (row[0] || '').trim() || `未命名-${i + 1}`
 
       // 原始列字典
@@ -127,14 +117,12 @@ export default function RequirementImport() {
         const val = row[idx] || ''
         return `${key}: ${val}`
       })
-      const description =
-        `来源文件：${fileName}\n部门：${department}\n导入时间：${new Date().toLocaleString()}\n\n` +
-        descLines.join('\n')
 
-      const item: Requirement = {
-        id: uuidv4(),
+      return {
         title,
-        description,
+        description:
+          `来源文件：${fileName}\n部门：${department}\n导入时间：${new Date().toLocaleString()}\n\n` +
+          descLines.join('\n'),
         status: 'pending',
         priority: 'medium',
         submitter: {
@@ -145,20 +133,8 @@ export default function RequirementImport() {
         assignee: null,
         department,
         type,
-        createdAt: todayStr,
-        updatedAt: todayStr,
-        dueDate: '',
+        due_date: null,
         tags: [],
-        attachments: [],
-        comments: [],
-        history: [
-          {
-            id: uuidv4(),
-            action: '导入需求',
-            user: user?.name || '系统',
-            timestamp: new Date().toLocaleString(),
-          },
-        ],
         extra: {
           raw,
           source: {
@@ -167,13 +143,14 @@ export default function RequirementImport() {
           },
         },
       }
+    })
 
-      all.push(item)
-      created++
+    const { error } = await supabase.from('requirements').insert(payload)
+    if (error) {
+      setLog([`导入失败：${error.message}`])
+      return
     }
-
-    localStorage.setItem('requirements', JSON.stringify(all))
-    setLog([`导入完成：新增 ${created} 条（部门：${departmentLabel}）`, `列表总数：${all.length} 条`])
+    setLog([`导入完成：新增 ${payload.length} 条（部门：${departmentLabel}）`])
   }
 
   const disableImport = !headers.length || !rows.length
@@ -183,7 +160,7 @@ export default function RequirementImport() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">导入需求（CSV） - {departmentLabel}</h1>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => navigate(`${base}/requirements` || '/requirements')}>
+          <Button variant="secondary" onClick={() => navigate(`${base}/requirements` || '/requirements`)}>
             返回列表
           </Button>
           <Button onClick={handleImport} disabled={disableImport}>
