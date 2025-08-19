@@ -149,18 +149,7 @@ export default function Layout() {
 
           <div className={cn("flex-1", isMobile ? "ml-4" : "")}>
             {isDashboard ? (
-              <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'overview' | 'user')}>
-                <TabsList className="grid w-fit grid-cols-2">
-                  <TabsTrigger value="overview" className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    概览
-                  </TabsTrigger>
-                  <TabsTrigger value="user" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    用户
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <h2 className="text-lg font-semibold text-gray-800">仪表盘</h2>
             ) : (
               <h2 className="text-lg font-semibold text-gray-800">欢迎回来，{user?.name}</h2>
             )}
@@ -204,14 +193,7 @@ export default function Layout() {
 
         <main className="flex-1 p-6 overflow-auto">
           {isDashboard ? (
-            <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'overview' | 'user')}>
-              <TabsContent value="overview">
-                <Outlet context={{ viewType: 'overview' }} />
-              </TabsContent>
-              <TabsContent value="user">
-                <Outlet context={{ viewType: 'user' }} />
-              </TabsContent>
-            </Tabs>
+            <Outlet context={{ viewType: 'overview' }} />
           ) : (
             <Outlet />
           )}

@@ -10,7 +10,7 @@ import {
   Target,
   CheckCircle
 } from 'lucide-react'
-import { Requirement, mockUsers } from '../services/requirement-service'
+import { Requirement } from '../services/requirement-service'
 import { techRequirementService, TechRequirement } from '../services/tech-requirement-service'
 import { useAuth } from '../hooks/use-auth'
 
@@ -96,30 +96,9 @@ export default function Dashboard() {
           completionRate
         })
 
-        // 计算用户统计
-        const userStatsData: UserStats[] = mockUsers.map(mockUser => {
-          const userCreativeReqs = creativeRequirements.filter((req: Requirement) => req.assignee_id === mockUser.id)
-          const userTechReqs = techRequirements.filter((req: TechRequirement) => req.tech_assignee === mockUser.name)
-          const totalUserReqs = userCreativeReqs.length + userTechReqs.length
-          
-          const completedCreativeReqs = userCreativeReqs.filter((req: Requirement) => req.status === 'completed')
-          const completedTechReqs = userTechReqs.filter((req: TechRequirement) => req.progress === '已完成')
-          const totalCompleted = completedCreativeReqs.length + completedTechReqs.length
-          
-          const userCompletionRate = totalUserReqs > 0 ? (totalCompleted / totalUserReqs) * 100 : 0
-          
-          return {
-            id: mockUser.id,
-            name: mockUser.name,
-            avatar: mockUser.avatar,
-            assignedCount: totalUserReqs,
-            completedCount: totalCompleted,
-            completionRate: userCompletionRate,
-            department: mockUser.role === 'developer' ? '技术部' : '创意部'
-          }
-        })
-        
-        setUserStats(userStatsData.sort((a, b) => b.assignedCount - a.assignedCount))
+        // 计算用户统计（暂不展示用户统计，等待真实需求数据驱动）
+        const userStatsData: UserStats[] = []
+        setUserStats(userStatsData)
         
         // 获取最近的需求（混合两个部门的数据）
         const allRequirements = [
