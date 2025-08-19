@@ -247,17 +247,18 @@ class TechRequirementService {
     return stats
   }
 
-  // 获取所有技术负责人列表（从现有数据中提取）
+  // 获取所有技术负责人列表（集中维护：tech_staff）
   async getTechAssignees(): Promise<string[]> {
     const { data, error } = await supabase
-      .from('tech_requirements')
-      .select('tech_assignee')
-      .not('tech_assignee', 'is', null)
+      .from('tech_staff')
+      .select('name')
+      .eq('department', '技术部')
+      .eq('active', true)
+      .order('name', { ascending: true })
 
     if (error) throw error
 
-    const assignees = [...new Set((data || []).map(r => r.tech_assignee).filter(Boolean))]
-    return assignees.sort()
+    return (data || []).map((r: any) => r.name)
   }
 }
 
