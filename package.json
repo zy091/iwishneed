@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:clear": "node ./src/scripts/clear-database.js",
+    "db:seed:staff": "node ./src/scripts/seed-tech-staff.js --file=./src/scripts/staff.csv",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
