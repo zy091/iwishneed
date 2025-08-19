@@ -36,17 +36,21 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card'
-import { SupabaseRequirementService, SupabaseRequirement } from '../services/supabase-requirement-service'
+import { supabaseRequirementService, Requirement, TechRequirement } from '../services/supabase-requirement-service'
 import { useAuth } from '../hooks/use-auth'
-import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3 } from 'lucide-react'
+import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
 
 export default function RequirementList() {
-  const [requirements, setRequirements] = useState<SupabaseRequirement[]>([])
-  const [filteredRequirements, setFilteredRequirements] = useState<SupabaseRequirement[]>([])
+  const [requirements, setRequirements] = useState<Requirement[]>([])
+  const [filteredRequirements, setFilteredRequirements] = useState<Requirement[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [departmentFilter, setDepartmentFilter] = useState('')
+  const [assigneeFilter, setAssigneeFilter] = useState('')
+  const [progressFilter, setProgressFilter] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState({
     total: 0,
@@ -55,6 +59,7 @@ export default function RequirementList() {
     pending: 0,
     overdue: 0
   })
+  const [techAssignees, setTechAssignees] = useState<string[]>([])
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -70,20 +75,24 @@ export default function RequirementList() {
   useEffect(() => {
     const fetchRequirements = async () => {
       try {
-        let data: SupabaseRequirement[]
-        let statsData
-        
+        const filters: any = {}
         if (currentDepartment) {
-          data = await SupabaseRequirementService.getRequirementsByDepartment(currentDepartment)
-          statsData = await SupabaseRequirementService.getRequirementStats(currentDepartment)
-        } else {
-          data = await SupabaseRequirementService.getAllRequirements()
-          statsData = await SupabaseRequirementService.getRequirementStats()
+          filters.department = currentDepartment
         }
+        
+        const data = await supabaseRequirementService.getRequirements(filters)
+        const statsData = await supabaseRequirementService.getStats()
         
         setRequirements(data)
         setFilteredRequirements(data)
         setStats(statsData)
+        
+        // 获取技术负责人列表
+        if (currentDepartment === '技术部') {
+          const assignees = await supabaseRequirementService.getTechAssignees()
+          setTechAssignees(assignees.map(a => a.name))
+        }
+        
         setIsLoading(false)
       } catch (error) {
         console.error('获取需求列表失败:', error)
@@ -101,9 +110,10 @@ export default function RequirementList() {
     if (searchTerm) {
       result = result.filter(req => 
         req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.submitter.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (req.assignee && req.assignee.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (req.submitter?.name && req.submitter.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (req.type === 'tech' && (req as TechRequirement).tech_assignee && 
+         (req as TechRequirement).tech_assignee!.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
 
@@ -122,15 +132,27 @@ export default function RequirementList() {
       result = result.filter(req => req.department === departmentFilter)
     }
 
+    // 技术负责人过滤
+    if (assigneeFilter && assigneeFilter !== 'all-assignee') {
+      result = result.filter(req => 
+        req.type === 'tech' && (req as TechRequirement).tech_assignee === assigneeFilter
+      )
+    }
+
+    // 技术进度过滤
+    if (progressFilter && progressFilter !== 'all-progress') {
+      result = result.filter(req => 
+        req.type === 'tech' && (req as TechRequirement).tech_progress === progressFilter
+      )
+    }
+
     setFilteredRequirements(result)
-  }, [searchTerm, statusFilter, priorityFilter, departmentFilter, requirements, currentDepartment])
+  }, [searchTerm, statusFilter, priorityFilter, departmentFilter, assigneeFilter, progressFilter, requirements, currentDepartment])
 
   const handleDelete = async (id: string) => {
     try {
-      const success = await SupabaseRequirementService.deleteRequirement(id)
-      if (success) {
-        setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
-      }
+      await supabaseRequirementService.deleteRequirement(id)
+      setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
     } catch (error) {
       console.error('删除需求失败:', error)
     }
@@ -164,6 +186,43 @@ export default function RequirementList() {
     }
   }
 
+  const getTechUrgencyBadge = (urgency?: string) => {
+    if (!urgency) return null
+    switch (urgency) {
+      case '高':
+        return <Badge variant="destructive">高</Badge>
+      case '中':
+        return <Badge variant="secondary">中</Badge>
+      case '低':
+        return <Badge variant="outline">低</Badge>
+      default:
+        return <Badge variant="outline">{urgency}</Badge>
+    }
+  }
+
+  const getTechProgressBadge = (progress?: string) => {
+    if (!progress) return null
+    switch (progress) {
+      case '已完成':
+        return <Badge className="bg-green-500">已完成</Badge>
+      case '处理中':
+        return <Badge className="bg-blue-500">处理中</Badge>
+      case '未开始':
+        return <Badge className="bg-gray-500">未开始</Badge>
+      case '已沟通延迟':
+        return <Badge className="bg-orange-500">已沟通延迟</Badge>
+      default:
+        return <Badge variant="outline">{progress}</Badge>
+    }
+  }
+
+  const calculateTechDuration = (req: TechRequirement) => {
+    if (req.tech_start_time && req.tech_end_time) {
+      return supabaseRequirementService.calculateTechDuration(req.tech_start_time, req.tech_end_time)
+    }
+    return 0
+  }
+
   const getPageTitle = () => {
     if (currentDepartment) {
       return `${currentDepartment} - 需求列表`
@@ -187,6 +246,10 @@ export default function RequirementList() {
       return '/requirements/import?department=creative'
     }
     return '/requirements/import'
+  }
+
+  const getTechAssigneeEditPath = (id: string) => {
+    return `/requirements/${id}/edit?mode=assignee`
   }
 
   return (
@@ -326,11 +389,40 @@ export default function RequirementList() {
                     <SelectItem value="all-department">全部部门</SelectItem>
                     <SelectItem value="技术部">技术部</SelectItem>
                     <SelectItem value="创意部">创意部</SelectItem>
-                    <SelectItem value="产品部">产品部</SelectItem>
-                    <SelectItem value="市场部">市场部</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            )}
+            {currentDepartment === '技术部' && (
+              <>
+                <div className="w-full md:w-48">
+                  <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="技术负责人" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-assignee">全部负责人</SelectItem>
+                      {techAssignees.map(assignee => (
+                        <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-full md:w-48">
+                  <Select value={progressFilter} onValueChange={setProgressFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="技术进度" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all-progress">全部进度</SelectItem>
+                      <SelectItem value="未开始">未开始</SelectItem>
+                      <SelectItem value="处理中">处理中</SelectItem>
+                      <SelectItem value="已完成">已完成</SelectItem>
+                      <SelectItem value="已沟通延迟">已沟通延迟</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
           </div>
         </CardContent>
@@ -347,94 +439,124 @@ export default function RequirementList() {
               <TableHeader>
                 <TableRow>
                   <TableHead>标题</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>优先级</TableHead>
+                  {currentDepartment === '技术部' && (
+                    <>
+                      <TableHead>月份</TableHead>
+                      <TableHead>紧急程度</TableHead>
+                      <TableHead>客户类型</TableHead>
+                      <TableHead>技术负责人</TableHead>
+                      <TableHead>技术进度</TableHead>
+                      <TableHead>耗时(小时)</TableHead>
+                    </>
+                  )}
                   {!currentDepartment && <TableHead>部门</TableHead>}
                   <TableHead>提交人</TableHead>
-                  <TableHead>负责人</TableHead>
+                  <TableHead>期望完成时间</TableHead>
                   <TableHead>创建日期</TableHead>
-                  <TableHead>截止日期</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRequirements.length > 0 ? (
-                  filteredRequirements.map((req) => (
-                    <TableRow key={req.id}>
-                      <TableCell className="font-medium">
-                        <Link to={`/requirements/${req.id}`} className="hover:underline">
-                          {req.title}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(req.status)}</TableCell>
-                      <TableCell>{getPriorityBadge(req.priority)}</TableCell>
-                      {!currentDepartment && (
-                        <TableCell>
-                          <Badge variant="outline">{req.department}</Badge>
+                  filteredRequirements.map((req) => {
+                    const techReq = req.type === 'tech' ? req as TechRequirement : null
+                    return (
+                      <TableRow key={req.id}>
+                        <TableCell className="font-medium">
+                          <Link to={`/requirements/${req.id}`} className="hover:underline">
+                            {req.title}
+                          </Link>
                         </TableCell>
-                      )}
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <img 
-                            src={req.submitter.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
-                            alt={req.submitter.name} 
-                            className="h-6 w-6 rounded-full" 
-                          />
-                          <span>{req.submitter.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {req.assignee ? (
+                        {currentDepartment === '技术部' && techReq && (
+                          <>
+                            <TableCell>{techReq.tech_month || '-'}</TableCell>
+                            <TableCell>{getTechUrgencyBadge(techReq.tech_urgency)}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{techReq.tech_client_type || '-'}</Badge>
+                            </TableCell>
+                            <TableCell>{techReq.tech_assignee || '未分配'}</TableCell>
+                            <TableCell>{getTechProgressBadge(techReq.tech_progress)}</TableCell>
+                            <TableCell>
+                              {techReq.tech_progress === '已完成' ? (
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  {calculateTechDuration(techReq)}h
+                                </div>
+                              ) : '-'}
+                            </TableCell>
+                          </>
+                        )}
+                        {!currentDepartment && (
+                          <TableCell>
+                            <Badge variant="outline">{req.department}</Badge>
+                          </TableCell>
+                        )}
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             <img 
-                              src={req.assignee.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
-                              alt={req.assignee.name} 
+                              src={req.submitter?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
+                              alt={req.submitter?.name || 'Unknown'} 
                               className="h-6 w-6 rounded-full" 
                             />
-                            <span>{req.assignee.name}</span>
+                            <span>{req.submitter?.name || 'Unknown'}</span>
                           </div>
-                        ) : (
-                          <span className="text-gray-400">未分配</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell>{req.due_date ? new Date(req.due_date).toLocaleDateString() : '-'}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}`)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}/edit`)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-red-500" />
+                        </TableCell>
+                        <TableCell>
+                          {techReq?.tech_expected_completion_time ? 
+                            format(new Date(techReq.tech_expected_completion_time), "PPP", { locale: zhCN }) : 
+                            (req.due_date ? format(new Date(req.due_date), "PPP", { locale: zhCN }) : '-')
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {req.created_at ? format(new Date(req.created_at), "PPP", { locale: zhCN }) : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}`)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}/edit`)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            {currentDepartment === '技术部' && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => navigate(getTechAssigneeEditPath(req.id!))}
+                                title="技术负责人处理"
+                              >
+                                <Settings className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>确认删除</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  您确定要删除这个需求吗？此操作无法撤销。
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>取消</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(req.id)}>
-                                  删除
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                            )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>确认删除</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    您确定要删除这个需求吗？此操作无法撤销。
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>取消</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(req.id!)}>
+                                    删除
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={!currentDepartment ? 9 : 8} className="text-center py-8">
+                    <TableCell colSpan={currentDepartment === '技术部' ? 11 : (!currentDepartment ? 6 : 5)} className="text-center py-8">
                       没有找到符合条件的需求
                     </TableCell>
                   </TableRow>

@@ -119,30 +119,19 @@ export default function RequirementImport() {
         raw[key] = row[idx] || ''
       })
 
-      // 描述拼接友好可读文本
-      const descLines = headers.map((h, idx) => {
-        const key = h || `第${idx + 1}列`
-        const val = row[idx] || ''
-        return `${key}: ${val}`
-      })
-
-      return {
+      // 基础数据
+      const baseData = {
         title,
-        description:
-          `来源文件：${fileName}\n部门：${department}\n导入时间：${new Date().toLocaleString()}\n\n` +
-          descLines.join('\n'),
-        status: 'pending',
-        priority: 'medium',
+        description: raw['具体需求描述'] || raw['需求描述'] || `来源文件：${fileName}\n部门：${department}\n导入时间：${new Date().toLocaleString()}`,
+        status: 'pending' as const,
+        priority: 'medium' as const,
         submitter: {
           id: user?.id || 'unknown',
           name: user?.name || '未知提交人',
           avatar: user?.avatar,
         },
-        assignee: null,
         department,
         type,
-        due_date: null,
-        tags: [],
         extra: {
           raw,
           source: {
@@ -151,6 +140,31 @@ export default function RequirementImport() {
           },
         },
       }
+
+      // 技术部特殊字段处理
+      if (type === 'tech') {
+        return {
+          ...baseData,
+          tech_month: raw['月份'] || new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
+          tech_expected_completion_time: raw['期望完成的时间'] ? new Date(raw['期望完成的时间']).toISOString() : null,
+          tech_urgency: (raw['紧急程度'] === '高' || raw['紧急程度'] === '中' || raw['紧急程度'] === '低') ? raw['紧急程度'] as '高' | '中' | '低' : '中',
+          tech_client_url: raw['需支持的客户网址'] || null,
+          tech_client_type: (raw['客户类型（流量运营服务/全案深度服务）'] === '流量运营服务' || raw['客户类型（流量运营服务/全案深度服务）'] === '全案深度服务') 
+            ? raw['客户类型（流量运营服务/全案深度服务）'] as '流量运营服务' | '全案深度服务' 
+            : '流量运营服务',
+          tech_assignee: raw['技术负责人'] || null,
+          tech_estimated_completion_time: raw['技术负责人预计可完成时间'] ? new Date(raw['技术负责人预计可完成时间']).toISOString() : null,
+          tech_progress: (raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '未开始' || 
+                        raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '处理中' || 
+                        raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '已完成' || 
+                        raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '已沟通延迟') 
+            ? raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] as '未开始' | '处理中' | '已完成' | '已沟通延迟'
+            : '未开始',
+        }
+      }
+
+      // 创意部或其他部门
+      return baseData
     })
 
     const { error } = await supabase.from('requirements').insert(payload)
