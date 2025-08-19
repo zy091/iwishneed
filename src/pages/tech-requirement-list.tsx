@@ -166,7 +166,7 @@ export default function TechRequirementList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">技术部 - 需求列表</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/requirements/import?department=tech')}>
+          <Button variant="outline" onClick={() => navigate('/tech-requirements/import')}>
             <Upload className="mr-2 h-4 w-4" /> 批量导入
           </Button>
           <Button onClick={() => navigate('/tech-requirements/new')}>
@@ -327,16 +327,18 @@ export default function TechRequirementList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>需求标题</TableHead>
                   <TableHead>月份</TableHead>
+                  <TableHead>需求标题</TableHead>
+                  <TableHead>期望完成时间</TableHead>
                   <TableHead>紧急程度</TableHead>
-                  <TableHead>提交人</TableHead>
                   <TableHead>客户类型</TableHead>
+                  <TableHead>客户网址</TableHead>
+                  <TableHead>提交人</TableHead>
                   <TableHead>技术负责人</TableHead>
                   <TableHead>技术进度</TableHead>
-                  <TableHead>期望完成时间</TableHead>
+                  <TableHead>负责人预计完成时间</TableHead>
                   <TableHead>技术所耗时间</TableHead>
-                  <TableHead>需求提交时间</TableHead>
+                  <TableHead>提交时间</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -344,20 +346,31 @@ export default function TechRequirementList() {
                 {filteredRequirements.length > 0 ? (
                   filteredRequirements.map((req) => (
                     <TableRow key={req.id}>
+                      <TableCell>{req.month}</TableCell>
                       <TableCell className="font-medium">
                         <div className="max-w-[200px] truncate" title={req.title}>
                           {req.title}
                         </div>
                       </TableCell>
-                      <TableCell>{req.month}</TableCell>
-                      <TableCell>{getUrgencyBadge(req.urgency)}</TableCell>
-                      <TableCell>{req.submitter_name}</TableCell>
-                      <TableCell>{getClientTypeBadge(req.client_type)}</TableCell>
-                      <TableCell>{req.tech_assignee || '未分配'}</TableCell>
-                      <TableCell>{getProgressBadge(req.progress)}</TableCell>
                       <TableCell>
                         {req.expected_completion_time ? 
                           format(new Date(req.expected_completion_time), "PPP", { locale: zhCN }) : 
+                          '-'
+                        }
+                      </TableCell>
+                      <TableCell>{getUrgencyBadge(req.urgency)}</TableCell>
+                      <TableCell>{getClientTypeBadge(req.client_type)}</TableCell>
+                      <TableCell>
+                        {req.client_url ? (
+                          <a href={req.client_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">链接</a>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>{req.submitter_name}</TableCell>
+                      <TableCell>{req.tech_assignee || '未分配'}</TableCell>
+                      <TableCell>{getProgressBadge(req.progress)}</TableCell>
+                      <TableCell>
+                        {req.assignee_estimated_time ? 
+                          format(new Date(req.assignee_estimated_time), "PPP", { locale: zhCN }) : 
                           '-'
                         }
                       </TableCell>

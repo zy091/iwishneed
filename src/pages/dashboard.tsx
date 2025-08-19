@@ -10,7 +10,7 @@ import {
   Target,
   CheckCircle
 } from 'lucide-react'
-import { RequirementService, Requirement, mockUsers } from '../services/requirement-service'
+import { Requirement, mockUsers } from '../services/requirement-service'
 import { techRequirementService, TechRequirement } from '../services/tech-requirement-service'
 import { useAuth } from '../hooks/use-auth'
 
@@ -56,8 +56,8 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // 获取创意部需求数据
-        const creativeRequirements = await RequirementService.getAllRequirements()
+        // 获取创意部需求数据（暂时禁用创意部）
+        const creativeRequirements: Requirement[] = []
         
         // 获取技术部需求数据
         const techRequirements = await techRequirementService.getTechRequirements()
@@ -123,7 +123,6 @@ export default function Dashboard() {
         
         // 获取最近的需求（混合两个部门的数据）
         const allRequirements = [
-          ...creativeRequirements.map((req: Requirement) => ({ ...req, department: '创意部' })),
           ...techRequirements.map((req: TechRequirement) => ({ ...req, department: '技术部' }))
         ]
         
@@ -240,7 +239,7 @@ export default function Dashboard() {
       </div>
 
       {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -277,17 +276,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">创意部需求</p>
-                <p className="text-3xl font-bold">{stats.creativeDept}</p>
-              </div>
-              <Users className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* 状态分布和最近需求 */}
@@ -368,16 +356,6 @@ export default function Dashboard() {
               <div className="flex items-center space-x-4">
                 <Progress value={stats.total > 0 ? (stats.techDept / stats.total) * 100 : 0} className="w-24" />
                 <span className="font-medium w-8">{stats.techDept}</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-orange-500" />
-                <span>创意部</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Progress value={stats.total > 0 ? (stats.creativeDept / stats.total) * 100 : 0} className="w-24" />
-                <span className="font-medium w-8">{stats.creativeDept}</span>
               </div>
             </div>
           </div>
