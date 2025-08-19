@@ -7,6 +7,11 @@ import RequirementList from './pages/requirement-list'
 import RequirementForm from './pages/requirement-form'
 import RequirementDetail from './pages/requirement-detail'
 import RequirementImport from './pages/requirement-import'
+import TechRequirementList from './pages/tech-requirement-list'
+import TechRequirementForm from './pages/tech-requirement-form'
+import TechRequirementImport from './pages/tech-requirement-import'
+import Departments from './pages/departments'
+import DatabaseManagement from './pages/database-management'
 import AuthBridge from './pages/auth/Bridge'
 import { ENV } from './config/env'
 
@@ -39,16 +44,24 @@ function App() {
         {/* 仪表盘 */}
         <Route index element={<Dashboard />} />
         
-        {/* 需求管理 */}
+        {/* 部门导航 */}
+        <Route path="departments" element={<Departments />} />
+        
+        {/* 技术部需求 */}
+        <Route path="departments/tech" element={<TechRequirementList />} />
+        <Route path="tech-requirements/new" element={<TechRequirementForm />} />
+        <Route path="tech-requirements/:id/edit" element={<TechRequirementForm />} />
+        <Route path="tech-requirements/import" element={<TechRequirementImport />} />
+        
+        {/* 创意部需求（原需求管理） */}
         <Route path="requirements" element={<RequirementList />} />
         <Route path="requirements/new" element={<RequirementForm />} />
         <Route path="requirements/import" element={<RequirementImport />} />
         <Route path="requirements/:id" element={<RequirementDetail />} />
         <Route path="requirements/:id/edit" element={<RequirementForm />} />
         
-        {/* 部门分类 */}
-        <Route path="departments/tech" element={<RequirementList />} />
-        <Route path="departments/creative" element={<RequirementList />} />
+        {/* 系统管理 */}
+        <Route path="database-management" element={<DatabaseManagement />} />
         
         {/* 报表分析 */}
         <Route path="reports" element={<Dashboard />} />

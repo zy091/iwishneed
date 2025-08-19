@@ -1,0 +1,425 @@
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { 
+  Search, 
+  Plus, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Clock, 
+  Upload, 
+  BarChart3,
+  Calendar
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
+import { useAuth } from '@/hooks/use-auth'
+import { techRequirementService, TechRequirement, TechRequirementStats } from '@/services/tech-requirement-service'
+
+export default function TechRequirementList() {
+  const [requirements, setRequirements] = useState<TechRequirement[]>([])
+  const [filteredRequirements, setFilteredRequirements] = useState<TechRequirement[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [urgencyFilter, setUrgencyFilter] = useState('')
+  const [progressFilter, setProgressFilter] = useState('')
+  const [assigneeFilter, setAssigneeFilter] = useState('')
+  const [clientTypeFilter, setClientTypeFilter] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState<TechRequirementStats>({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    delayed: 0,
+    byUrgency: { high: 0, medium: 0, low: 0 },
+    byClientType: { traffic: 0, fullService: 0 }
+  })
+  const [techAssignees, setTechAssignees] = useState<string[]>([])
+  
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchRequirements = async () => {
+      try {
+        const data = await techRequirementService.getTechRequirements()
+        const statsData = await techRequirementService.getTechRequirementStats()
+        const assignees = await techRequirementService.getTechAssignees()
+        
+        setRequirements(data)
+        setFilteredRequirements(data)
+        setStats(statsData)
+        setTechAssignees(assignees)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('获取技术需求列表失败:', error)
+        setIsLoading(false)
+      }
+    }
+
+    fetchRequirements()
+  }, [])
+
+  useEffect(() => {
+    let result = requirements
+
+    // 搜索过滤
+    if (searchTerm) {
+      result = result.filter(req => 
+        req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        req.submitter_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (req.tech_assignee && req.tech_assignee.toLowerCase().includes(searchTerm.toLowerCase()))
+      )
+    }
+
+    // 紧急程度过滤
+    if (urgencyFilter && urgencyFilter !== 'all-urgency') {
+      result = result.filter(req => req.urgency === urgencyFilter)
+    }
+
+    // 进度过滤
+    if (progressFilter && progressFilter !== 'all-progress') {
+      result = result.filter(req => req.progress === progressFilter)
+    }
+
+    // 技术负责人过滤
+    if (assigneeFilter && assigneeFilter !== 'all-assignee') {
+      result = result.filter(req => req.tech_assignee === assigneeFilter)
+    }
+
+    // 客户类型过滤
+    if (clientTypeFilter && clientTypeFilter !== 'all-client-type') {
+      result = result.filter(req => req.client_type === clientTypeFilter)
+    }
+
+    setFilteredRequirements(result)
+  }, [searchTerm, urgencyFilter, progressFilter, assigneeFilter, clientTypeFilter, requirements])
+
+  const handleDelete = async (id: string) => {
+    try {
+      await techRequirementService.deleteTechRequirement(id)
+      setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
+    } catch (error) {
+      console.error('删除需求失败:', error)
+    }
+  }
+
+  const getUrgencyBadge = (urgency: string) => {
+    switch (urgency) {
+      case '高':
+        return <Badge variant="destructive">高</Badge>
+      case '中':
+        return <Badge variant="secondary">中</Badge>
+      case '低':
+        return <Badge variant="outline">低</Badge>
+      default:
+        return <Badge variant="outline">{urgency}</Badge>
+    }
+  }
+
+  const getProgressBadge = (progress?: string) => {
+    switch (progress) {
+      case '已完成':
+        return <Badge className="bg-green-500">已完成</Badge>
+      case '处理中':
+        return <Badge className="bg-blue-500">处理中</Badge>
+      case '未开始':
+        return <Badge className="bg-gray-500">未开始</Badge>
+      case '已沟通延迟':
+        return <Badge className="bg-orange-500">已沟通延迟</Badge>
+      default:
+        return <Badge variant="outline">{progress || '未开始'}</Badge>
+    }
+  }
+
+  const getClientTypeBadge = (clientType: string) => {
+    return <Badge variant="outline">{clientType}</Badge>
+  }
+
+  const calculateTechDuration = (req: TechRequirement) => {
+    if (req.start_time && req.end_time) {
+      return techRequirementService.calculateTechDuration(req.start_time, req.end_time)
+    }
+    return 0
+  }
+
+  return (
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">技术部 - 需求列表</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/requirements/import?department=tech')}>
+            <Upload className="mr-2 h-4 w-4" /> 批量导入
+          </Button>
+          <Button onClick={() => navigate('/tech-requirements/new')}>
+            <Plus className="mr-2 h-4 w-4" /> 新建需求
+          </Button>
+        </div>
+      </div>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">总计</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">未开始</p>
+                <p className="text-2xl font-bold text-gray-600">{stats.pending}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-gray-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">处理中</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">已完成</p>
+                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-green-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">已沟通延迟</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.delayed}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-orange-500"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>筛选条件</CardTitle>
+          <CardDescription>使用以下选项筛选技术需求列表</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="搜索需求标题、描述或人员..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="紧急程度" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-urgency">全部紧急程度</SelectItem>
+                  <SelectItem value="高">高</SelectItem>
+                  <SelectItem value="中">中</SelectItem>
+                  <SelectItem value="低">低</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={progressFilter} onValueChange={setProgressFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="技术进度" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-progress">全部进度</SelectItem>
+                  <SelectItem value="未开始">未开始</SelectItem>
+                  <SelectItem value="处理中">处理中</SelectItem>
+                  <SelectItem value="已完成">已完成</SelectItem>
+                  <SelectItem value="已沟通延迟">已沟通延迟</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="技术负责人" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-assignee">全部负责人</SelectItem>
+                  {techAssignees.map(assignee => (
+                    <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full md:w-48">
+              <Select value={clientTypeFilter} onValueChange={setClientTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="客户类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-client-type">全部客户类型</SelectItem>
+                  <SelectItem value="流量运营服务">流量运营服务</SelectItem>
+                  <SelectItem value="全案深度服务">全案深度服务</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>需求标题</TableHead>
+                  <TableHead>月份</TableHead>
+                  <TableHead>紧急程度</TableHead>
+                  <TableHead>提交人</TableHead>
+                  <TableHead>客户类型</TableHead>
+                  <TableHead>技术负责人</TableHead>
+                  <TableHead>技术进度</TableHead>
+                  <TableHead>期望完成时间</TableHead>
+                  <TableHead>技术所耗时间</TableHead>
+                  <TableHead>需求提交时间</TableHead>
+                  <TableHead className="text-right">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRequirements.length > 0 ? (
+                  filteredRequirements.map((req) => (
+                    <TableRow key={req.id}>
+                      <TableCell className="font-medium">
+                        <div className="max-w-[200px] truncate" title={req.title}>
+                          {req.title}
+                        </div>
+                      </TableCell>
+                      <TableCell>{req.month}</TableCell>
+                      <TableCell>{getUrgencyBadge(req.urgency)}</TableCell>
+                      <TableCell>{req.submitter_name}</TableCell>
+                      <TableCell>{getClientTypeBadge(req.client_type)}</TableCell>
+                      <TableCell>{req.tech_assignee || '未分配'}</TableCell>
+                      <TableCell>{getProgressBadge(req.progress)}</TableCell>
+                      <TableCell>
+                        {req.expected_completion_time ? 
+                          format(new Date(req.expected_completion_time), "PPP", { locale: zhCN }) : 
+                          '-'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {req.progress === '已完成' ? (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {calculateTechDuration(req)}h
+                          </div>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {req.submit_time ? 
+                          format(new Date(req.submit_time), "PPP", { locale: zhCN }) : 
+                          (req.created_at ? format(new Date(req.created_at), "PPP", { locale: zhCN }) : '-')
+                        }
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/tech-requirements/${req.id}`)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/tech-requirements/${req.id}/edit`)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>确认删除</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  您确定要删除这个技术需求吗？此操作无法撤销。
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>取消</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(req.id!)}>
+                                  删除
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={11} className="text-center py-8">
+                      没有找到符合条件的技术需求
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
