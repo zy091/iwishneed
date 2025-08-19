@@ -56,7 +56,7 @@ export default function TechRequirementForm() {
       urgency: '中',
       client_url: '',
       description: '',
-      tech_assignee: '',
+      tech_assignee: '__none__',
       client_type: '流量运营服务',
       assignee_estimated_time: undefined,
       progress: '未开始',
@@ -83,7 +83,7 @@ export default function TechRequirementForm() {
               urgency: req.urgency,
               client_url: req.client_url || '',
               description: req.description,
-              tech_assignee: req.tech_assignee || '',
+              tech_assignee: req.tech_assignee || '__none__',
               client_type: req.client_type,
               assignee_estimated_time: req.assignee_estimated_time ? new Date(req.assignee_estimated_time) : undefined,
               progress: req.progress || '未开始',
@@ -122,7 +122,7 @@ export default function TechRequirementForm() {
         submitter_name: user.name,
         client_url: data.client_url || undefined,
         description: data.description,
-        tech_assignee: data.tech_assignee || undefined,
+        tech_assignee: (data.tech_assignee && data.tech_assignee !== '__none__') ? data.tech_assignee : undefined,
         client_type: data.client_type,
         attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
         assignee_estimated_time: data.assignee_estimated_time?.toISOString(),
@@ -331,7 +331,7 @@ export default function TechRequirementForm() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">未分配</SelectItem>
+                            <SelectItem value="__none__">未分配</SelectItem>
                             {techAssignees.map((assignee) => (
                               <SelectItem key={assignee} value={assignee}>
                                 {assignee}
