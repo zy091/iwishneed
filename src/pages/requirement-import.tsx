@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/hooks/use-auth'
+import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
 
 function detectDelimiter(sample: string): string {
   const lines = sample.split(/\r?\n/).slice(0, 5)
@@ -108,71 +109,114 @@ export default function RequirementImport() {
 
   const handleImport = async () => {
     if (!headers.length || !rows.length) return
-
-    const payload = rows.map((row, i) => {
-      const title = (row[0] || '').trim() || `未命名-${i + 1}`
-
-      // 原始列字典
-      const raw: Record<string, string> = {}
-      headers.forEach((h, idx) => {
-        const key = h || `第${idx + 1}列`
-        raw[key] = row[idx] || ''
-      })
-
-      // 基础数据
-      const baseData = {
-        title,
-        description: raw['具体需求描述'] || raw['需求描述'] || `来源文件：${fileName}\n部门：${department}\n导入时间：${new Date().toLocaleString()}`,
-        status: 'pending' as const,
-        priority: 'medium' as const,
-        submitter: {
-          id: user?.id || 'unknown',
-          name: user?.name || '未知提交人',
-          avatar: user?.avatar,
-        },
-        department,
-        type,
-        extra: {
-          raw,
-          source: {
-            fileName,
-            importedAt: new Date().toISOString(),
-          },
-        },
-      }
-
-      // 技术部特殊字段处理
-      if (type === 'tech') {
-        return {
-          ...baseData,
-          tech_month: raw['月份'] || new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
-          tech_expected_completion_time: raw['期望完成的时间'] ? new Date(raw['期望完成的时间']).toISOString() : null,
-          tech_urgency: (raw['紧急程度'] === '高' || raw['紧急程度'] === '中' || raw['紧急程度'] === '低') ? raw['紧急程度'] as '高' | '中' | '低' : '中',
-          tech_client_url: raw['需支持的客户网址'] || null,
-          tech_client_type: (raw['客户类型（流量运营服务/全案深度服务）'] === '流量运营服务' || raw['客户类型（流量运营服务/全案深度服务）'] === '全案深度服务') 
-            ? raw['客户类型（流量运营服务/全案深度服务）'] as '流量运营服务' | '全案深度服务' 
-            : '流量运营服务',
-          tech_assignee: raw['技术负责人'] || null,
-          tech_estimated_completion_time: raw['技术负责人预计可完成时间'] ? new Date(raw['技术负责人预计可完成时间']).toISOString() : null,
-          tech_progress: (raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '未开始' || 
-                        raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '处理中' || 
-                        raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '已完成' || 
-                        raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] === '已沟通延迟') 
-            ? raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] as '未开始' | '处理中' | '已完成' | '已沟通延迟'
-            : '未开始',
-        }
-      }
-
-      // 创意部或其他部门
-      return baseData
-    })
-
-    const { error } = await supabase.from('requirements').insert(payload)
-    if (error) {
-      setLog([`导入失败：${error.message}`])
+    if (!user) {
+      setLog(['请先登录后再导入'])
+      navigate('/login')
       return
     }
-    setLog([`导入完成：新增 ${payload.length} 条（部门：${departmentLabel}）`])
+
+    const parseDate = (dateStr: string): string | null => {
+      if (!dateStr) return null
+      const d = new Date(dateStr)
+      return isNaN(d.getTime()) ? null : d.toISOString()
+    }
+
+    const validateUrgency = (urgency: string): '高' | '中' | '低' => {
+      if (urgency === '高' || urgency === '中' || urgency === '低') return urgency
+      return '中'
+    }
+
+    const validateClientType = (clientType: string): '流量运营服务' | '全案深度服务' => {
+      if (clientType === '流量运营服务' || clientType === '全案深度服务') return clientType
+      return '流量运营服务'
+    }
+
+    const validateProgress = (progress: string): '未开始' | '处理中' | '已完成' | '已沟通延迟' => {
+      if (progress === '未开始' || progress === '处理中' || progress === '已完成' || progress === '已沟通延迟') return progress
+      return '未开始'
+    }
+
+    try {
+      if (type === 'tech') {
+        const payload: Omit<TechRequirement, 'id' | 'created_at' | 'updated_at'>[] = rows.map((row, i) => {
+          const raw: Record<string, string> = {}
+          headers.forEach((h, idx) => {
+            const key = h || `第${idx + 1}列`
+            raw[key] = row[idx] || ''
+          })
+
+          return {
+            title: raw['需求标题'] || raw['标题'] || `未命名需求-${i + 1}`,
+            month: raw['月份'] || new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
+            submit_time: parseDate(raw['提交时间'] || raw['需求提交时间']) || new Date().toISOString(),
+            expected_completion_time: parseDate(raw['期望完成的时间'] || raw['期望完成时间']) || new Date().toISOString(),
+            urgency: validateUrgency(raw['紧急程度']),
+            submitter_name: raw['提交人（直接使用用户名）'] || raw['提交人'] || user.name || '未知提交人',
+            client_url: raw['需支持的客户网址'] || raw['客户网址'] || undefined,
+            description: raw['具体需求描述'] || raw['需求描述'] || `来源文件：${fileName}\n导入时间：${new Date().toLocaleString()}`,
+            tech_assignee: raw['技术负责人'] || undefined,
+            client_type: validateClientType(raw['客户类型（流量运营服务/全案深度服务）'] || raw['客户类型']),
+            attachments: undefined,
+            assignee_estimated_time: parseDate(raw['技术负责人预计可完成时间']) || undefined,
+            progress: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度']),
+            submitter_id: user.id,
+            submitter_avatar: user.avatar,
+          }
+        })
+
+        const result = await techRequirementService.importTechRequirements(payload)
+        setLog([`导入完成：新增 ${result.length} 条技术需求（部门：${departmentLabel}）`])
+        return
+      }
+
+      if (type === 'creative') {
+        const payload = rows.map((row, i) => {
+          const raw: Record<string, string> = {}
+          headers.forEach((h, idx) => {
+            const key = h || `第${idx + 1}列`
+            raw[key] = row[idx] || ''
+          })
+
+          const toInt = (v: string): number | null => {
+            const n = parseInt(v, 10)
+            return isNaN(n) ? null : n
+          }
+
+          return {
+            submit_time: parseDate(raw['提交时间']) || new Date().toISOString(),
+            expected_delivery_time: parseDate(raw['期望交付时间']),
+            actual_delivery_time: parseDate(raw['实际交付时间']),
+            submitter_name: raw['需求提交人'] || user.name || '未知提交人',
+            platform: (raw['平台(GG/FB/CT/网站)'] as any) || null,
+            status: (raw['状态（未开始/处理中/已完成/不做处理）'] as any) || '未开始',
+            urgency: (raw['紧急程度'] as any) || '中',
+            designer: raw['设计师'] || undefined,
+            site_name: raw['网站名称'] || undefined,
+            url_or_product_page: raw['网址/产品详情页'] || undefined,
+            asset_type: raw['素材类型（Google广告图/Meta广告图/网站Banner图/网站产品图/网站横幅图/联盟营销/EDM营销/Criteo广告图）'] || undefined,
+            asset_size: raw['素材尺寸'] || undefined,
+            layout_style: raw['设计版式'] || undefined,
+            asset_count: toInt(raw['素材数量'] || ''),
+            copy: raw['具体文案'] || undefined,
+            style_requirements: raw['风格要求'] || undefined,
+            original_assets: raw['原素材'] || undefined,
+            asset_package: raw['素材包'] || undefined,
+            remark: raw['备注'] || undefined,
+            reference_examples: raw['参考案例'] || undefined,
+          }
+        })
+
+        const { error } = await supabase.from('creative_requirements').insert(payload)
+        if (error) throw error
+        setLog([`导入完成：新增 ${payload.length} 条创意部需求（部门：${departmentLabel}）`])
+        return
+      }
+
+      setLog(['未识别的部门，暂不导入。请在地址中指定 ?department=tech 或 ?department=creative'])
+    } catch (e: any) {
+      console.error('导入失败:', e)
+      setLog([`导入失败：${e?.message || '未知错误'}`])
+    }
   }
 
   const disableImport = !headers.length || !rows.length

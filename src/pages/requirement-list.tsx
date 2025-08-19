@@ -37,6 +37,7 @@ import {
   CardTitle 
 } from '@/components/ui/card'
 import { supabaseRequirementService, Requirement, TechRequirement } from '../services/supabase-requirement-service'
+import { creativeRequirementService, CreativeRequirement } from '@/services/creative-requirement-service'
 import { useAuth } from '../hooks/use-auth'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
 import { format } from 'date-fns'
@@ -435,7 +436,7 @@ export default function RequirementList() {
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[1600px] whitespace-nowrap">
               <TableHeader>
                 <TableRow>
                   <TableHead>标题</TableHead>

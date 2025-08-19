@@ -92,8 +92,8 @@ export default function Layout() {
             仪表盘
           </NavLink>
 
-          {/* 技术部 */}
-          <div className="px-3 pt-4 pb-1 text-xs text-gray-400 uppercase tracking-wider">技术部</div>
+          {/* 需求 */}
+          <div className="px-3 pt-4 pb-1 text-xs text-gray-400 uppercase tracking-wider">需求</div>
 
           <NavLink
             to="/departments/tech"
