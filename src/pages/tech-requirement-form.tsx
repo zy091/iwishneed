@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -52,11 +52,13 @@ export default function TechRequirementForm() {
     defaultValues: {
       title: '',
       month: new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
+      expected_completion_time: new Date(),
       urgency: '中',
       client_url: '',
       description: '',
       tech_assignee: '',
       client_type: '流量运营服务',
+      assignee_estimated_time: undefined,
       progress: '未开始',
     }
   })
