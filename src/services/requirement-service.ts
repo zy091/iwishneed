@@ -325,21 +325,31 @@ export class RequirementService {
   }
 
   // 创建新需求
-  static createRequirement(requirementData: Omit<Requirement, 'id' | 'createdAt' | 'updatedAt' | 'comments' | 'history'>, currentUser: any): Promise<Requirement> {
+  static createRequirement(requirementData: Partial<Requirement>, currentUser: any): Promise<Requirement> {
     return new Promise((resolve) => {
       setTimeout(() => {
         const requirements = getStoredRequirements();
         
         const newRequirement: Requirement = {
-          ...requirementData,
           id: uuidv4(),
-          createdAt: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString().split('T')[0],
+          title: requirementData.title || '未命名',
+          description: requirementData.description || '',
+          status: requirementData.status || 'pending',
+          priority: requirementData.priority || 'medium',
           submitter: {
             id: currentUser.id,
             name: currentUser.name,
             avatar: currentUser.avatar
           },
+          assignee: requirementData.assignee ?? null,
+          department: requirementData.department || '创意部',
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+          dueDate: (requirementData as any).dueDate || new Date().toISOString().split('T')[0],
+          tags: requirementData.tags || [],
+          type: requirementData.type || 'creative',
+          extra: requirementData.extra,
+          attachments: requirementData.attachments || [],
           comments: [],
           history: [
             {

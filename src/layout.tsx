@@ -109,16 +109,16 @@ export default function Layout() {
           </NavLink>
 
           <NavLink
-            to="/tech-requirements/new"
+            to="/departments/creative"
             className={({ isActive }) => cn(
-              "flex items-center px-3 py-2 rounded-md text-sm font-medium ml-4",
-              isActive
+              "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+              (isActive || location.pathname.startsWith('/creative-requirements'))
                 ? "bg-blue-100 text-blue-900"
                 : "text-gray-700 hover:bg-gray-100"
             )}
           >
             <Folder className="mr-2 h-5 w-5" />
-            新建技术需求
+            创意部需求列表
           </NavLink>
         </nav>
 

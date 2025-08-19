@@ -324,22 +324,22 @@ export default function TechRequirementList() {
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-[1600px] whitespace-nowrap">
               <TableHeader>
                 <TableRow>
-                  <TableHead>月份</TableHead>
-                  <TableHead>需求标题</TableHead>
-                  <TableHead>期望完成时间</TableHead>
-                  <TableHead>紧急程度</TableHead>
-                  <TableHead>客户类型</TableHead>
-                  <TableHead>客户网址</TableHead>
-                  <TableHead>提交人</TableHead>
-                  <TableHead>技术负责人</TableHead>
-                  <TableHead>技术进度</TableHead>
-                  <TableHead>负责人预计完成时间</TableHead>
-                  <TableHead>技术所耗时间</TableHead>
-                  <TableHead>提交时间</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
+                  <TableHead className="min-w-[100px]">月份</TableHead>
+                  <TableHead className="min-w-[240px]">需求标题</TableHead>
+                  <TableHead className="min-w-[160px]">期望完成时间</TableHead>
+                  <TableHead className="min-w-[100px]">紧急程度</TableHead>
+                  <TableHead className="min-w-[120px]">客户类型</TableHead>
+                  <TableHead className="min-w-[120px]">客户网址</TableHead>
+                  <TableHead className="min-w-[120px]">提交人</TableHead>
+                  <TableHead className="min-w-[120px]">技术负责人</TableHead>
+                  <TableHead className="min-w-[120px]">技术进度</TableHead>
+                  <TableHead className="min-w-[180px]">负责人预计完成时间</TableHead>
+                  <TableHead className="min-w-[140px]">技术所耗时间</TableHead>
+                  <TableHead className="min-w-[160px]">提交时间</TableHead>
+                  <TableHead className="text-right min-w-[120px]">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
