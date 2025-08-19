@@ -10,7 +10,7 @@ import {
   Target,
   CheckCircle
 } from 'lucide-react'
-import { requirementService, Requirement, mockUsers } from '../services/requirement-service'
+import { RequirementService, Requirement, mockUsers } from '../services/requirement-service'
 import { techRequirementService, TechRequirement } from '../services/tech-requirement-service'
 import { useAuth } from '../hooks/use-auth'
 
@@ -57,7 +57,7 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         // 获取创意部需求数据
-        const creativeRequirements = await requirementService.getRequirements()
+        const creativeRequirements = await RequirementService.getAllRequirements()
         
         // 获取技术部需求数据
         const techRequirements = await techRequirementService.getTechRequirements()
