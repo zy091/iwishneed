@@ -10,8 +10,8 @@ import {
   Target,
   CheckCircle
 } from 'lucide-react'
-import { SupabaseRequirementService, SupabaseRequirement } from '../services/supabase-requirement-service'
-import { mockUsers } from '../services/requirement-service'
+import { requirementService, Requirement, mockUsers } from '../services/requirement-service'
+import { techRequirementService, TechRequirement } from '../services/tech-requirement-service'
 import { useAuth } from '../hooks/use-auth'
 
 interface DashboardStats {
@@ -49,42 +49,71 @@ export default function Dashboard() {
     completionRate: 0
   })
   const [userStats, setUserStats] = useState<UserStats[]>([])
-  const [recentRequirements, setRecentRequirements] = useState<SupabaseRequirement[]>([])
+  const [recentRequirements, setRecentRequirements] = useState<(Requirement | TechRequirement)[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // 获取所有需求数据
-        const requirements = await SupabaseRequirementService.getAllRequirements()
+        // 获取创意部需求数据
+        const creativeRequirements = await requirementService.getRequirements()
         
-        // 计算总体统计
-        const totalStats = await SupabaseRequirementService.getRequirementStats()
-        const techStats = await SupabaseRequirementService.getRequirementStats('技术部')
-        const creativeStats = await SupabaseRequirementService.getRequirementStats('创意部')
+        // 获取技术部需求数据
+        const techRequirements = await techRequirementService.getTechRequirements()
         
-        const completionRate = totalStats.total > 0 ? (totalStats.completed / totalStats.total) * 100 : 0
+        // 计算统计数据
+        const totalCreative = creativeRequirements.length
+        const totalTech = techRequirements.length
+        const total = totalCreative + totalTech
+        
+        const completedCreative = creativeRequirements.filter((req: Requirement) => req.status === 'completed').length
+        const completedTech = techRequirements.filter((req: TechRequirement) => req.progress === '已完成').length
+        const completed = completedCreative + completedTech
+        
+        const inProgressCreative = creativeRequirements.filter((req: Requirement) => req.status === 'in_progress').length
+        const inProgressTech = techRequirements.filter((req: TechRequirement) => req.progress === '处理中').length
+        const inProgress = inProgressCreative + inProgressTech
+        
+        const pendingCreative = creativeRequirements.filter((req: Requirement) => req.status === 'pending').length
+        const pendingTech = techRequirements.filter((req: TechRequirement) => req.progress === '未开始').length
+        const pending = pendingCreative + pendingTech
+        
+        const overdueCreative = creativeRequirements.filter((req: Requirement) => req.status === 'overdue').length
+        const overdueTech = techRequirements.filter((req: TechRequirement) => req.progress === '已沟通延迟').length
+        const overdue = overdueCreative + overdueTech
+        
+        const completionRate = total > 0 ? (completed / total) * 100 : 0
         
         setStats({
-          ...totalStats,
-          techDept: techStats.total,
-          creativeDept: creativeStats.total,
+          total,
+          completed,
+          inProgress,
+          pending,
+          overdue,
+          techDept: totalTech,
+          creativeDept: totalCreative,
           completionRate
         })
 
         // 计算用户统计
         const userStatsData: UserStats[] = mockUsers.map(mockUser => {
-          const userRequirements = requirements.filter(req => req.assignee?.id === mockUser.id)
-          const completedRequirements = userRequirements.filter(req => req.status === 'completed')
-          const userCompletionRate = userRequirements.length > 0 ? (completedRequirements.length / userRequirements.length) * 100 : 0
+          const userCreativeReqs = creativeRequirements.filter((req: Requirement) => req.assignee_id === mockUser.id)
+          const userTechReqs = techRequirements.filter((req: TechRequirement) => req.tech_assignee === mockUser.name)
+          const totalUserReqs = userCreativeReqs.length + userTechReqs.length
+          
+          const completedCreativeReqs = userCreativeReqs.filter((req: Requirement) => req.status === 'completed')
+          const completedTechReqs = userTechReqs.filter((req: TechRequirement) => req.progress === '已完成')
+          const totalCompleted = completedCreativeReqs.length + completedTechReqs.length
+          
+          const userCompletionRate = totalUserReqs > 0 ? (totalCompleted / totalUserReqs) * 100 : 0
           
           return {
             id: mockUser.id,
             name: mockUser.name,
             avatar: mockUser.avatar,
-            assignedCount: userRequirements.length,
-            completedCount: completedRequirements.length,
+            assignedCount: totalUserReqs,
+            completedCount: totalCompleted,
             completionRate: userCompletionRate,
             department: mockUser.role === 'developer' ? '技术部' : '创意部'
           }
@@ -92,8 +121,18 @@ export default function Dashboard() {
         
         setUserStats(userStatsData.sort((a, b) => b.assignedCount - a.assignedCount))
         
-        // 获取最近的需求
-        setRecentRequirements(requirements.slice(0, 5))
+        // 获取最近的需求（混合两个部门的数据）
+        const allRequirements = [
+          ...creativeRequirements.map((req: Requirement) => ({ ...req, department: '创意部' })),
+          ...techRequirements.map((req: TechRequirement) => ({ ...req, department: '技术部' }))
+        ]
+        
+        // 按创建时间排序，取最新的5个
+        const sortedRequirements = allRequirements
+          .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
+          .slice(0, 5)
+        
+        setRecentRequirements(sortedRequirements)
         
         setIsLoading(false)
       } catch (error) {
@@ -105,18 +144,38 @@ export default function Dashboard() {
     fetchDashboardData()
   }, [])
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-500">已完成</Badge>
-      case 'inProgress':
-        return <Badge className="bg-blue-500">进行中</Badge>
-      case 'pending':
-        return <Badge className="bg-yellow-500">待处理</Badge>
-      case 'overdue':
-        return <Badge className="bg-red-500">已逾期</Badge>
-      default:
-        return <Badge>未知</Badge>
+  const getStatusBadge = (req: Requirement | TechRequirement) => {
+    // 判断是技术部还是创意部需求
+    if ('progress' in req) {
+      // 技术部需求
+      const techReq = req as TechRequirement
+      switch (techReq.progress) {
+        case '已完成':
+          return <Badge className="bg-green-500">已完成</Badge>
+        case '处理中':
+          return <Badge className="bg-blue-500">处理中</Badge>
+        case '未开始':
+          return <Badge className="bg-yellow-500">未开始</Badge>
+        case '已沟通延迟':
+          return <Badge className="bg-red-500">已沟通延迟</Badge>
+        default:
+          return <Badge>未知</Badge>
+      }
+    } else {
+      // 创意部需求
+      const creativeReq = req as Requirement
+      switch (creativeReq.status) {
+        case 'completed':
+          return <Badge className="bg-green-500">已完成</Badge>
+        case 'in_progress':
+          return <Badge className="bg-blue-500">进行中</Badge>
+        case 'pending':
+          return <Badge className="bg-yellow-500">待处理</Badge>
+        case 'overdue':
+          return <Badge className="bg-red-500">已逾期</Badge>
+        default:
+          return <Badge>未知</Badge>
+      }
     }
   }
 
@@ -283,9 +342,9 @@ export default function Dashboard() {
                 <div key={req.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex-1">
                     <h4 className="font-medium text-sm">{req.title}</h4>
-                    <p className="text-xs text-gray-500">{req.department}</p>
+                    <p className="text-xs text-gray-500">{(req as any).department}</p>
                   </div>
-                  {getStatusBadge(req.status)}
+                  {getStatusBadge(req)}
                 </div>
               ))}
             </div>
@@ -307,7 +366,7 @@ export default function Dashboard() {
                 <span>技术部</span>
               </div>
               <div className="flex items-center space-x-4">
-                <Progress value={(stats.techDept / stats.total) * 100} className="w-24" />
+                <Progress value={stats.total > 0 ? (stats.techDept / stats.total) * 100 : 0} className="w-24" />
                 <span className="font-medium w-8">{stats.techDept}</span>
               </div>
             </div>
@@ -317,7 +376,7 @@ export default function Dashboard() {
                 <span>创意部</span>
               </div>
               <div className="flex items-center space-x-4">
-                <Progress value={(stats.creativeDept / stats.total) * 100} className="w-24" />
+                <Progress value={stats.total > 0 ? (stats.creativeDept / stats.total) * 100 : 0} className="w-24" />
                 <span className="font-medium w-8">{stats.creativeDept}</span>
               </div>
             </div>
