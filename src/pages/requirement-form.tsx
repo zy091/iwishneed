@@ -17,7 +17,7 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
-import { requirementService, Requirement } from '@/services/requirement-service'
+import { RequirementService, Requirement } from '@/services/requirement-service'
 
 // 创意部表单验证
 const creativeSchema = z.object({
@@ -56,7 +56,7 @@ export default function RequirementForm() {
     const loadData = async () => {
       if (isEdit && id) {
         try {
-          const req = await requirementService.getRequirement(id)
+          const req = await RequirementService.getRequirementById(id)
           if (req) {
             setRequirement(req)
             form.reset({
@@ -96,9 +96,9 @@ export default function RequirementForm() {
       }
 
       if (isEdit && id) {
-        await requirementService.updateRequirement(id, reqData)
+        await RequirementService.updateRequirement(id, reqData, user)
       } else {
-        await requirementService.createRequirement(reqData)
+        await RequirementService.createRequirement(reqData, user)
       }
 
       navigate('/requirements')
