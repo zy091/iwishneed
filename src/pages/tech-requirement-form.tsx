@@ -56,6 +56,7 @@ export default function TechRequirementForm() {
       urgency: '中',
       client_url: '',
       description: '',
+      // 重要：Radix Select 禁止空字符串，使用占位值
       tech_assignee: '__none__',
       client_type: '流量运营服务',
       assignee_estimated_time: undefined,
@@ -83,7 +84,8 @@ export default function TechRequirementForm() {
               urgency: req.urgency,
               client_url: req.client_url || '',
               description: req.description,
-              tech_assignee: req.tech_assignee || '__none__',
+              // 编辑态：为空时也使用占位值
+              tech_assignee: (req.tech_assignee && req.tech_assignee.trim() !== '') ? req.tech_assignee : '__none__',
               client_type: req.client_type,
               assignee_estimated_time: req.assignee_estimated_time ? new Date(req.assignee_estimated_time) : undefined,
               progress: req.progress || '未开始',
@@ -122,6 +124,7 @@ export default function TechRequirementForm() {
         submitter_name: user.name,
         client_url: data.client_url || undefined,
         description: data.description,
+        // 映射占位值为 undefined，避免写入无效值
         tech_assignee: (data.tech_assignee && data.tech_assignee !== '__none__') ? data.tech_assignee : undefined,
         client_type: data.client_type,
         attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
@@ -258,7 +261,7 @@ export default function TechRequirementForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>紧急程度 *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择紧急程度" />
@@ -297,7 +300,7 @@ export default function TechRequirementForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>客户类型（流量运营服务/全案深度服务） *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择客户类型" />
@@ -324,7 +327,7 @@ export default function TechRequirementForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>技术负责人</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value ?? '__none__'}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="选择技术负责人" />
@@ -350,7 +353,7 @@ export default function TechRequirementForm() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>技术完成进度（未开始/处理中/已完成/已沟通延迟）</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="选择进度状态" />
