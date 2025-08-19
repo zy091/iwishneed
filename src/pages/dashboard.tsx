@@ -165,51 +165,6 @@ export default function Dashboard() {
     )
   }
 
-  if (viewType === 'user') {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">用户统计</h2>
-        </div>
-
-        {/* 用户统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {userStats.map((userStat) => (
-            <Card key={userStat.id}>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={userStat.avatar} />
-                    <AvatarFallback>{userStat.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{userStat.name}</h3>
-                    <p className="text-sm text-gray-500">{userStat.department}</p>
-                  </div>
-                </div>
-                
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>分配任务</span>
-                    <span className="font-medium">{userStat.assignedCount}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>已完成</span>
-                    <span className="font-medium text-green-600">{userStat.completedCount}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>完成率</span>
-                    <span className="font-medium">{userStat.completionRate.toFixed(1)}%</span>
-                  </div>
-                  <Progress value={userStat.completionRate} className="mt-2" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
