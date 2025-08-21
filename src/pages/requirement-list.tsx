@@ -436,7 +436,7 @@ export default function RequirementList() {
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
-            <Table className="min-w-[1600px] whitespace-nowrap">
+            <Table className="w-full">
               <TableHeader>
                 <TableRow>
                   <TableHead>标题</TableHead>
@@ -492,14 +492,14 @@ export default function RequirementList() {
                             <Badge variant="outline">{req.department}</Badge>
                           </TableCell>
                         )}
-                        <TableCell>
+                        <TableCell className="min-w-[120px]">
                           <div className="flex items-center gap-2">
                             <img 
                               src={req.submitter?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
                               alt={req.submitter?.name || 'Unknown'} 
-                              className="h-6 w-6 rounded-full" 
+                              className="h-6 w-6 rounded-full flex-shrink-0" 
                             />
-                            <span>{req.submitter?.name || 'Unknown'}</span>
+                            <span className="text-sm truncate">{req.submitter?.name || 'Unknown'}</span>
                           </div>
                         </TableCell>
                         <TableCell>

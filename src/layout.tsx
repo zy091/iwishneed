@@ -130,9 +130,13 @@ export default function Layout() {
             </Avatar>
             <div className="ml-3">
               <p className="text-sm font-medium">{user?.name}</p>
-              <p className="text-xs text-gray-500">{user?.role === 'admin' ? '管理员' :
-                user?.role === 'manager' ? '经理' :
-                  user?.role === 'developer' ? '开发者' : '提交者'}</p>
+              <p className="text-xs text-gray-500">
+                {user?.rolename || (
+                  user?.role === 'admin' ? '管理员' :
+                  user?.role === 'manager' ? '经理' :
+                  user?.role === 'developer' ? '开发者' : '提交者'
+                )}
+              </p>
             </div>
           </div>
         </div>
