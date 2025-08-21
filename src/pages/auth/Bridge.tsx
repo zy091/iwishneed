@@ -117,6 +117,23 @@ export default function Bridge() {
       return () => clearTimeout(t)
     }
 
+    // 检查是否已经有有效的用户会话，如果有则直接跳转，避免刷新时重复桥接
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser)
+        if (user && user.id && user.email) {
+          console.log('检测到已有用户会话，直接跳转到首页')
+          setStatus('检测到已有会话，跳转中...')
+          const t = setTimeout(() => navigate('/', { replace: true }), 500)
+          return () => clearTimeout(t)
+        }
+      } catch (e) {
+        console.warn('解析本地用户数据失败:', e)
+        localStorage.removeItem('user')
+      }
+    }
+
     // 优先处理 external_user（Base64URL JSON）方案
     const externalUserParam = (search.get('external_user') || '').trim()
 
@@ -253,6 +270,8 @@ export default function Bridge() {
           name: String(data.name || data.full_name || (email ? email.split('@')[0] : '用户')),
           email,
           role,
+          rolename: String(data.rolename || ''),  // 主项目角色名称
+          role_id: Number(data.role_id || 999),   // 主项目角色ID，默认999表示非超级管理员
           avatar: data.avatar || data.avatar_url || undefined,
         }
 
@@ -348,6 +367,8 @@ export default function Bridge() {
             name: String(du.name || du.full_name || (email ? email.split('@')[0] : '用户')),
             email,
             role,
+            rolename: String(du.rolename || ''),  // 主项目角色名称
+            role_id: Number(du.role_id || 999),   // 主项目角色ID
             avatar: du.avatar || du.avatar_url || undefined,
           }
           setExternalUser(u)

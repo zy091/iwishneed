@@ -8,6 +8,8 @@ interface User {
   name: string
   email: string
   role: 'admin' | 'manager' | 'developer' | 'submitter'
+  rolename?: string  // 主项目的角色名称，如"超级管理员"、"项目经理"
+  role_id?: number   // 主项目的角色ID
   avatar?: string
 }
 
