@@ -162,10 +162,10 @@ export default function TechRequirementList() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 px-3 overflow-x-hidden">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">技术部 - 需求列表</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => navigate('/tech-requirements/import')}>
             <Upload className="mr-2 h-4 w-4" /> 批量导入
           </Button>
@@ -323,7 +323,7 @@ export default function TechRequirementList() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <Table className="min-w-[1600px] whitespace-nowrap">
               <TableHeader>
                 <TableRow>

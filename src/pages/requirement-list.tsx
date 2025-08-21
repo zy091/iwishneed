@@ -254,10 +254,10 @@ export default function RequirementList() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6 px-3 overflow-x-hidden">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{getPageTitle()}</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => navigate(getImportPath())}>
             <Upload className="mr-2 h-4 w-4" /> 批量导入
           </Button>
@@ -435,7 +435,7 @@ export default function RequirementList() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
@@ -493,7 +493,7 @@ export default function RequirementList() {
                           </TableCell>
                         )}
                         <TableCell className="min-w-[120px]">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <img 
                               src={req.submitter?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
                               alt={req.submitter?.name || 'Unknown'} 

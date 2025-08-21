@@ -79,16 +79,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 监听认证状态变化
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (ENV.AUTH_MODE === 'sso') {
+        // 在 SSO 模式下，完全忽略 Supabase 的会话事件，保留主项目传入的用户信息（rolename/role_id）
+        return
+      }
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
         setUser(u)
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
       } else {
-        if (ENV.AUTH_MODE === 'sso') {
-          // 在 SSO 模式下，忽略 Supabase 的空会话清空，保留外部用户状态
-          return
-        }
         setUser(null)
         setIsAuthenticated(false)
         localStorage.removeItem('user')
