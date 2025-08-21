@@ -400,19 +400,6 @@ export default function Bridge() {
     navigate('/', { replace: true })
   }
 
-  const loginAsTestUser = () => {
-    console.warn('联调模式：使用测试用户进入（仅用于测试）')
-    const u = {
-      id: 'debug_user',
-      email: 'debug@iwishcloud.com',
-      name: '联调测试',
-      role: 'submitter' as Role,
-      avatar: undefined,
-    }
-    setExternalUser(u as any)
-    setStatus('联调模式：使用测试用户登录，跳转中...')
-    setShouldNavigate(true)
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -431,15 +418,6 @@ export default function Bridge() {
           手动跳转到首页
         </button>
 
-        {/* 联调辅助：无凭证时可用测试用户一键进入 */}
-        {ENV.DISABLE_ORIGIN_CHECK && !(debug?.hasParam) && (
-          <button
-            onClick={loginAsTestUser}
-            className="mt-2 ml-2 px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors"
-          >
-            使用测试用户进入
-          </button>
-        )}
         {ENV.MAIN_APP_ORIGINS.length > 0 ? (
           <p className="text-xs text-gray-400 mt-3">
             允许来源：{ENV.MAIN_APP_ORIGINS.join(', ')}
