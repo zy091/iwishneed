@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
+import CommentsSection from '@/components/CommentsSection'
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,6 @@ import {
   Clock, 
   Edit, 
   Trash2, 
-  Send, 
   Tag, 
   FileText, 
   User, 
@@ -43,8 +42,6 @@ export default function RequirementDetail() {
   const { id } = useParams<{ id: string }>()
   const [requirement, setRequirement] = useState<Requirement | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [comment, setComment] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -79,23 +76,6 @@ export default function RequirementDetail() {
       }
     } catch (error) {
       console.error('删除需求失败:', error)
-    }
-  }
-
-  const handleCommentSubmit = async () => {
-    if (!comment.trim() || !id || !user) return
-    
-    setIsSubmitting(true)
-    try {
-      const updatedRequirement = await RequirementService.addComment(id, comment, user)
-      if (updatedRequirement) {
-        setRequirement(updatedRequirement)
-        setComment('')
-      }
-    } catch (error) {
-      console.error('提交评论失败:', error)
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -234,45 +214,9 @@ export default function RequirementDetail() {
               <CardTitle>评论</CardTitle>
             </CardHeader>
             <CardContent>
-              {requirement.comments && requirement.comments.length > 0 ? (
-                <div className="space-y-4">
-                  {requirement.comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-4 p-4 border rounded-lg">
-                      <img 
-                        src={comment.user.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
-                        alt={comment.user.name} 
-                        className="h-10 w-10 rounded-full" 
-                      />
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <p className="font-medium">{comment.user.name}</p>
-                          <p className="text-sm text-gray-500">{comment.timestamp}</p>
-                        </div>
-                        <p className="mt-1">{comment.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-center text-gray-500 py-4">暂无评论</p>
-              )}
+              {/* 使用新的 CommentsSection 组件 */}
+              {id && <CommentsSection requirementId={id} />}
             </CardContent>
-            <CardFooter>
-              <div className="w-full space-y-4">
-                <Textarea 
-                  placeholder="添加评论..." 
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                />
-                <Button 
-                  className="ml-auto" 
-                  onClick={handleCommentSubmit}
-                  disabled={!comment.trim() || isSubmitting}
-                >
-                  <Send className="mr-2 h-4 w-4" /> 提交评论
-                </Button>
-              </div>
-            </CardFooter>
           </Card>
         </div>
 

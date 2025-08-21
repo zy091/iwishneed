@@ -129,11 +129,23 @@ export default function Bridge() {
       }
     }
 
-    // 兼容 Hash 透传方案（/#external_user=...）
+    // 兼容 Hash 透传方案（/#external_user=...&main_access_token=...）
     const externalFromHash = (() => {
       const h = window.location.hash || ''
       const m = h.match(/external_user=([^&]+)/)
       return m ? decodeURIComponent(m[1]) : ''
+    })()
+    
+    // 获取主项目的 access_token（从 URL 参数或 Hash）
+    const mainAccessToken = (() => {
+      // 优先从 Hash 获取
+      const h = window.location.hash || ''
+      const mHash = h.match(/main_access_token=([^&]+)/)
+      if (mHash) return decodeURIComponent(mHash[1])
+      
+      // 其次从查询参数获取
+      const mQuery = search.get('main_access_token')
+      return mQuery || ''
     })()
 
     const payloadParam = externalUserParam || externalFromName || externalFromHash
@@ -144,6 +156,17 @@ export default function Bridge() {
     console.log('external_user 参数存在:', !!externalUserParam, '长度:', externalUserParam.length)
     console.log('window.name 渠道长度:', externalFromName.length)
     console.log('hash 渠道长度:', externalFromHash.length, '使用通道:', channel)
+    console.log('main_access_token 存在:', !!mainAccessToken, '长度:', mainAccessToken.length)
+    
+    // 如果有 main_access_token，安全存储在 sessionStorage（仅会话期有效）
+    if (mainAccessToken) {
+      try {
+        sessionStorage.setItem('MAIN_ACCESS_TOKEN', mainAccessToken)
+        console.log('已安全存储主项目访问令牌')
+      } catch (e) {
+        console.error('存储主项目访问令牌失败:', e)
+      }
+    }
 
     // 填充调试信息（直接显示在页面，避免依赖控制台）
     setDebug({
@@ -240,6 +263,16 @@ export default function Bridge() {
         // 清理 window.name，避免泄漏
         try { window.name = '' } catch (_) {}
         
+        // 如果有 main_access_token 但尚未存储，此时存储
+        if (mainAccessToken && !sessionStorage.getItem('MAIN_ACCESS_TOKEN')) {
+          try {
+            sessionStorage.setItem('MAIN_ACCESS_TOKEN', mainAccessToken)
+            console.log('已安全存储主项目访问令牌')
+          } catch (e) {
+            console.error('存储主项目访问令牌失败:', e)
+          }
+        }
+        
         // 设置跳转标志，让 useEffect 监听认证状态变化后跳转
         setShouldNavigate(true)
         return
@@ -322,6 +355,16 @@ export default function Bridge() {
           
           // 清理 window.name，避免泄漏
           try { window.name = '' } catch (_) {}
+          
+          // 如果消息中包含 main_access_token，存储它
+          if (data.main_access_token && typeof data.main_access_token === 'string') {
+            try {
+              sessionStorage.setItem('MAIN_ACCESS_TOKEN', data.main_access_token)
+              console.log('已从 postMessage 安全存储主项目访问令牌')
+            } catch (e) {
+              console.error('存储主项目访问令牌失败:', e)
+            }
+          }
           
           // 设置跳转标志，让 useEffect 监听认证状态变化后跳转
           setShouldNavigate(true)
@@ -419,6 +462,7 @@ export default function Bridge() {
               <div>Referrer：<span className="break-all">{debug.ref || '(空)'}</span></div>
               <div>白名单：{debug.allowed.length > 0 ? debug.allowed.join(', ') : '(空)'}</div>
               <div>通道：{debug.channel}；external_user：{debug.hasParam ? '是' : '否'}（有效负载长度：{debug.len}，window.name 长度：{debug.nameLen}，hash 长度：{debug.hashLen}，opener：{debug.opener ? '存在' : '不存在'}）</div>
+              <div>主项目访问令牌：{!!mainAccessToken ? '已接收' : '未接收'}{!!sessionStorage.getItem('MAIN_ACCESS_TOKEN') ? '（已存储）' : ''}</div>
               {!debug.hasParam && <div className="text-amber-600">提示：未检测到 external_user 参数。请确认主项目跳转 URL 是否携带 external_user=...</div>}
             </>
           )}
