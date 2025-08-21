@@ -20,7 +20,13 @@ function App() {
     return (
       <Routes>
         <Route path="/auth/bridge" element={<AuthBridge />} />
-        <Route path="*" element={<Navigate to="/auth/bridge" replace />} />
+        <Route path="*" element={
+          <Navigate 
+            to="/auth/bridge" 
+            replace 
+            state={{ from: window.location.pathname + window.location.search }}
+          />
+        } />
       </Routes>
     )
   }

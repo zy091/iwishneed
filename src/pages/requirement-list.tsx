@@ -434,27 +434,27 @@ export default function RequirementList() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow">
           <div className="overflow-x-auto">
-            <Table className="w-full">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead>标题</TableHead>
+                  <TableHead className="w-1/4 min-w-[200px]">标题</TableHead>
                   {currentDepartment === '技术部' && (
                     <>
-                      <TableHead>月份</TableHead>
-                      <TableHead>紧急程度</TableHead>
-                      <TableHead>客户类型</TableHead>
-                      <TableHead>技术负责人</TableHead>
-                      <TableHead>技术进度</TableHead>
-                      <TableHead>耗时(小时)</TableHead>
+                      <TableHead className="w-20">月份</TableHead>
+                      <TableHead className="w-24">紧急程度</TableHead>
+                      <TableHead className="w-24">客户类型</TableHead>
+                      <TableHead className="w-28">技术负责人</TableHead>
+                      <TableHead className="w-24">技术进度</TableHead>
+                      <TableHead className="w-24">耗时(小时)</TableHead>
                     </>
                   )}
-                  {!currentDepartment && <TableHead>部门</TableHead>}
-                  <TableHead>提交人</TableHead>
-                  <TableHead>期望完成时间</TableHead>
-                  <TableHead>创建日期</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
+                  {!currentDepartment && <TableHead className="w-20">部门</TableHead>}
+                  <TableHead className="w-28">提交人</TableHead>
+                  <TableHead className="w-32">期望完成时间</TableHead>
+                  <TableHead className="w-28">创建日期</TableHead>
+                  <TableHead className="w-24 text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

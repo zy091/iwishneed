@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { ENV } from '@/config/env'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 
 type Role = 'admin' | 'manager' | 'developer' | 'submitter'
@@ -105,10 +105,14 @@ export default function Bridge() {
   // 监听认证状态变化，认证成功后自动跳转
   useEffect(() => {
     if (shouldNavigate && isAuthenticated) {
-      console.log('认证状态已更新，执行跳转到首页')
-      navigate('/', { replace: true })
+      // 获取目标路径，优先使用 location.state.from，其次使用 sessionStorage，最后默认首页
+      const targetPath = (location.state as any)?.from || sessionStorage.getItem('BRIDGE_TARGET_PATH') || '/'
+      sessionStorage.removeItem('BRIDGE_TARGET_PATH') // 清理目标路径
+      
+      console.log('认证状态已更新，执行跳转到:', targetPath)
+      navigate(targetPath, { replace: true })
     }
-  }, [shouldNavigate, isAuthenticated, navigate])
+  }, [shouldNavigate, isAuthenticated, navigate, location.state])
 
   useEffect(() => {
     if (ENV.AUTH_MODE !== 'sso') {
@@ -117,15 +121,20 @@ export default function Bridge() {
       return () => clearTimeout(t)
     }
 
-    // 检查是否已经有有效的用户会话，如果有则直接跳转，避免刷新时重复桥接
+    // 检查是否已经有有效的用户会话，如果有则跳转到目标页面或首页
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
       try {
         const user = JSON.parse(storedUser)
         if (user && user.id && user.email) {
-          console.log('检测到已有用户会话，直接跳转到首页')
+          console.log('检测到已有用户会话，跳转到目标页面')
           setStatus('检测到已有会话，跳转中...')
-          const t = setTimeout(() => navigate('/', { replace: true }), 500)
+          
+          // 获取目标页面，如果没有则跳转到首页
+          const targetPath = sessionStorage.getItem('BRIDGE_TARGET_PATH') || '/'
+          sessionStorage.removeItem('BRIDGE_TARGET_PATH') // 清理目标路径
+          
+          const t = setTimeout(() => navigate(targetPath, { replace: true }), 500)
           return () => clearTimeout(t)
         }
       } catch (e) {
