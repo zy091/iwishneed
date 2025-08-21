@@ -462,7 +462,7 @@ export default function Bridge() {
               <div>Referrer：<span className="break-all">{debug.ref || '(空)'}</span></div>
               <div>白名单：{debug.allowed.length > 0 ? debug.allowed.join(', ') : '(空)'}</div>
               <div>通道：{debug.channel}；external_user：{debug.hasParam ? '是' : '否'}（有效负载长度：{debug.len}，window.name 长度：{debug.nameLen}，hash 长度：{debug.hashLen}，opener：{debug.opener ? '存在' : '不存在'}）</div>
-              <div>主项目访问令牌：{!!mainAccessToken ? '已接收' : '未接收'}{!!sessionStorage.getItem('MAIN_ACCESS_TOKEN') ? '（已存储）' : ''}</div>
+              <div>主项目访问令牌：{!!sessionStorage.getItem('MAIN_ACCESS_TOKEN') ? '已接收并存储' : '未接收'}</div>
               {!debug.hasParam && <div className="text-amber-600">提示：未检测到 external_user 参数。请确认主项目跳转 URL 是否携带 external_user=...</div>}
             </>
           )}
