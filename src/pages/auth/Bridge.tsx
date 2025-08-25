@@ -97,6 +97,7 @@ function b64UrlDecode(s: string) {
 export default function Bridge() {
   const navigate = useNavigate()
   const [search] = useSearchParams()
+  const routerLocation = useLocation()
   const [status, setStatus] = useState('准备接入主项目会话...')
   const [debug, setDebug] = useState<DebugInfo | null>(null)
   const [shouldNavigate, setShouldNavigate] = useState(false)
@@ -106,13 +107,13 @@ export default function Bridge() {
   useEffect(() => {
     if (shouldNavigate && isAuthenticated) {
       // 获取目标路径，优先使用 location.state.from，其次使用 sessionStorage，最后默认首页
-      const targetPath = (location.state as any)?.from || sessionStorage.getItem('BRIDGE_TARGET_PATH') || '/'
+      const targetPath = (routerLocation.state as any)?.from || sessionStorage.getItem('BRIDGE_TARGET_PATH') || '/'
       sessionStorage.removeItem('BRIDGE_TARGET_PATH') // 清理目标路径
       
       console.log('认证状态已更新，执行跳转到:', targetPath)
       navigate(targetPath, { replace: true })
     }
-  }, [shouldNavigate, isAuthenticated, navigate, location.state])
+  }, [shouldNavigate, isAuthenticated, navigate, routerLocation])
 
   useEffect(() => {
     if (ENV.AUTH_MODE !== 'sso') {
@@ -121,9 +122,13 @@ export default function Bridge() {
       return () => clearTimeout(t)
     }
 
-    // 检查是否已经有有效的用户会话，如果有则跳转到目标页面或首页
+    // 检查是否已经有有效的用户会话（如当前携带 external_user 则以外部数据为准，不走本地会话早跳）
+    const hasExternal =
+      !!(search.get('external_user') || '').trim() ||
+      (typeof window.name === 'string' && window.name.startsWith('EXTERNAL_USER:')) ||
+      (window.location.hash || '').includes('external_user=')
     const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    if (storedUser && !hasExternal) {
       try {
         const user = JSON.parse(storedUser)
         if (user && user.id && user.email) {
@@ -279,8 +284,8 @@ export default function Bridge() {
           name: String(data.name || data.full_name || (email ? email.split('@')[0] : '用户')),
           email,
           role,
-          rolename: String(data.rolename || ''),  // 主项目角色名称
-          role_id: Number(data.role_id || 999),   // 主项目角色ID，默认999表示非超级管理员
+          rolename: String(data.rolename ?? ''),  // 主项目角色名称
+          role_id: Number(data.role_id ?? 999),   // 主项目角色ID，默认999表示非超级管理员
           avatar: data.avatar || data.avatar_url || undefined,
         }
 
@@ -376,8 +381,8 @@ export default function Bridge() {
             name: String(du.name || du.full_name || (email ? email.split('@')[0] : '用户')),
             email,
             role,
-            rolename: String(du.rolename || ''),  // 主项目角色名称
-            role_id: Number(du.role_id || 999),   // 主项目角色ID
+            rolename: String(du.rolename ?? ''),  // 主项目角色名称
+            role_id: Number(du.role_id ?? 999),   // 主项目角色ID
             avatar: du.avatar || du.avatar_url || undefined,
           }
           setExternalUser(u)

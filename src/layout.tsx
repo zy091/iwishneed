@@ -158,20 +158,20 @@ export default function Layout() {
             </Button>
           )}
 
-          <div className={cn("flex-1", isMobile ? "ml-4" : "")}>
+          <div className={cn("flex-1 min-w-0", isMobile ? "ml-4" : "")}>
             {isDashboard ? (
-              <h2 className="text-lg font-semibold text-gray-800">仪表盘</h2>
+              <h2 className="text-lg font-semibold text-gray-800 truncate whitespace-nowrap">仪表盘</h2>
             ) : (
-              <h2 className="text-lg font-semibold text-gray-800">欢迎回来，{user?.name}</h2>
+              <h2 className="text-lg font-semibold text-gray-800 truncate whitespace-nowrap" title={`欢迎回来，${user?.name || ''}`}>欢迎回来，{user?.name}</h2>
             )}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
             </Button>
             {isSSO && (
-              <Button variant="outline" onClick={handleBackToMain}>
+              <Button className="hidden sm:inline-flex" variant="outline" onClick={handleBackToMain}>
                 返回主系统
               </Button>
             )}
