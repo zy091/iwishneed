@@ -322,6 +322,7 @@ export default function TechRequirementList() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
+        <>
         {/* 移动端卡片视图 */}
         <div className="md:hidden space-y-3">
           {filteredRequirements.length > 0 ? (
@@ -488,6 +489,7 @@ export default function TechRequirementList() {
             </Table>
           </div>
         </div>
+        </>
       )}
     </div>
   )
