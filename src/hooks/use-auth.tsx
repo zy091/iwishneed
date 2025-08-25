@@ -21,6 +21,14 @@ interface AuthContextType {
   setExternalUser: (u: User) => void
 }
 
+const ROLE_NAME_MAP: Record<number, string> = {
+  0: '超级管理员',
+  1: '管理员',
+  2: '经理',
+  3: '开发者',
+  4: '提交者',
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function mapSupabaseUser(su: SupaUser): User {
@@ -53,9 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (ENV.AUTH_MODE === 'sso') {
         const storedUser = localStorage.getItem('user')
         if (storedUser) {
-          setUser(JSON.parse(storedUser))
-          setIsAuthenticated(true)
-          return
+          try {
+            const parsed = JSON.parse(storedUser)
+            if (!parsed.rolename && typeof parsed.role_id === 'number') {
+              parsed.rolename = ROLE_NAME_MAP[parsed.role_id] || parsed.rolename
+            }
+            setUser(parsed)
+            setIsAuthenticated(true)
+            return
+          } catch {
+            // ignore parse error and continue
+          }
         }
       }
 
@@ -120,9 +136,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const setExternalUser = (u: User) => {
-    setUser(u)
+    const enriched: User = {
+      ...u,
+      rolename:
+        (u.rolename && u.rolename.trim()
+          ? u.rolename
+          : (typeof u.role_id === 'number' ? ROLE_NAME_MAP[u.role_id] : u.rolename)) || u.rolename,
+    }
+    setUser(enriched)
     setIsAuthenticated(true)
-    localStorage.setItem('user', JSON.stringify(u))
+    localStorage.setItem('user', JSON.stringify(enriched))
   }
 
   return (
