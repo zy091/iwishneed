@@ -5,9 +5,11 @@ import Login from './pages/login'
 import Dashboard from './pages/dashboard'
 import TechRequirementList from './pages/tech-requirement-list'
 import TechRequirementForm from './pages/tech-requirement-form'
+import TechRequirementDetail from './pages/tech-requirement-detail'
 import TechRequirementImport from './pages/tech-requirement-import'
 import CreativeRequirementList from './pages/creative-requirement-list'
 import CreativeRequirementForm from './pages/creative-requirement-form'
+import CreativeRequirementDetail from './pages/creative-requirement-detail'
 import RequirementImport from './pages/requirement-import'
 import AuthBridge from './pages/auth/Bridge'
 import { ENV } from './config/env'
@@ -50,13 +52,13 @@ function App() {
         {/* 技术部需求（仅保留这部分功能） */}
         <Route path="departments/tech" element={<TechRequirementList />} />
         <Route path="tech-requirements/new" element={<TechRequirementForm />} />
-        <Route path="tech-requirements/:id" element={<TechRequirementForm />} />
+        <Route path="tech-requirements/:id" element={<TechRequirementDetail />} />
         <Route path="tech-requirements/:id/edit" element={<TechRequirementForm />} />
         <Route path="tech-requirements/import" element={<TechRequirementImport />} />
         {/* 创意部需求 */}
         <Route path="departments/creative" element={<CreativeRequirementList />} />
         <Route path="creative-requirements/new" element={<CreativeRequirementForm />} />
-        <Route path="creative-requirements/:id" element={<CreativeRequirementForm />} />
+        <Route path="creative-requirements/:id" element={<CreativeRequirementDetail />} />
         <Route path="creative-requirements/:id/edit" element={<CreativeRequirementForm />} />
         {/* 通用导入（用于创意部） */}
         <Route path="requirements/import" element={<RequirementImport />} />
