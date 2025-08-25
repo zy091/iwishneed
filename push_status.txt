@@ -1,6 +1,31 @@
-﻿## main...origin/main
-?? combined_report.txt
-?? git_report.txt
-?? push_after.txt
-?? push_status.txt
-?? status_check.txt
+﻿=== STATUS ===
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   push_status.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+=== BRANCH ===
+* main 0434835 [origin/main] fix(ui/auth): 绉诲姩绔€傞厤涓嶴SO瑙掕壊淇濈暀 - layout: 涓诲唴瀹?overflow-y-auto/overflow-x-hidden锛屼晶鏍忕敤鎴峰尯浼樺厛鏄剧ず rolename锛況ole_id=0 鏄剧ず瓒呯骇绠＄悊鍛?- use-auth: SSO 妯″紡瀹屽叏蹇界暐 Supabase 浼氳瘽浜嬩欢锛岄伩鍏嶈鐩栦富椤圭洰 rolename/role_id - tech/creative/requirement 鍒楄〃椤碉細椤甸潰瀹瑰櫒绂佹 X 杞存粴鍔紙px-3 overflow-x-hidden锛夛紝澶撮儴鎸夐挳 flex-wrap锛岃〃鏍煎鍣?overflow-x-auto w-full锛屼粎琛ㄦ牸鍐呴儴妯悜婊氬姩
+
+=== REMOTE ===
+origin	https://github.com/zy091/iwishneed.git (fetch)
+origin	https://github.com/zy091/iwishneed.git (push)
+
+=== HEAD ===
+0434835497aac7e704c36a89203654439c4b3fa7
+
+=== ORIGIN/MAIN ===
+0434835497aac7e704c36a89203654439c4b3fa7
+
+=== PUSH ===
+branch 'main' set up to track 'origin/main'.
+Pushing to https://github.com/zy091/iwishneed.git
+To https://github.com/zy091/iwishneed.git
+ = [up to date]      main -> main
+updating local tracking ref 'refs/remotes/origin/main'
+Everything up-to-date

@@ -322,9 +322,65 @@ export default function TechRequirementList() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* 移动端卡片视图 */}
+        <div className="md:hidden space-y-3">
+          {filteredRequirements.length > 0 ? (
+            filteredRequirements.map((req) => (
+              <Card key={req.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <CardTitle className="text-base leading-6 truncate" title={req.title}>
+                        {req.title}
+                      </CardTitle>
+                      <CardDescription className="mt-1 text-xs">
+                        {req.month} · {req.submitter_name}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {getProgressBadge(req.progress)}
+                      {getUrgencyBadge(req.urgency)}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+                    <div>负责人：{req.tech_assignee || '未分配'}</div>
+                    <div>
+                      期望：{req.expected_completion_time ? format(new Date(req.expected_completion_time), "P", { locale: zhCN }) : '-'}
+                    </div>
+                    <div>客户类型：{req.client_type}</div>
+                    <div>
+                      提交：{req.submit_time ? format(new Date(req.submit_time), "P", { locale: zhCN }) : (req.created_at ? format(new Date(req.created_at), "P", { locale: zhCN }) : '-')}
+                    </div>
+                    <div className="col-span-2">
+                      {req.client_url ? (
+                        <a href={req.client_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">客户链接</a>
+                      ) : '无客户链接'}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button variant="secondary" size="sm" onClick={() => navigate(`/tech-requirements/${req.id}`)}>
+                      <Eye className="h-4 w-4 mr-1" /> 查看
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/tech-requirements/${req.id}/edit`)}>
+                      <Edit className="h-4 w-4 mr-1" /> 编辑
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-gray-500">没有找到符合条件的技术需求</CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* 桌面端表格视图 */}
+        <div className="hidden md:block bg-white rounded-lg shadow">
           <div className="overflow-x-auto w-full">
-            <Table className="min-w-[1600px] whitespace-nowrap">
+            <Table className="min-w-[1200px] whitespace-nowrap">
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[100px]">月份</TableHead>

@@ -110,8 +110,60 @@ export default function CreativeRequirementList() {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto w-full">
-            <Table className="min-w-[1600px] whitespace-nowrap">
+          <div className="md:hidden space-y-3">
+            {filtered.length ? filtered.map(r => (
+              <Card key={r.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <CardTitle className="text-base leading-6 truncate" title={r.site_name || '-'}>
+                        {r.site_name || '-'}
+                      </CardTitle>
+                      <CardDescription className="mt-1 text-xs">
+                        {r.submitter_name || '-'}
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {statusBadge(r.status)}
+                      <Badge variant="outline">{r.urgency || '-'}</Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+                    <div>设计师：{r.designer || '-'}</div>
+                    <div>平台：{r.platform || '-'}</div>
+                    <div>素材：{r.asset_type || '-'}</div>
+                    <div>尺寸：{r.asset_size || '-'}</div>
+                    <div>数量：{(r.asset_count ?? '-') as any}</div>
+                    <div>期望：{r.expected_delivery_time ? format(new Date(r.expected_delivery_time), 'P', { locale: zhCN }) : '-'}</div>
+                    <div className="col-span-2">
+                      {r.url_or_product_page ? (
+                        <a href={r.url_or_product_page} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">链接</a>
+                      ) : '无链接'}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button variant="secondary" size="sm" onClick={() => navigate(`/creative-requirements/${r.id}`)}>
+                      <Eye className="h-4 w-4 mr-1" /> 查看
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/creative-requirements/${r.id}/edit`)}>
+                      <Edit className="h-4 w-4 mr-1" /> 编辑
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDelete(r.id)}>
+                      <Trash2 className="h-4 w-4 mr-1 text-red-500" /> 删除
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )) : (
+              <Card>
+                <CardContent className="py-8 text-center text-sm text-gray-500">暂无创意部需求</CardContent>
+              </Card>
+            )}
+          </div>
+          <div className="hidden md:block overflow-x-auto w-full">
+            <Table className="min-w-[1200px] whitespace-nowrap">
               <TableHeader>
                 <TableRow>
                   <TableHead>提交时间</TableHead>
