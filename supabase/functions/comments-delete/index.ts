@@ -1,214 +1,172 @@
-// 评论删除 Edge Function
-// 验证主项目访问令牌并删除评论（仅允许删除自己的评论）
+// 评论删除 Edge Function（支持管理员删除与清理附件）
+// 验证主项目访问令牌并删除评论（本人可删；role_id=0 或 ADMIN_EMAILS 可删任意评论）
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
-// 环境变量
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const mainSupabaseUrl = Deno.env.get('MAIN_SUPABASE_URL') || 'https://oziqjzzrouoclocfgoub.supabase.com'
-const mainSupabaseAnonKey = Deno.env.get('MAIN_SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96aXFqenpyb3VvY2xvY2Znb3ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4NDE3NzAsImV4cCI6MjA1NTQxNzc3MH0.2PoPYqOq0SAev20WEvUCJer7JmBmCxv36-IE8uLizr4'
-
-// 允许的来源域名
+const mainSupabaseUrl = Deno.env.get('MAIN_SUPABASE_URL') || ''
+const mainSupabaseAnonKey = Deno.env.get('MAIN_SUPABASE_ANON_KEY') || ''
 const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').filter(Boolean)
+const ADMIN_EMAILS = (Deno.env.get('ADMIN_EMAILS') || '').split(',').map((s) => s.trim()).filter(Boolean)
+const BUCKET = 'comments-attachments'
 
-// 创建 Supabase 客户端（使用服务角色密钥）
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// 验证主项目访问令牌
-async function verifyMainAccessToken(token: string): Promise<{ id: string; email: string } | null> {
-  if (!token || !mainSupabaseUrl || !mainSupabaseAnonKey) {
-    console.error('缺少验证所需的配置或令牌')
-    return null
-  }
+function isAllowed(req: Request) {
+  const origin = req.headers.get('origin') || ''
+  return allowedOrigins.length === 0 || allowedOrigins.some((a) => origin === a || origin.endsWith(a))
+}
 
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('origin') || '*'
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Main-Access-Token',
+  }
+}
+
+type MainUser = { id: string; email: string; role_id?: number | null }
+
+async function verifyMainAccessToken(token: string): Promise<MainUser | null> {
+  if (!token || !mainSupabaseUrl || !mainSupabaseAnonKey) return null
   try {
-    // 调用主项目的 Auth API 验证令牌
-    const response = await fetch(`${mainSupabaseUrl}/auth/v1/user`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': mainSupabaseAnonKey
-      }
+    const res = await fetch(`${mainSupabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: mainSupabaseAnonKey },
     })
-
-    if (!response.ok) {
-      console.error('主项目令牌验证失败:', response.status, await response.text())
-      return null
-    }
-
-    const userData = await response.json()
-    return {
-      id: userData.id,
-      email: userData.email
-    }
-  } catch (error) {
-    console.error('验证主项目令牌时出错:', error)
+    if (!res.ok) return null
+    const j = await res.json()
+    const metaRole =
+      (j?.user_metadata?.role_id ?? j?.app_metadata?.role_id ?? j?.user_metadata?.roleId ?? j?.app_metadata?.roleId)
+    const parsed = typeof metaRole === 'string' ? parseInt(metaRole) : (typeof metaRole === 'number' ? metaRole : null)
+    return { id: j.id, email: j.email, role_id: Number.isFinite(parsed as any) ? (parsed as number) : null }
+  } catch {
     return null
   }
 }
 
-// 处理 CORS 预检请求
-function handleCorsPreflightRequest(req: Request): Response {
-  const origin = req.headers.get('origin') || ''
-  
-  // 检查来源是否在允许列表中
-  const isAllowedOrigin = allowedOrigins.length === 0 || 
-    allowedOrigins.some(allowed => origin === allowed || origin.endsWith(allowed))
-  
-  if (!isAllowedOrigin) {
-    return new Response('不允许的来源', { status: 403 })
-  }
-
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Main-Access-Token',
-      'Access-Control-Max-Age': '86400'
-    }
-  })
+function isAdmin(user: MainUser): boolean {
+  if (user.role_id === 0) return true
+  if (user.email && ADMIN_EMAILS.includes(user.email)) return true
+  return false
 }
 
-// 添加 CORS 头到响应
-function addCorsHeaders(response: Response, origin: string): Response {
-  const headers = new Headers(response.headers)
-  headers.set('Access-Control-Allow-Origin', origin)
-  headers.set('Access-Control-Allow-Methods', 'DELETE, OPTIONS')
-  headers.set('Access-Control-Allow-Headers', 'Content-Type, X-Main-Access-Token')
-  
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  })
-}
-
-// 主处理函数
 serve(async (req) => {
-  // 处理 CORS 预检请求
   if (req.method === 'OPTIONS') {
-    return handleCorsPreflightRequest(req)
+    return new Response(null, { status: 204, headers: corsHeaders(req) })
   }
-
-  const origin = req.headers.get('origin') || ''
-  
-  // 检查来源是否在允许列表中
-  const isAllowedOrigin = allowedOrigins.length === 0 || 
-    allowedOrigins.some(allowed => origin === allowed || origin.endsWith(allowed))
-  
-  if (!isAllowedOrigin) {
-    return addCorsHeaders(
-      new Response(JSON.stringify({ error: '不允许的来源' }), { 
-        status: 403, 
-        headers: { 'Content-Type': 'application/json' } 
-      }),
-      origin
-    )
+  if (!isAllowed(req)) {
+    return new Response(JSON.stringify({ error: '不允许的来源' }), {
+      status: 403,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
   }
-
-  // 只允许 DELETE 请求
   if (req.method !== 'DELETE') {
-    return addCorsHeaders(
-      new Response(JSON.stringify({ error: '方法不允许' }), { 
-        status: 405, 
-        headers: { 'Content-Type': 'application/json' } 
-      }),
-      origin
-    )
+    return new Response(JSON.stringify({ error: '方法不允许' }), {
+      status: 405,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
   }
 
-  // 获取主项目访问令牌
-  const mainAccessToken = req.headers.get('X-Main-Access-Token')
-  if (!mainAccessToken) {
-    return addCorsHeaders(
-      new Response(JSON.stringify({ error: '未提供主项目访问令牌' }), { 
-        status: 401, 
-        headers: { 'Content-Type': 'application/json' } 
-      }),
-      origin
-    )
-  }
-
-  // 验证主项目访问令牌
-  const userData = await verifyMainAccessToken(mainAccessToken)
-  if (!userData) {
-    return addCorsHeaders(
-      new Response(JSON.stringify({ error: '主项目访问令牌无效' }), { 
-        status: 401, 
-        headers: { 'Content-Type': 'application/json' } 
-      }),
-      origin
-    )
+  const token = req.headers.get('X-Main-Access-Token') || ''
+  const user = await verifyMainAccessToken(token)
+  if (!user) {
+    return new Response(JSON.stringify({ error: '主项目访问令牌无效' }), {
+      status: 401,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
   }
 
   try {
-    // 从 URL 获取评论 ID
     const url = new URL(req.url)
     const commentId = url.searchParams.get('id')
-    
     if (!commentId) {
-      return addCorsHeaders(
-        new Response(JSON.stringify({ error: '缺少评论 ID' }), { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json' } 
-        }),
-        origin
-      )
+      return new Response(JSON.stringify({ error: '缺少评论 ID' }), {
+        status: 400,
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+      })
     }
 
-    // 首先检查评论是否存在且属于当前用户
-    const { data: comment, error: fetchError } = await supabase
+    // 获取评论
+    const { data: comment, error: fetchErr } = await supabase
       .from('comments')
       .select('*')
       .eq('id', commentId)
-      .eq('user_external_id', userData.id)
       .single()
 
-    if (fetchError || !comment) {
-      return addCorsHeaders(
-        new Response(JSON.stringify({ error: '评论不存在或您无权删除' }), { 
-          status: 403, 
-          headers: { 'Content-Type': 'application/json' } 
-        }),
-        origin
-      )
+    if (fetchErr || !comment) {
+      return new Response(JSON.stringify({ error: '评论不存在' }), {
+        status: 404,
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+      })
     }
 
-    // 删除评论
-    const { error: deleteError } = await supabase
+    const admin = isAdmin(user)
+    const owner = comment.user_external_id === user.id
+    if (!admin && !owner) {
+      return new Response(JSON.stringify({ error: '您无权删除此评论' }), {
+        status: 403,
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+      })
+    }
+
+    // 需要删除的评论ID集合：该评论 + 其一级回复
+    const { data: relatedIds, error: relErr } = await supabase
       .from('comments')
-      .delete()
-      .eq('id', commentId)
-      .eq('user_external_id', userData.id)
+      .select('id')
+      .or(`id.eq.${commentId},parent_id.eq.${commentId}`)
 
-    if (deleteError) {
-      console.error('删除评论失败:', deleteError)
-      return addCorsHeaders(
-        new Response(JSON.stringify({ error: '删除评论失败' }), { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json' } 
-        }),
-        origin
-      )
+    if (relErr) {
+      console.error('查询关联评论失败:', relErr)
     }
 
-    return addCorsHeaders(
-      new Response(JSON.stringify({ success: true }), { 
-        status: 200, 
-        headers: { 'Content-Type': 'application/json' } 
-      }),
-      origin
-    )
-  } catch (error) {
-    console.error('处理请求时出错:', error)
-    return addCorsHeaders(
-      new Response(JSON.stringify({ error: '处理请求时出错' }), { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json' } 
-      }),
-      origin
-    )
+    const ids = (relatedIds || []).map((r: any) => r.id)
+    if (!ids.includes(commentId)) ids.push(commentId)
+
+    // 找到所有附件路径
+    let paths: string[] = []
+    if (ids.length > 0) {
+      const { data: attaches, error: attErr } = await supabase
+        .from('comment_attachments')
+        .select('file_path')
+        .in('comment_id', ids)
+
+      if (attErr) {
+        console.error('查询附件失败:', attErr)
+      } else {
+        paths = (attaches || []).map((a: any) => a.file_path).filter(Boolean)
+      }
+    }
+
+    // 先删除存储中的文件（忽略单个失败避免阻断）
+    if (paths.length > 0) {
+      const { error: rmErr } = await supabase.storage.from(BUCKET).remove(paths)
+      if (rmErr) {
+        console.error('删除存储文件出错:', rmErr)
+      }
+    }
+
+    // 删除评论（及其回复，附件记录将因外键级联被删除）
+    const { error: delErr } = await supabase.from('comments').delete().in('id', ids)
+    if (delErr) {
+      console.error('删除评论失败:', delErr)
+      return new Response(JSON.stringify({ error: '删除评论失败' }), {
+        status: 500,
+        headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
+  } catch (e) {
+    console.error('处理请求时出错:', e)
+    return new Response(JSON.stringify({ error: '处理请求时出错' }), {
+      status: 500,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
   }
 })
