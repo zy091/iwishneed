@@ -163,7 +163,7 @@ export default function TechRequirementList() {
 
   return (
     <div className="container mx-auto py-6 px-3 overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold min-w-0">技术部 - 需求列表</h1>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => navigate('/tech-requirements/import')}>
@@ -176,7 +176,7 @@ export default function TechRequirementList() {
       </div>
 
       {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -248,7 +248,7 @@ export default function TechRequirementList() {
           <CardDescription>使用以下选项筛选技术需求列表</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />

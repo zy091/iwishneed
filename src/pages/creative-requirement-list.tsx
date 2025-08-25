@@ -73,8 +73,8 @@ export default function CreativeRequirementList() {
 
   return (
     <div className="container mx-auto py-6 px-3 overflow-x-hidden">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">创意部 - 需求列表</h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between md:flex-wrap gap-3 mb-6">
+        <h1 className="text-2xl font-bold min-w-0">创意部 - 需求列表</h1>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => navigate('/requirements/import?department=creative')}>
             <Upload className="mr-2 h-4 w-4" /> 批量导入

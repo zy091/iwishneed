@@ -150,7 +150,7 @@ export default function Layout() {
       </aside>
 
       {/* 主内容区 */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col">
         <header className="bg-white border-b border-gray-200 h-16 flex items-center px-4 justify-between">
           {isMobile && (
             <Button variant="ghost" size="icon" onClick={toggleSidebar}>
@@ -166,12 +166,12 @@ export default function Layout() {
             )}
           </div>
 
-          <div className="flex items-center space-x-2 flex-shrink-0">
+          <div className="flex items-center space-x-2">
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
             </Button>
             {isSSO && (
-              <Button className="hidden sm:inline-flex" variant="outline" onClick={handleBackToMain}>
+              <Button className="hidden lg:inline-flex" variant="outline" onClick={handleBackToMain}>
                 返回主系统
               </Button>
             )}
