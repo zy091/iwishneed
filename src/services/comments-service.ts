@@ -40,7 +40,7 @@ export interface AddCommentParams {
 function getUserInfoFromToken(): { id: string; email: string } | null {
   try {
     const token = getMainAccessToken()
-    if (!token) return null
+    if (!token || typeof token !== 'string') return null
     
     // JWT token 格式: header.payload.signature
     const parts = token.split('.')
@@ -48,6 +48,11 @@ function getUserInfoFromToken(): { id: string; email: string } | null {
     
     // 解码 payload (base64url)
     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    
+    // 确保payload包含必要的字段
+    if (!payload || (!payload.sub && !payload.user_id && !payload.id) || !payload.email) {
+      return null
+    }
     
     return {
       id: payload.sub || payload.user_id || payload.id,
