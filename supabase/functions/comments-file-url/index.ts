@@ -14,7 +14,27 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 function isAllowed(req: Request) {
   const origin = req.headers.get('origin') || ''
-  return allowedOrigins.length === 0 || allowedOrigins.some((a) => origin === a || origin.endsWith(a))
+  
+  // 基础白名单检查
+  const baseAllowed = allowedOrigins.length === 0 || 
+    allowedOrigins.some((a) => origin === a || origin.endsWith(a))
+  
+  // 动态匹配规则 - 支持常见的部署平台和域名模式
+  const dynamicRules = [
+    // Netlify部署域名
+    /^https:\/\/.*\.netlify\.app$/,
+    // Vercel部署域名  
+    /^https:\/\/.*\.vercel\.app$/,
+    // 自定义域名模式（包含iwish的域名）
+    /^https:\/\/.*iwish.*\.(com|cn)$/,
+    // 开发环境
+    /^http:\/\/localhost:\d+$/,
+    /^http:\/\/127\.0\.0\.1:\d+$/
+  ]
+  
+  const dynamicAllowed = dynamicRules.some(rule => rule.test(origin))
+  
+  return baseAllowed || dynamicAllowed
 }
 
 function corsHeaders(req: Request) {
