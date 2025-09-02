@@ -42,12 +42,21 @@ function getUserInfoFromToken(): { id: string; email: string } | null {
     const token = getMainAccessToken()
     if (!token || typeof token !== 'string') return null
     
+    // 检查token是否以Bearer开头，如果是则去掉
+    const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
+    
     // JWT token 格式: header.payload.signature
-    const parts = token.split('.')
+    const parts = cleanToken.split('.')
     if (parts.length !== 3) return null
     
     // 解码 payload (base64url)
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    // 补齐base64填充
+    while (base64.length % 4) {
+      base64 += '='
+    }
+    
+    const payload = JSON.parse(atob(base64))
     
     // 确保payload包含必要的字段
     if (!payload || (!payload.sub && !payload.user_id && !payload.id) || !payload.email) {
