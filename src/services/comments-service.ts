@@ -304,31 +304,36 @@ export function canAddComment(): boolean {
 }
 
 /**
- * 生成文件上传预签名URL
+ * 生成文件上传预签名URL（使用直接Supabase存储操作）
  */
 export async function presignUploads(
   files: Array<{ name: string; type: string; size: number }>
 ): Promise<Array<{ path: string; token: string }>> {
-  const token = getMainAccessToken()
-  if (!token) {
-    throw new Error('No access token available')
+  const results: Array<{ path: string; token: string }> = []
+  
+  for (const file of files) {
+    // 生成唯一的文件路径
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substring(2, 15)
+    const fileExtension = file.name.split('.').pop() || ''
+    const filePath = `comments/${timestamp}_${randomId}.${fileExtension}`
+    
+    // 使用Supabase存储创建预签名URL
+    const { data, error } = await supabase.storage
+      .from('attachments')
+      .createSignedUploadUrl(filePath)
+    
+    if (error) {
+      console.error('创建预签名URL失败:', error)
+      throw new Error(`创建预签名URL失败: ${error.message}`)
+    }
+    
+    results.push({
+      path: filePath,
+      token: data.signedUrl
+    })
   }
   
-  const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Main-Access-Token': token,
-    },
-    body: JSON.stringify({ files }),
-  })
-  
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({}))
-    throw new Error(j.error || '生成上传令牌失败')
-  }
-  
-  const j = await res.json()
-  return j.uploads || []
+  return results
 }
 
