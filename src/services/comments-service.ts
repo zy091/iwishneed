@@ -1,9 +1,21 @@
-/**
- * 评论服务（扩展：一级回复与附件）
- */
+import { supabase } from '@/lib/supabase'
+import { mustToken } from '@/lib/mainAccessToken'
 
-import { supabase } from '@/lib/supabaseClient'
-import { getMainAccessToken } from '@/lib/mainAccessToken'
+const EDGE_BASE = import.meta.env.VITE_SUPABASE_URL
+
+export interface Comment {
+  id: string
+  requirement_id: string
+  content: string
+  parent_id?: string
+  user_external_id: string
+  user_email: string
+  user_email_masked: string
+  created_at: string
+  updated_at: string
+  attachments_count: number
+  attachments?: CommentAttachment[]
+}
 
 export interface CommentAttachment {
   id: string
@@ -15,33 +27,51 @@ export interface CommentAttachment {
   created_at: string
 }
 
-export interface Comment {
-  id: string
-  requirement_id: string
-  content: string
-  user_id_masked: string
-  user_email_masked: string
-  parent_id: string | null
-  attachments_count: number
-  created_at: string
-  updated_at: string
-  // 聚合后的附件（前端便于渲染）
-  attachments?: CommentAttachment[]
-}
-
 export interface AddCommentParams {
   requirement_id: string
   content: string
-  parent_id?: string | null
+  parent_id?: string
   attachments?: Array<{ path: string; name: string; type: string; size: number }>
 }
 
-const EDGE_BASE = import.meta.env.VITE_SUPABASE_URL
+/**
+ * 从主访问令牌中解析用户信息
+ */
+function getUserInfoFromToken(): { id: string; email: string } | null {
+  try {
+    const token = mustToken()
+    if (!token) return null
+    
+    // JWT token 格式: header.payload.signature
+    const parts = token.split('.')
+    if (parts.length !== 3) return null
+    
+    // 解码 payload (base64url)
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    
+    return {
+      id: payload.sub || payload.user_id || payload.id,
+      email: payload.email
+    }
+  } catch (error) {
+    console.error('解析用户令牌失败:', error)
+    return null
+  }
+}
 
-function mustToken() {
-  const t = getMainAccessToken()
-  if (!t) throw new Error('缺少主项目访问令牌')
-  return t
+/**
+ * 邮箱脱敏处理
+ */
+function maskEmail(email: string): string {
+  if (!email || !email.includes('@')) return '匿名用户'
+  
+  const [local, domain] = email.split('@')
+  if (local.length <= 2) {
+    return `${local[0]}***@${domain}`
+  }
+  
+  const masked = local[0] + '*'.repeat(Math.min(local.length - 2, 3)) + local[local.length - 1]
+  return `${masked}@${domain}`
 }
 
 /**
@@ -57,9 +87,7 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
 
   if (error) {
     console.error('获取评论失败:', error)
-    console.error('Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
-    console.error('主访问令牌存在:', !!getMainAccessToken())
-    throw new Error(`获取评论失败: ${error.message}`)
+    throw error
   }
 
   const comments: Comment[] = (data as any) || []
@@ -72,9 +100,7 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
       .select('*')
       .in('comment_id', needIds)
 
-    if (aerr) {
-      console.error('获取附件失败:', aerr)
-    } else {
+    if (!aerr && attaches) {
       const map = new Map<string, CommentAttachment[]>()
       for (const a of (attaches || []) as CommentAttachment[]) {
         const arr = map.get(a.comment_id) || []
@@ -91,12 +117,12 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
 }
 
 /**
- * 预签名上传：返回 { path, token, signedUrl }
+ * 生成上传预签名URL
  */
-export async function presignUploads(
+export async function getUploadPresignedUrls(
   requirement_id: string,
   files: Array<{ name: string; type: string; size: number }>
-): Promise<Array<{ path: string; token: string; signedUrl: string }>> {
+): Promise<Array<{ path: string; token: string }>> {
   const token = mustToken()
   const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
     method: 'POST',
@@ -137,75 +163,116 @@ export async function uploadToSignedUrls(
 }
 
 /**
- * 添加评论（支持 parent_id 与 attachments）
+ * 添加评论（直接数据库操作）
  */
 export async function addComment(params: AddCommentParams): Promise<Comment> {
-  const mainAccessToken = mustToken()
-  
-  console.log('发送评论请求:', {
-    url: `${EDGE_BASE}/functions/v1/comments-add`,
-    hasToken: !!mainAccessToken,
-    tokenLength: mainAccessToken?.length || 0,
-    params: { ...params, content: params.content.substring(0, 50) + '...' }
-  })
-  
-  const response = await fetch(`${EDGE_BASE}/functions/v1/comments-add`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Main-Access-Token': mainAccessToken,
-    },
-    body: JSON.stringify(params),
-  })
-
-  console.log('评论请求响应:', {
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries())
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '')
-    let errorData: any = {}
-    try {
-      errorData = JSON.parse(errorText)
-    } catch {
-      errorData = { error: errorText || `HTTP ${response.status}: ${response.statusText}` }
-    }
-    
-    console.error('评论请求失败:', errorData)
-    throw new Error(errorData.error || `添加评论失败 (${response.status})`)
+  // 获取用户信息
+  const userInfo = getUserInfoFromToken()
+  if (!userInfo) {
+    throw new Error('用户未登录或令牌无效')
   }
 
-  const result = await response.json()
-  return result.data as Comment
+  // 插入评论到数据库
+  const { data: comment, error } = await supabase
+    .from('comments')
+    .insert({
+      requirement_id: params.requirement_id,
+      content: params.content,
+      parent_id: params.parent_id,
+      user_external_id: userInfo.id,
+      user_email: userInfo.email,
+      attachments_count: params.attachments?.length || 0
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('添加评论失败:', error)
+    throw new Error('添加评论失败')
+  }
+
+  // 如果有附件，插入附件记录
+  if (params.attachments && params.attachments.length > 0) {
+    const attachmentRecords = params.attachments.map(att => ({
+      comment_id: comment.id,
+      file_path: att.path,
+      file_name: att.name,
+      mime_type: att.type,
+      size: att.size
+    }))
+
+    const { error: attachError } = await supabase
+      .from('comment_attachments')
+      .insert(attachmentRecords)
+
+    if (attachError) {
+      console.error('添加附件失败:', attachError)
+      // 不抛出错误，因为评论已经成功添加
+    }
+  }
+
+  // 返回格式化的评论数据
+  return {
+    id: comment.id,
+    requirement_id: comment.requirement_id,
+    content: comment.content,
+    parent_id: comment.parent_id,
+    user_external_id: comment.user_external_id,
+    user_email: comment.user_email,
+    user_email_masked: maskEmail(comment.user_email),
+    created_at: comment.created_at,
+    updated_at: comment.updated_at,
+    attachments_count: comment.attachments_count,
+    attachments: params.attachments || []
+  }
 }
 
 /**
- * 删除评论
+ * 删除评论（直接数据库操作）
  */
 export async function deleteComment(commentId: string): Promise<boolean> {
-  const mainAccessToken = mustToken()
-  const response = await fetch(
-    `${EDGE_BASE}/functions/v1/comments-delete?id=${encodeURIComponent(commentId)}`,
-    {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Main-Access-Token': mainAccessToken,
-      },
-    }
-  )
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.error || '删除评论失败')
+  const userInfo = getUserInfoFromToken()
+  if (!userInfo) {
+    throw new Error('用户未登录或令牌无效')
   }
+
+  // 先删除附件记录
+  const { error: attachError } = await supabase
+    .from('comment_attachments')
+    .delete()
+    .eq('comment_id', commentId)
+
+  if (attachError) {
+    console.error('删除附件记录失败:', attachError)
+  }
+
+  // 删除子评论
+  const { error: childError } = await supabase
+    .from('comments')
+    .delete()
+    .eq('parent_id', commentId)
+
+  if (childError) {
+    console.error('删除子评论失败:', childError)
+  }
+
+  // 删除主评论
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', commentId)
+    .eq('user_external_id', userInfo.id) // 只能删除自己的评论
+
+  if (error) {
+    console.error('删除评论失败:', error)
+    throw new Error('删除评论失败')
+  }
+
   return true
 }
 
 /**
- * 生成附件的临时访问地址
+ * 获取附件的签名URL
  */
 export async function getAttachmentSignedUrl(path: string): Promise<string> {
   const token = mustToken()
@@ -217,15 +284,15 @@ export async function getAttachmentSignedUrl(path: string): Promise<string> {
   })
   if (!res.ok) {
     const j = await res.json().catch(() => ({}))
-    throw new Error(j.error || '获取附件地址失败')
+    throw new Error(j.error || '获取文件URL失败')
   }
   const j = await res.json()
-  return j.url as string
+  return j.url
 }
 
 /**
  * 检查用户是否可以添加评论
  */
-export function canAddComment(): boolean {
-  return !!getMainAccessToken()
+export function canAddComments(): boolean {
+  return !!getUserInfoFromToken()
 }
