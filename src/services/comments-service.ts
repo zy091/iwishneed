@@ -303,3 +303,32 @@ export function canAddComment(): boolean {
   return !!getUserInfoFromToken()
 }
 
+/**
+ * 生成文件上传预签名URL
+ */
+export async function presignUploads(
+  files: Array<{ name: string; type: string; size: number }>
+): Promise<Array<{ path: string; token: string }>> {
+  const token = getMainAccessToken()
+  if (!token) {
+    throw new Error('No access token available')
+  }
+  
+  const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Main-Access-Token': token,
+    },
+    body: JSON.stringify({ files }),
+  })
+  
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}))
+    throw new Error(j.error || '生成上传令牌失败')
+  }
+  
+  const j = await res.json()
+  return j.uploads || []
+}
+
