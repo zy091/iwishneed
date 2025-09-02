@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { mustToken } from '@/lib/mainAccessToken'
+import { getMainAccessToken } from '@/lib/mainAccessToken'
 
 const EDGE_BASE = import.meta.env.VITE_SUPABASE_URL
 
@@ -39,7 +39,7 @@ export interface AddCommentParams {
  */
 function getUserInfoFromToken(): { id: string; email: string } | null {
   try {
-    const token = mustToken()
+    const token = getMainAccessToken()
     if (!token) return null
     
     // JWT token 格式: header.payload.signature
@@ -123,7 +123,10 @@ export async function getUploadPresignedUrls(
   requirement_id: string,
   files: Array<{ name: string; type: string; size: number }>
 ): Promise<Array<{ path: string; token: string }>> {
-  const token = mustToken()
+  const token = getMainAccessToken()
+  if (!token) {
+    throw new Error('No access token available')
+  }
   const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
     method: 'POST',
     headers: {
@@ -275,7 +278,10 @@ export async function deleteComment(commentId: string): Promise<boolean> {
  * 获取附件的签名URL
  */
 export async function getAttachmentSignedUrl(path: string): Promise<string> {
-  const token = mustToken()
+  const token = getMainAccessToken()
+  if (!token) {
+    throw new Error('No access token available')
+  }
   const res = await fetch(`${EDGE_BASE}/functions/v1/comments-file-url?path=${encodeURIComponent(path)}`, {
     method: 'GET',
     headers: {
