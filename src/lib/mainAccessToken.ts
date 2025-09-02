@@ -65,3 +65,16 @@ export function urlWithMainAccessToken(url: string): string {
   const separator = url.includes('?') ? '&' : '?'
   return `${url}${separator}main_access_token=${encodeURIComponent(token)}`
 }
+
+/**
+ * 获取主项目访问令牌，如果不存在则抛出错误
+ * @returns 访问令牌
+ * @throws 如果令牌不存在或无效
+ */
+export function mustToken(): string {
+  const token = getMainAccessToken()
+  if (!token) {
+    throw new Error('主项目访问令牌不存在，请从主系统登录')
+  }
+  return token
+}
