@@ -293,6 +293,75 @@ export async function getAttachmentSignedUrl(path: string): Promise<string> {
 /**
  * 检查用户是否可以添加评论
  */
-export function canAddComments(): boolean {
+export function canAddComment(): boolean {
   return !!getUserInfoFromToken()
+}
+
+// 文件上传相关函数
+export async function presignUploads(
+  files: Array<{ name: string; type: string; size: number }>
+): Promise<Array<{ path: string; token: string }>> {
+  const token = getMainAccessToken()
+  if (!token) {
+    throw new Error('No access token available')
+  }
+  
+  const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ files }),
+  })
+  
+  if (!res.ok) {
+    throw new Error('Failed to get presigned URLs')
+  }
+  
+  return res.json()
+}
+
+export async function uploadToSignedUrls(
+  files: File[],
+  signedUrls: Array<{ path: string; token: string }>
+): Promise<void> {
+  const uploadPromises = files.map(async (file, index) => {
+    const { token } = signedUrls[index]
+    
+    const res = await fetch(token, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type,
+      },
+    })
+    
+    if (!res.ok) {
+      throw new Error(`Failed to upload ${file.name}`)
+    }
+  })
+  
+  await Promise.all(uploadPromises)
+}
+
+export async function getAttachmentSignedUrl(path: string): Promise<string> {
+  const token = getMainAccessToken()
+  if (!token) {
+    throw new Error('No access token available')
+  }
+  
+  const res = await fetch(`${EDGE_BASE}/functions/v1/comments-file-url?path=${encodeURIComponent(path)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  })
+  
+  if (!res.ok) {
+    throw new Error('Failed to get file URL')
+  }
+  
+  const data = await res.json()
+  return data.url
 }
