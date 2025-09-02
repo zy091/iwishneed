@@ -57,7 +57,9 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
 
   if (error) {
     console.error('获取评论失败:', error)
-    throw error
+    console.error('Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
+    console.error('主访问令牌存在:', !!getMainAccessToken())
+    throw new Error(`获取评论失败: ${error.message}`)
   }
 
   const comments: Comment[] = (data as any) || []
@@ -139,6 +141,14 @@ export async function uploadToSignedUrls(
  */
 export async function addComment(params: AddCommentParams): Promise<Comment> {
   const mainAccessToken = mustToken()
+  
+  console.log('发送评论请求:', {
+    url: `${EDGE_BASE}/functions/v1/comments-add`,
+    hasToken: !!mainAccessToken,
+    tokenLength: mainAccessToken?.length || 0,
+    params: { ...params, content: params.content.substring(0, 50) + '...' }
+  })
+  
   const response = await fetch(`${EDGE_BASE}/functions/v1/comments-add`, {
     method: 'POST',
     headers: {
@@ -148,9 +158,23 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
     body: JSON.stringify(params),
   })
 
+  console.log('评论请求响应:', {
+    status: response.status,
+    statusText: response.statusText,
+    headers: Object.fromEntries(response.headers.entries())
+  })
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.error || '添加评论失败')
+    const errorText = await response.text().catch(() => '')
+    let errorData: any = {}
+    try {
+      errorData = JSON.parse(errorText)
+    } catch {
+      errorData = { error: errorText || `HTTP ${response.status}: ${response.statusText}` }
+    }
+    
+    console.error('评论请求失败:', errorData)
+    throw new Error(errorData.error || `添加评论失败 (${response.status})`)
   }
 
   const result = await response.json()

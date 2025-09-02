@@ -16,10 +16,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 function isAllowed(req: Request) {
   const origin = req.headers.get('origin') || ''
-  // 开发环境允许localhost
-  if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-    return true
-  }
   return allowedOrigins.length === 0 || allowedOrigins.some((a) => origin === a || origin.endsWith(a))
 }
 
