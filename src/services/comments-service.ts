@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabaseClient'
 import { mustToken } from '@/lib/mainAccessToken'
 
 const EDGE_BASE = import.meta.env.VITE_SUPABASE_URL
