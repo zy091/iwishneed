@@ -22,7 +22,8 @@ function corsHeaders(req: Request) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Main-Access-Token'
+    'Access-Control-Allow-Headers': 'Content-Type, X-Main-Access-Token, Authorization',
+    'Access-Control-Allow-Credentials': 'true',
   }
 }
 
