@@ -320,8 +320,9 @@ export async function presignUploads(
     // 生成唯一的文件路径
     const timestamp = Date.now()
     const randomId = Math.random().toString(36).substring(2, 15)
-    const fileExtension = file.name.split('.').pop() || ''
-    const filePath = `comments/${timestamp}_${randomId}.${fileExtension}`
+    const fileName = file.name || 'unknown'
+    const fileExtension = fileName.includes('.') ? fileName.split('.').pop() || '' : ''
+    const filePath = `comments/${timestamp}_${randomId}${fileExtension ? '.' + fileExtension : ''}`
     
     // 使用Supabase存储创建预签名URL
     const { data, error } = await supabase.storage
