@@ -290,26 +290,23 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 }
 
 /**
- * 获取附件的签名URL
+ * 获取附件的签名URL（直接使用 Supabase Storage）
  */
 export async function getAttachmentSignedUrl(path: string): Promise<string> {
-  const token = getMainAccessToken()
-  if (!token) {
-    throw new Error('No access token available')
+  const { data, error } = await supabase.storage
+    .from('comments-attachments')
+    .createSignedUrl(path, 3600) // 1小时有效期
+  
+  if (error) {
+    console.error('获取签名URL失败:', error)
+    throw new Error(`获取文件URL失败: ${error.message}`)
   }
-  const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
-  const res = await fetch(`${EDGE_BASE}/functions/v1/comments-file-url?path=${encodeURIComponent(path)}`, {
-    method: 'GET',
-    headers: {
-      'X-Main-Access-Token': cleanToken,
-    },
-  })
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({}))
-    throw new Error(j.error || '获取文件URL失败')
+  
+  if (!data?.signedUrl) {
+    throw new Error('未能获取有效的签名URL')
   }
-  const j = await res.json()
-  return j.url
+  
+  return data.signedUrl
 }
 
 /**
