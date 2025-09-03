@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Send, Trash2, Paperclip, Reply, File as FileIcon, Image as ImageIcon } from 'lucide-react'
+import { Send, Trash2, Paperclip, Reply, File as FileIcon, Image as ImageIcon, Download } from 'lucide-react'
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -244,25 +244,123 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }
   }
 
+  // 图片附件组件
+  const AttachmentImage = ({ attachment, onError }: { 
+    attachment: NonNullable<Comment['attachments']>[0], 
+    onError: () => void 
+  }) => {
+    const [imageUrl, setImageUrl] = useState<string | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(false)
+
+    useEffect(() => {
+      const loadImage = async () => {
+        try {
+          const url = await getAttachmentSignedUrl(attachment.file_path)
+          setImageUrl(url)
+        } catch (err) {
+          console.error('加载图片失败:', err)
+          setError(true)
+          onError()
+        } finally {
+          setLoading(false)
+        }
+      }
+      loadImage()
+    }, [attachment.file_path, onError])
+
+    if (loading) {
+      return (
+        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )
+    }
+
+    if (error || !imageUrl) {
+      return (
+        <div className="w-full h-32 bg-gray-200 flex items-center justify-center text-gray-500">
+          <div className="text-center">
+            <ImageIcon className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-sm">图片加载失败</p>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <img
+        src={imageUrl}
+        alt={attachment.file_name}
+        className="w-full max-w-md h-auto max-h-64 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => openAttachment(attachment.file_path)}
+        onError={() => {
+          setError(true)
+          onError()
+        }}
+      />
+    )
+  }
+
   const renderAttachments = (list: NonNullable<Comment['attachments']>) => {
     if (!list || list.length === 0) return null
+    
     return (
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 space-y-2">
         {list.map(att => {
-          const isImage = att.mime_type?.startsWith('image/')
+          const isImage = att.mime_type?.startsWith('image/') || 
+                         /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.file_name)
+          
           return (
-            <Button
-              key={att.id || att.file_path}
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8"
-              onClick={() => openAttachment(att.file_path)}
-              title={`${att.file_name} · ${formatBytes(att.size)}`}
-            >
-              {isImage ? <ImageIcon className="h-4 w-4 mr-1" /> : <FileIcon className="h-4 w-4 mr-1" />}
-              <span className="max-w-[140px] truncate">{att.file_name}</span>
-            </Button>
+            <div key={att.id || att.file_path} className="border rounded-lg overflow-hidden bg-gray-50">
+              {isImage ? (
+                // 图片预览
+                <div className="relative group">
+                  <AttachmentImage 
+                    attachment={att}
+                    onError={() => console.log('图片加载失败:', att.file_name)}
+                  />
+                  {/* 图片信息覆盖层 */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-sm truncate">{att.file_name}</p>
+                    <p className="text-xs text-gray-300">点击查看大图 • {formatBytes(att.size)}</p>
+                  </div>
+                </div>
+              ) : (
+                // 非图片文件显示
+                <div className="p-3 flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    {att.mime_type?.includes('pdf') ? (
+                      <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                      </svg>
+                    ) : att.mime_type?.includes('word') || att.file_name.includes('.doc') ? (
+                      <svg className="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                      </svg>
+                    ) : (
+                      <FileIcon className="w-8 h-8 text-gray-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{att.file_name}</p>
+                    <p className="text-xs text-gray-500">
+                      {formatBytes(att.size)}
+                      {att.mime_type && ` • ${att.mime_type}`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openAttachment(att.file_path)}
+                    className="flex-shrink-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    下载
+                  </Button>
+                </div>
+              )}
+            </div>
           )
         })}
       </div>
