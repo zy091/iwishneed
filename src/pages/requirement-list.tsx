@@ -39,7 +39,6 @@ import {
 import { supabaseRequirementService, Requirement, TechRequirement } from '../services/supabase-requirement-service'
 import { creativeRequirementService, CreativeRequirement } from '@/services/creative-requirement-service'
 import { useAuth } from '../hooks/use-auth'
-import { getUserInfoFromToken } from '@/services/comments-service'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -62,7 +61,6 @@ export default function RequirementList() {
     overdue: 0
   })
   const [techAssignees, setTechAssignees] = useState<string[]>([])
-  const [currentUserInfo, setCurrentUserInfo] = useState<{ id: string; role: string } | null>(null)
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -77,11 +75,12 @@ export default function RequirementList() {
 
   // 权限检查函数
   const canEditOrDelete = (requirement: Requirement) => {
-    if (!currentUserInfo) return false
+    if (!user) return false
     // 管理员可以操作所有需求
-    if (currentUserInfo.role === 'admin') return true
+    const isAdmin = (user as any)?.role_id === 0 || user?.role === 'admin'
+    if (isAdmin) return true
     // 需求提交者可以操作自己的需求
-    return requirement.submitter?.id === currentUserInfo.id
+    return requirement.submitter?.id === user.id || requirement.submitter?.email === user.email
   }
 
   // 处理行点击事件
@@ -92,21 +91,6 @@ export default function RequirementList() {
     }
     navigate(`/requirements/${requirementId}`)
   }
-
-  // 获取当前用户信息
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      if (user?.access_token) {
-        try {
-          const userInfo = await getUserInfoFromToken(user.access_token)
-          setCurrentUserInfo(userInfo)
-        } catch (error) {
-          console.error('Failed to get user info:', error)
-        }
-      }
-    }
-    fetchUserInfo()
-  }, [user])
 
   useEffect(() => {
     const fetchRequirements = async () => {

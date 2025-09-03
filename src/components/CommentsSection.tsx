@@ -216,12 +216,10 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }).format(date)
   }
 
-  const isAdmin = (user as any)?.role_id === 0
+  const isAdmin = (user as any)?.role_id === 0 || user?.role === 'admin'
   const isOwnComment = (comment: Comment) => {
-    // 直接比较用户邮箱，因为 comment.user_email_masked 是脱敏后的
-    // 而我们需要比较的是实际的用户身份
-    const userInfo = getUserInfoFromToken()
-    return userInfo && userInfo.email === comment.user_email
+    // 直接比较用户邮箱和ID
+    return user?.email === comment.user_email || user?.id === comment.user_id
   }
   const canDeleteComment = (comment: Comment) => {
     return isAdmin || isOwnComment(comment)
