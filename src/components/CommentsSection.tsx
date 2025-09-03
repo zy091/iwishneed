@@ -22,6 +22,7 @@ import {
   presignUploads,
   uploadToSignedUrls,
   getAttachmentSignedUrl,
+  getUserInfoFromToken,
 } from '@/services/comments-service'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/components/ui/use-toast'
@@ -217,8 +218,10 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
 
   const isAdmin = (user as any)?.role_id === 0
   const isOwnComment = (comment: Comment) => {
-    const maskedMine = maskEmailForCompare(user?.email)
-    return maskedMine && maskedMine === comment.user_email_masked
+    // 直接比较用户邮箱，因为 comment.user_email_masked 是脱敏后的
+    // 而我们需要比较的是实际的用户身份
+    const userInfo = getUserInfoFromToken()
+    return userInfo && userInfo.email === comment.user_email
   }
   const canDeleteComment = (comment: Comment) => {
     return isAdmin || isOwnComment(comment)

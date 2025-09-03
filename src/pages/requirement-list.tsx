@@ -39,6 +39,7 @@ import {
 import { supabaseRequirementService, Requirement, TechRequirement } from '../services/supabase-requirement-service'
 import { creativeRequirementService, CreativeRequirement } from '@/services/creative-requirement-service'
 import { useAuth } from '../hooks/use-auth'
+import { getUserInfoFromToken } from '@/services/comments-service'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -61,6 +62,7 @@ export default function RequirementList() {
     overdue: 0
   })
   const [techAssignees, setTechAssignees] = useState<string[]>([])
+  const [currentUserInfo, setCurrentUserInfo] = useState<{ id: string; role: string } | null>(null)
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -72,6 +74,39 @@ export default function RequirementList() {
     : location.pathname.includes('/creative') ? '创意部' 
     : ''
     : ''
+
+  // 权限检查函数
+  const canEditOrDelete = (requirement: Requirement) => {
+    if (!currentUserInfo) return false
+    // 管理员可以操作所有需求
+    if (currentUserInfo.role === 'admin') return true
+    // 需求提交者可以操作自己的需求
+    return requirement.submitter?.id === currentUserInfo.id
+  }
+
+  // 处理行点击事件
+  const handleRowClick = (requirementId: string, event: React.MouseEvent) => {
+    // 如果点击的是按钮或链接，不触发行点击
+    if ((event.target as HTMLElement).closest('button, a')) {
+      return
+    }
+    navigate(`/requirements/${requirementId}`)
+  }
+
+  // 获取当前用户信息
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (user?.access_token) {
+        try {
+          const userInfo = await getUserInfoFromToken(user.access_token)
+          setCurrentUserInfo(userInfo)
+        } catch (error) {
+          console.error('Failed to get user info:', error)
+        }
+      }
+    }
+    fetchUserInfo()
+  }, [user])
 
   useEffect(() => {
     const fetchRequirements = async () => {
@@ -461,12 +496,17 @@ export default function RequirementList() {
                 {filteredRequirements.length > 0 ? (
                   filteredRequirements.map((req) => {
                     const techReq = req.type === 'tech' ? req as TechRequirement : null
+                    const hasPermission = canEditOrDelete(req)
                     return (
-                      <TableRow key={req.id}>
+                      <TableRow 
+                        key={req.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={(e) => handleRowClick(req.id!, e)}
+                      >
                         <TableCell className="font-medium">
-                          <Link to={`/requirements/${req.id}`} className="hover:underline">
+                          <div className="hover:underline">
                             {req.title}
-                          </Link>
+                          </div>
                         </TableCell>
                         {currentDepartment === '技术部' && techReq && (
                           <>
@@ -513,43 +553,68 @@ export default function RequirementList() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}`)}>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(`/requirements/${req.id}`)
+                              }}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => navigate(`/requirements/${req.id}/edit`)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            {hasPermission && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(`/requirements/${req.id}/edit`)
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
                             {currentDepartment === '技术部' && (
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                onClick={() => navigate(getTechAssigneeEditPath(req.id!))}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigate(getTechAssigneeEditPath(req.id!))
+                                }}
                                 title="技术负责人处理"
                               >
                                 <Settings className="h-4 w-4" />
                               </Button>
                             )}
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>确认删除</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    您确定要删除这个需求吗？此操作无法撤销。
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>取消</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(req.id!)}>
-                                    删除
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            {hasPermission && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>确认删除</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      您确定要删除这个需求吗？此操作无法撤销。
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>取消</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(req.id!)}>
+                                      删除
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

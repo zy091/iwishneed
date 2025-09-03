@@ -37,7 +37,7 @@ export interface AddCommentParams {
 /**
  * 从主访问令牌中解析用户信息
  */
-function getUserInfoFromToken(): { id: string; email: string } | null {
+export function getUserInfoFromToken(): { id: string; email: string } | null {
   try {
     const token = getMainAccessToken()
     if (!token || typeof token !== 'string') return null
