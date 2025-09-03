@@ -345,7 +345,7 @@ export async function presignUploads(
     
     results.push({
       path: filePath,
-      token: data.signedUrl
+      token: data.token
     })
   }
   
