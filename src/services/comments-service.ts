@@ -141,11 +141,12 @@ export async function getUploadPresignedUrls(
   if (!token) {
     throw new Error('No access token available')
   }
+  const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
   const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Main-Access-Token': token,
+      'X-Main-Access-Token': cleanToken,
     },
     body: JSON.stringify({ requirement_id, files }),
   })
@@ -296,10 +297,11 @@ export async function getAttachmentSignedUrl(path: string): Promise<string> {
   if (!token) {
     throw new Error('No access token available')
   }
+  const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
   const res = await fetch(`${EDGE_BASE}/functions/v1/comments-file-url?path=${encodeURIComponent(path)}`, {
     method: 'GET',
     headers: {
-      'X-Main-Access-Token': token,
+      'X-Main-Access-Token': cleanToken,
     },
   })
   if (!res.ok) {

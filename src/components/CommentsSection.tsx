@@ -19,7 +19,7 @@ import {
   addComment,
   deleteComment,
   canAddComment,
-  presignUploads,
+  getUploadPresignedUrls,
   uploadToSignedUrls,
   getAttachmentSignedUrl,
 } from '@/services/comments-service'
@@ -133,7 +133,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
   const doUploadIfNeeded = async (): Promise<Array<{ path: string; name: string; type: string; size: number }>> => {
     if (attachments.length === 0) return []
     const filesMeta = attachments.map(f => ({ name: f.name, type: f.type, size: f.size }))
-    const presigned = await presignUploads(requirementId, filesMeta)
+    const presigned = await getUploadPresignedUrls(requirementId, filesMeta)
     // uploadToSignedUrls 需要 [{ path, token }] 与 files 顺序一一对应
     const items = presigned.map(u => ({ path: u.path, token: u.token }))
     const uploaded = await uploadToSignedUrls(BUCKET, items, attachments)
