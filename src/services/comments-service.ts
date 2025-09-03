@@ -321,6 +321,7 @@ export function canAddComment(): boolean {
  * 生成文件上传预签名URL（使用直接Supabase存储操作）
  */
 export async function presignUploads(
+  requirement_id: string,
   files: Array<{ name: string; type: string; size: number }>
 ): Promise<Array<{ path: string; token: string }>> {
   const results: Array<{ path: string; token: string }> = []
@@ -331,11 +332,11 @@ export async function presignUploads(
     const randomId = Math.random().toString(36).substring(2, 15)
     const fileName = file.name || 'unknown'
     const fileExtension = fileName.includes('.') ? fileName.split('.').pop() || '' : ''
-    const filePath = `comments/${timestamp}_${randomId}${fileExtension ? '.' + fileExtension : ''}`
+    const filePath = `${requirement_id}/${timestamp}_${randomId}${fileExtension ? '.' + fileExtension : ''}`
     
     // 使用Supabase存储创建预签名URL
     const { data, error } = await supabase.storage
-      .from('attachments')
+      .from('comments-attachments')
       .createSignedUploadUrl(filePath)
     
     if (error) {
