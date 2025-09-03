@@ -76,11 +76,22 @@ export default function RequirementList() {
   // 权限检查函数
   const canEditOrDelete = (requirement: Requirement) => {
     if (!user) return false
-    // 管理员可以操作所有需求
-    const isAdmin = (user as any)?.role_id === 0 || user?.role === 'admin'
+    
+    // 检查管理员权限 - 多种方式确保准确性
+    const isAdmin = (user as any)?.role_id === 0 || 
+                   user?.role === 'admin' || 
+                   user?.role === 'manager' ||
+                   (user as any)?.rolename === '超级管理员' ||
+                   (user as any)?.rolename === '管理员'
+    
     if (isAdmin) return true
-    // 需求提交者可以操作自己的需求
-    return requirement.submitter?.id === user.id || requirement.submitter?.email === user.email
+    
+    // 检查是否为需求提交者 - 多重匹配确保准确性
+    if (!requirement.submitter) return false
+    
+    return requirement.submitter.id === user.id || 
+           requirement.submitter.email === user.email ||
+           requirement.submitter.id?.toString() === user.id?.toString()
   }
 
   // 处理行点击事件
@@ -488,7 +499,13 @@ export default function RequirementList() {
                         onClick={(e) => handleRowClick(req.id!, e)}
                       >
                         <TableCell className="font-medium">
-                          <div className="hover:underline">
+                          <div 
+                            className="hover:underline cursor-pointer" 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/requirements/${req.id}`)
+                            }}
+                          >
                             {req.title}
                           </div>
                         </TableCell>

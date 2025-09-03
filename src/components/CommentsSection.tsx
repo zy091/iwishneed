@@ -216,13 +216,26 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }).format(date)
   }
 
-  const isAdmin = (user as any)?.role_id === 0 || user?.role === 'admin'
-  const isOwnComment = (comment: Comment) => {
-    // 直接比较用户邮箱和ID
-    return user?.email === comment.user_email || user?.id === comment.user_id
+  const isAdmin = () => {
+    if (!user) return false
+    // 检查多种管理员标识
+    return (user as any)?.role_id === 0 || 
+           user?.role === 'admin' || 
+           user?.role === 'manager' ||
+           (user as any)?.rolename === '超级管理员' ||
+           (user as any)?.rolename === '管理员'
   }
+  
+  const isOwnComment = (comment: Comment) => {
+    if (!user) return false
+    // 多重匹配确保权限准确
+    return user.email === comment.user_email || 
+           user.id === comment.user_id ||
+           user.id.toString() === comment.user_id?.toString()
+  }
+  
   const canDeleteComment = (comment: Comment) => {
-    return isAdmin || isOwnComment(comment)
+    return isAdmin() || isOwnComment(comment)
   }
 
   // 将平铺评论分成顶级与回复（一级）
