@@ -18,14 +18,14 @@ import {
   getComments,
   addComment,
   deleteComment,
-  canAddComment,
   presignUploads,
   uploadToSignedUrls,
   getAttachmentSignedUrl,
-  getUserInfoFromToken,
 } from '@/services/comments-service'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/components/ui/use-toast'
+import { supabase } from '@/lib/supabaseClient'
+import { usePermissions } from '@/hooks/use-permissions'
 
 interface CommentsSectionProps {
   requirementId: string
@@ -69,8 +69,8 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const canComment = canAddComment()
   const { user } = useAuth()
+  const canComment = !!user
   const { toast } = useToast()
 
   // 回复状态（一级）
@@ -94,6 +94,55 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
       }
     }
     loadComments()
+  }, [requirementId])
+
+  // Realtime：订阅评论变更，保持与其他客户端同步
+  useEffect(() => {
+    if (!requirementId) return
+    const channel = supabase
+      .channel(`comments-${requirementId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'comments', filter: `requirement_id=eq.${requirementId}` },
+        (payload) => {
+          try {
+            if (payload.eventType === 'INSERT') {
+              const row: any = payload.new
+              setComments(prev =>
+                prev.some(c => c.id === row.id)
+                  ? prev
+                  : [{
+                      id: row.id,
+                      requirement_id: row.requirement_id,
+                      content: row.content,
+                      parent_id: row.parent_id,
+                      user_id: row.user_id,
+                      user_external_id: row.user_external_id,
+                      user_email: row.user_email,
+                      user_email_masked: row.user_email || '匿名用户',
+                      created_at: row.created_at,
+                      updated_at: row.updated_at,
+                      attachments_count: row.attachments_count,
+                      attachments: []
+                    } as any, ...prev]
+              )
+            } else if (payload.eventType === 'UPDATE') {
+              const row: any = payload.new
+              setComments(prev => prev.map(c => c.id === row.id ? { ...c, content: row.content, updated_at: row.updated_at } : c))
+            } else if (payload.eventType === 'DELETE') {
+              const row: any = payload.old
+              setComments(prev => prev.filter(c => c.id !== row.id && c.parent_id !== row.id))
+            }
+          } catch (e) {
+            console.error('Realtime 评论处理失败', e)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [requirementId])
 
   const handleFilesPick = (files: FileList | null) => {
@@ -216,26 +265,16 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }).format(date)
   }
 
-  const isAdmin = () => {
-    if (!user) return false
-    // 检查多种管理员标识
-    return (user as any)?.role_id === 0 || 
-           user?.role === 'admin' || 
-           user?.role === 'manager' ||
-           (user as any)?.rolename === '超级管理员' ||
-           (user as any)?.rolename === '管理员'
-  }
+  const { isAdmin } = usePermissions()
   
   const isOwnComment = (comment: Comment) => {
     if (!user) return false
-    // 多重匹配确保权限准确
-    return user.email === comment.user_email || 
-           user.id === comment.user_id ||
-           user.id.toString() === comment.user_id?.toString()
+    const owner = (comment as any).user_id || comment.user_external_id
+    return user.id?.toString() === (owner?.toString?.() || owner)
   }
   
   const canDeleteComment = (comment: Comment) => {
-    return isAdmin() || isOwnComment(comment)
+    return isAdmin || isOwnComment(comment)
   }
 
   // 将平铺评论分成顶级与回复（一级）
@@ -284,7 +323,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }, [attachment.file_path, onError])
 
     if (loading) {
-      return (
+return (
         <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -450,7 +489,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
         </div>
       ) : (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-md">
-          您需要从主系统登录才能添加评论
+          请登录后才能添加评论
         </div>
       )}
 

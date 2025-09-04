@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import type { User as SupaUser } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
-import { ENV } from '@/config/env'
+
 
 interface User {
   id: string
@@ -45,7 +45,7 @@ function mapSupabaseUser(su: SupaUser): User {
     id: su.id,
     name: fullName || '用户',
     email: su.email ?? '',
-    role: 'manager',
+    role: 'submitter',
     avatar
   }
 }
@@ -58,21 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 初始化会话
     const init = async () => {
       // SSO 模式优先恢复外部用户的本地状态，避免被 Supabase 空会话覆盖
-      if (ENV.AUTH_MODE === 'sso') {
-        const storedUser = localStorage.getItem('user')
-        if (storedUser) {
-          try {
-            const parsed = JSON.parse(storedUser)
-            if (!parsed.rolename && typeof parsed.role_id === 'number') {
-              parsed.rolename = ROLE_NAME_MAP[parsed.role_id] || parsed.rolename
-            }
-            setUser(parsed)
-            setIsAuthenticated(true)
-            return
-          } catch {
-            // ignore parse error and continue
-          }
-        }
+      if (false) {
+        // SSO disabled
       }
 
       // 非 SSO 或未有本地外部用户时，再检查 Supabase 会话
@@ -82,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(u)
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
-      } else if (ENV.AUTH_MODE !== 'sso') {
+      } else {
         // 兼容已有本地存储（首次接入时不丢状态）
         const storedUser = localStorage.getItem('user')
         if (storedUser) {
@@ -95,10 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 监听认证状态变化
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (ENV.AUTH_MODE === 'sso') {
-        // 在 SSO 模式下，完全忽略 Supabase 的会话事件，保留主项目传入的用户信息（rolename/role_id）
-        return
-      }
+
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
         setUser(u)

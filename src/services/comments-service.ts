@@ -1,13 +1,14 @@
 import { supabase } from '@/lib/supabaseClient'
-import { getMainAccessToken } from '@/lib/mainAccessToken'
 
-const EDGE_BASE = import.meta.env.VITE_SUPABASE_URL
+
+
 
 export interface Comment {
   id: string
   requirement_id: string
   content: string
   parent_id?: string
+  user_id?: string
   user_external_id: string
   user_email: string
   user_email_masked: string
@@ -38,37 +39,14 @@ export interface AddCommentParams {
  * 从主访问令牌中解析用户信息
  */
 export function getUserInfoFromToken(): { id: string; email: string } | null {
+  // 独立模式：直接从本地 user（use-auth 持久化）读取
   try {
-    const token = getMainAccessToken()
-    if (!token || typeof token !== 'string') return null
-    
-    // 检查token是否以Bearer开头，如果是则去掉
-    const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
-    
-    // JWT token 格式: header.payload.signature
-    const parts = cleanToken.split('.')
-    if (parts.length !== 3) return null
-    
-    // 解码 payload (base64url)
-    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    // 补齐base64填充
-    while (base64.length % 4) {
-      base64 += '='
-    }
-    
-    const payload = JSON.parse(atob(base64))
-    
-    // 确保payload包含必要的字段
-    if (!payload || (!payload.sub && !payload.user_id && !payload.id) || !payload.email) {
-      return null
-    }
-    
-    return {
-      id: payload.sub || payload.user_id || payload.id,
-      email: payload.email
-    }
-  } catch (error) {
-    console.error('解析用户令牌失败:', error)
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    if (!u?.id || !u?.email) return null
+    return { id: String(u.id), email: String(u.email) }
+  } catch {
     return null
   }
 }
@@ -133,30 +111,7 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
 /**
  * 生成上传预签名URL
  */
-export async function getUploadPresignedUrls(
-  requirement_id: string,
-  files: Array<{ name: string; type: string; size: number }>
-): Promise<Array<{ path: string; token: string }>> {
-  const token = getMainAccessToken()
-  if (!token) {
-    throw new Error('No access token available')
-  }
-  const cleanToken = token.startsWith('Bearer ') ? token.slice(7) : token
-  const res = await fetch(`${EDGE_BASE}/functions/v1/comments-upload-presign`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Main-Access-Token': cleanToken,
-    },
-    body: JSON.stringify({ requirement_id, files }),
-  })
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({}))
-    throw new Error(j.error || '生成上传令牌失败')
-  }
-  const j = await res.json()
-  return j.uploads || []
-}
+
 
 /**
  * 使用 signedUrl/token 上传文件到存储
@@ -197,7 +152,8 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
       requirement_id: params.requirement_id,
       content: params.content,
       parent_id: params.parent_id,
-      user_external_id: userInfo.id,
+      user_id: userInfo.id,              // 关键：为 RLS/本人判定写入 user_id
+      user_external_id: userInfo.id,     // 兼容旧字段
       user_email: userInfo.email,
       attachments_count: params.attachments?.length || 0
     })
@@ -241,7 +197,7 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
     created_at: comment.created_at,
     updated_at: comment.updated_at,
     attachments_count: comment.attachments_count,
-    attachments: params.attachments || []
+    attachments: [] as any
   }
 }
 
@@ -274,12 +230,12 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     console.error('删除子评论失败:', childError)
   }
 
-  // 删除主评论
+  // 删除主评论：优先使用 user_id（与 RLS 对齐），兼容旧数据的 user_external_id
   const { error } = await supabase
     .from('comments')
     .delete()
     .eq('id', commentId)
-    .eq('user_external_id', userInfo.id) // 只能删除自己的评论
+    .or(`user_id.eq.${userInfo.id},user_external_id.eq.${userInfo.id}`)
 
   if (error) {
     console.error('删除评论失败:', error)

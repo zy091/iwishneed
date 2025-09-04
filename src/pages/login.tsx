@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/use-auth'
-import { ENV } from '../config/env'
+
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -17,12 +17,7 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  // SSO 模式下，登录页直接引导至桥接页
-  useEffect(() => {
-    if (ENV.AUTH_MODE === 'sso') {
-      navigate('/auth/bridge', { replace: true })
-    }
-  }, [navigate])
+  // 独立模式：无 SSO 跳转
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

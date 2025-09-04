@@ -15,6 +15,7 @@ import {
   BarChart3,
 } from 'lucide-react'
 import { useAuth } from './hooks/use-auth'
+import { usePermissions } from './hooks/use-permissions'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,32 +26,24 @@ import {
 } from './components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useMobile } from './hooks/use-mobile'
-import { ENV } from './config/env'
+
 
 export default function Layout() {
   const { user, logout } = useAuth()
+  const { isAdmin } = usePermissions()
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useMobile()
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
   const [activeView, setActiveView] = useState<'overview' | 'user'>('overview')
-  const isSSO = ENV.AUTH_MODE === 'sso'
+  const isSSO = false
 
   const handleLogout = () => {
     logout()
-    if (isSSO) {
-      handleBackToMain()
-    } else {
-      navigate('/login')
-    }
+    navigate('/login')
   }
 
-  const handleBackToMain = () => {
-    const stored = sessionStorage.getItem('MAIN_APP_RETURN_URL')
-    const fallback = (ENV.MAIN_APP_ORIGINS[0] || '').replace(/\/$/, '') + '/'
-    const target = stored || fallback || '/'
-    window.location.assign(target)
-  }
+
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
@@ -120,6 +113,25 @@ export default function Layout() {
             <Folder className="mr-2 h-5 w-5" />
             创意部需求列表
           </NavLink>
+
+          {/* 系统（仅管理员可见） */}
+          {isAdmin && (
+            <>
+              <div className="px-3 pt-4 pb-1 text-xs text-gray-400 uppercase tracking-wider">系统</div>
+              <NavLink
+                to="/admin/users"
+                className={({ isActive }) => cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+                  isActive
+                    ? "bg-blue-100 text-blue-900"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <Users className="mr-2 h-5 w-5" />
+                用户管理
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="p-4 border-t border-gray-200">
@@ -170,11 +182,7 @@ export default function Layout() {
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
             </Button>
-            {isSSO && (
-              <Button className="hidden lg:inline-flex" variant="outline" onClick={handleBackToMain}>
-                返回主系统
-              </Button>
-            )}
+
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -187,12 +195,7 @@ export default function Layout() {
                 <DropdownMenuSeparator />
                 {!isSSO && <DropdownMenuItem>个人资料</DropdownMenuItem>}
                 {!isSSO && <DropdownMenuItem>系统设置</DropdownMenuItem>}
-                {isSSO && (
-                  <>
-                    <DropdownMenuItem onClick={handleBackToMain}>返回主系统</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
+
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   退出登录

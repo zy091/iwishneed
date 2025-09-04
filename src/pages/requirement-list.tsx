@@ -39,6 +39,7 @@ import {
 import { supabaseRequirementService, Requirement, TechRequirement } from '../services/supabase-requirement-service'
 import { creativeRequirementService, CreativeRequirement } from '@/services/creative-requirement-service'
 import { useAuth } from '../hooks/use-auth'
+import { usePermissions } from '@/hooks/use-permissions'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -62,6 +63,7 @@ export default function RequirementList() {
   })
   const [techAssignees, setTechAssignees] = useState<string[]>([])
   const { user } = useAuth()
+  const { isAdmin: isAdminUser } = usePermissions()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -76,22 +78,22 @@ export default function RequirementList() {
   // 权限检查函数
   const canEditOrDelete = (requirement: Requirement) => {
     if (!user) return false
-    
-    // 检查管理员权限 - 多种方式确保准确性
-    const isAdmin = (user as any)?.role_id === 0 || 
-                   user?.role === 'admin' || 
-                   user?.role === 'manager' ||
-                   (user as any)?.rolename === '超级管理员' ||
-                   (user as any)?.rolename === '管理员'
-    
+
+    // 仅管理员
+    const isAdmin = isAdminUser
     if (isAdmin) return true
-    
-    // 检查是否为需求提交者 - 多重匹配确保准确性
-    if (!requirement.submitter) return false
-    
-    return requirement.submitter.id === user.id || 
-           requirement.submitter.email === user.email ||
-           requirement.submitter.id?.toString() === user.id?.toString()
+
+    // 优先使用 submitter_id 作为所有权校验，兼容历史数据回退到 submitter 对象
+    const uid = user.id
+    const subId = (requirement as any)?.submitter_id as string | undefined
+    if (uid && subId) {
+      return subId === uid
+    }
+
+    const submitter = requirement.submitter
+    if (!submitter) return false
+    return submitter.id === uid ||
+           submitter.id?.toString() === uid
   }
 
   // 处理行点击事件
@@ -288,9 +290,11 @@ export default function RequirementList() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{getPageTitle()}</h1>
         <div className="flex gap-2 flex-wrap justify-end">
-          <Button variant="outline" onClick={() => navigate(getImportPath())}>
-            <Upload className="mr-2 h-4 w-4" /> 批量导入
-          </Button>
+          {isAdminUser && (
+            <Button variant="outline" onClick={() => navigate(getImportPath())}>
+              <Upload className="mr-2 h-4 w-4" /> 批量导入
+            </Button>
+          )}
           <Button onClick={() => navigate(getCreatePath())}>
             <PlusCircle className="mr-2 h-4 w-4" /> 新建需求
           </Button>
@@ -576,7 +580,7 @@ export default function RequirementList() {
                                 <Edit className="h-4 w-4" />
                               </Button>
                             )}
-                            {currentDepartment === '技术部' && (
+                            {currentDepartment === '技术部' && hasPermission && (
                               <Button 
                                 variant="ghost" 
                                 size="icon" 

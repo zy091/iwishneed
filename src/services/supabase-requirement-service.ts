@@ -13,6 +13,8 @@ export interface TechRequirement {
     name: string
     avatar?: string
   }
+  // 冗余：提交者 id，便于 RLS 与索引过滤
+  submitter_id?: string
   submit_time?: string
   
   // 技术部 - 提交人填写字段
@@ -51,6 +53,8 @@ export interface CreativeRequirement {
     name: string
     avatar?: string
   }
+  // 冗余：提交者 id，便于 RLS 与索引过滤
+  submitter_id?: string
   creative_type?: string
   creative_target_audience?: string
   creative_brand_guidelines?: string
@@ -160,11 +164,36 @@ class SupabaseRequirementService {
     return data
   }
 
-  // 创建需求
+  // 创建需求：默认补全提交者为当前登录用户，便于后续基于本人权限的判断
   async createRequirement(requirement: Partial<Requirement>): Promise<Requirement> {
+    let payload: any = { ...requirement }
+    try {
+      const { data: auth } = await supabase.auth.getUser()
+      const uid = auth?.user?.id
+      const name =
+        (auth?.user?.user_metadata?.full_name as string | undefined) ||
+        (auth?.user?.user_metadata?.name as string | undefined) ||
+        (auth?.user?.email ? auth?.user?.email.split('@')[0] : '用户')
+
+      if (uid) {
+        if (!payload.submitter || !payload.submitter.id) {
+          payload.submitter = {
+            id: uid,
+            name: payload.submitter?.name || name || '用户',
+            avatar:
+              (auth?.user?.user_metadata?.avatar_url as string | undefined) ||
+              (auth?.user?.user_metadata?.picture as string | undefined),
+          }
+        }
+        if (!payload.submitter_id) {
+          payload.submitter_id = uid
+        }
+      }
+    } catch { /* 忽略获取用户失败，按传入值插入 */ }
+
     const { data, error } = await supabase
       .from('requirements')
-      .insert(requirement)
+      .insert(payload)
       .select()
       .single()
 
@@ -172,15 +201,19 @@ class SupabaseRequirementService {
     return data
   }
 
-  // 更新需求
+  // 更新需求（仅管理员或提交者本人）
   async updateRequirement(id: string, updates: Partial<Requirement>): Promise<Requirement> {
-    const { data, error } = await supabase
-      .from('requirements')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
+    const { data: auth } = await supabase.auth.getUser()
+    const currentRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('user') : null
+    const current = currentRaw ? JSON.parse(currentRaw) : null
+    const isAdmin = current?.role === 'admin' || current?.role_id === 0
 
+    let query = supabase.from('requirements').update(updates).eq('id', id)
+    if (!isAdmin && auth?.user?.id) {
+      query = query.or(`submitter_id.eq.${auth.user.id},submitter->>id.eq.${auth.user.id}`)
+    }
+
+    const { data, error } = await query.select().single()
     if (error) throw error
     return data
   }
@@ -203,32 +236,67 @@ class SupabaseRequirementService {
       updates.tech_end_time = new Date().toISOString()
     }
 
-    const { data, error } = await supabase
-      .from('requirements')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
+    const { data: auth } = await supabase.auth.getUser()
+    const currentRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('user') : null
+    const current = currentRaw ? JSON.parse(currentRaw) : null
+    const isAdmin = current?.role === 'admin' || current?.role_id === 0
+
+    let query = supabase.from('requirements').update(updates).eq('id', id)
+    if (!isAdmin && auth?.user?.id) {
+      query = query.or(`submitter_id.eq.${auth.user.id},submitter->>id.eq.${auth.user.id}`)
+    }
+
+    const { data, error } = await query.select().single()
 
     if (error) throw error
     return data
   }
 
-  // 删除需求
+  // 删除需求（仅管理员或提交者本人）
   async deleteRequirement(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('requirements')
-      .delete()
-      .eq('id', id)
+    const { data: auth } = await supabase.auth.getUser()
+    const currentRaw = typeof localStorage !== 'undefined' ? localStorage.getItem('user') : null
+    const current = currentRaw ? JSON.parse(currentRaw) : null
+    const isAdmin = current?.role === 'admin' || current?.role_id === 0
 
+    let query = supabase.from('requirements').delete().eq('id', id)
+    if (!isAdmin && auth?.user?.id) {
+      query = query.or(`submitter_id.eq.${auth.user.id},submitter->>id.eq.${auth.user.id}`)
+    }
+
+    const { error } = await query
     if (error) throw error
   }
 
-  // 批量导入需求
+  // 批量导入需求：为每条记录补全 submitter 与 submitter_id（RLS 要求 submitter_id=auth.uid()）
   async importRequirements(requirements: Partial<Requirement>[]): Promise<Requirement[]> {
+    const { data: auth } = await supabase.auth.getUser()
+    const uid = auth?.user?.id
+    if (!uid) throw new Error('未登录或会话失效，无法导入')
+
+    const name =
+      (auth?.user?.user_metadata?.full_name as string | undefined) ||
+      (auth?.user?.user_metadata?.name as string | undefined) ||
+      (auth?.user?.email ? auth?.user?.email.split('@')[0] : '用户')
+    const avatar =
+      (auth?.user?.user_metadata?.avatar_url as string | undefined) ||
+      (auth?.user?.user_metadata?.picture as string | undefined)
+
+    const payloads = (requirements || []).map((r) => {
+      const p: any = { ...r }
+      // 始终以当前登录用户作为提交者，满足 RLS with check
+      p.submitter_id = uid
+      if (!p.submitter || !p.submitter.id) {
+        p.submitter = { id: uid, name: p.submitter?.name || name || '用户', avatar }
+        } else if (p.submitter && !p.submitter.name) {
+        p.submitter.name = name || '用户'
+      }
+      return p
+    })
+
     const { data, error } = await supabase
       .from('requirements')
-      .insert(requirements)
+      .insert(payloads)
       .select()
 
     if (error) throw error

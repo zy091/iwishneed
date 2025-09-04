@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useAuth } from './use-auth'
+import { supabase } from '../lib/supabaseClient'
 
 type Permission = 
   | 'view_requirements'
@@ -49,6 +51,14 @@ const getRolePermissions = (roleId: number): Permission[] => {
 
 export function usePermissions() {
   const { user } = useAuth()
+  const [isAdminServer, setIsAdminServer] = useState(false)
+  useEffect(() => {
+    let mounted = true
+    supabase.rpc('is_admin')
+      .then(({ data }) => { if (mounted) setIsAdminServer(!!data) })
+      .catch(() => {})
+    return () => { mounted = false }
+  }, [user?.id])
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false
@@ -70,16 +80,23 @@ export function usePermissions() {
   const canCreateRequirements = () => hasPermission('create_requirements')
   const canEditRequirements = () => hasPermission('edit_requirements')
   const canDeleteRequirements = () => hasPermission('delete_requirements')
-  const canManageUsers = () => hasPermission('manage_users')
+  const canManageUsers = () => {
+    // 统一以后端 is_admin() 为准
+    return isAdminServer || user?.role === 'admin' || (user as any)?.role_id === 0
+  }
   const canViewAnalytics = () => hasPermission('view_analytics')
   const canManageSystem = () => hasPermission('manage_system')
   const canAddComments = () => hasPermission('add_comments')
   const canDeleteOwnComments = () => hasPermission('delete_own_comments')
-  const canDeleteAnyComments = () => hasPermission('delete_any_comments')
+  const canDeleteAnyComments = () => {
+    // 统一以后端 is_admin() 为准
+    return isAdminServer || user?.role === 'admin' || (user as any)?.role_id === 0
+  }
   const canViewRatings = () => hasPermission('view_ratings')
 
   const roleId = (user as any)?.role_id || 999
   const roleName = (user as any)?.rolename || user?.role || '未知角色'
+  const isAdminFinal = isAdminServer || user?.role === 'admin' || roleId === 0
 
   return {
     hasPermission,
@@ -99,8 +116,8 @@ export function usePermissions() {
     userRole: user?.role,
     roleName,
     roleId,
-    isSuperAdmin: roleId === 0,
-    isAdmin: user?.role === 'admin',
+    isSuperAdmin: roleId === 0 || isAdminServer,
+    isAdmin: isAdminFinal,
     isManager: user?.role === 'manager',
     isDeveloper: user?.role === 'developer',
     isSubmitter: user?.role === 'submitter'
