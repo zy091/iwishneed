@@ -55,14 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
   useEffect(() => {
-    // 初始化会话
+    // 初始化会话：严格以 Supabase 会话为准
     const init = async () => {
-      // SSO 模式优先恢复外部用户的本地状态，避免被 Supabase 空会话覆盖
-      if (false) {
-        // SSO disabled
-      }
-
-      // 非 SSO 或未有本地外部用户时，再检查 Supabase 会话
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
@@ -70,19 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
       } else {
-        // 兼容已有本地存储（首次接入时不丢状态）
-        const storedUser = localStorage.getItem('user')
-        if (storedUser) {
-          setUser(JSON.parse(storedUser))
-          setIsAuthenticated(true)
-        }
+        // 无会话时清理本地缓存，强制走登录
+        setUser(null)
+        setIsAuthenticated(false)
+        localStorage.removeItem('user')
       }
     }
     init()
 
     // 监听认证状态变化
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
         setUser(u)

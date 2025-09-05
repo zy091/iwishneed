@@ -16,17 +16,10 @@ import AdminUsersPage from './pages/admin/users'
 function App() {
   const { isAuthenticated } = useAuth()
 
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    )
-  }
-
+  // 顶层开放 /login，避免任何情况下出现 "No routes matched /login"
   return (
     <Routes>
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<Layout />}>
         {/* 仪表盘 */}
         <Route index element={<Dashboard />} />
@@ -58,6 +51,9 @@ function App() {
         <Route path="analytics" element={<Navigate to="/" replace />} />
         <Route path="database-management" element={<Navigate to="/" replace />} />
       </Route>
+
+      {/* 未匹配路径：根据是否登录跳转 */}
+      <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
     </Routes>
   )
 }

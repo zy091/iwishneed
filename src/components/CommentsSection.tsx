@@ -145,6 +145,48 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }
   }, [requirementId])
 
+  // Realtime: 附件增量同步（他人新增附件时）
+  useEffect(() => {
+    if (!requirementId) return
+    const channel = supabase
+      .channel(`comment-attachments-${requirementId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comment_attachments' },
+        (payload) => {
+          try {
+            const row: any = payload.new
+            setComments(prev => {
+              const idx = prev.findIndex(c => c.id === row.comment_id)
+              if (idx === -1) return prev
+              const next = [...prev]
+              const att = {
+                id: row.id,
+                comment_id: row.comment_id,
+                file_path: row.file_path,
+                file_name: row.file_name,
+                mime_type: row.mime_type,
+                size: row.size,
+                created_at: row.created_at
+              }
+              const target = next[idx]
+              const list = Array.isArray(target.attachments) ? target.attachments.slice() : []
+              if (!list.some(a => (a as any).id === att.id || (a as any).file_path === att.file_path)) {
+                list.push(att as any)
+                next[idx] = { ...target, attachments: list }
+              }
+              return next
+            })
+          } catch (e) {
+            console.error('Realtime 附件处理失败', e)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [requirementId])
+
   const handleFilesPick = (files: FileList | null) => {
     if (!files) return
     const next: File[] = [...attachments]

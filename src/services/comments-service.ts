@@ -1,8 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
 
-
-
-
 export interface Comment {
   id: string
   requirement_id: string
@@ -36,16 +33,13 @@ export interface AddCommentParams {
 }
 
 /**
- * 从主访问令牌中解析用户信息
+ * 从会话中获取用户（统一信任 Supabase 会话）
  */
-export function getUserInfoFromToken(): { id: string; email: string } | null {
-  // 独立模式：直接从本地 user（use-auth 持久化）读取
+export async function getUserInfoFromToken(): Promise<{ id: string; email: string } | null> {
   try {
-    const raw = localStorage.getItem('user')
-    if (!raw) return null
-    const u = JSON.parse(raw)
-    if (!u?.id || !u?.email) return null
-    return { id: String(u.id), email: String(u.email) }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !user.id || !user.email) return null
+    return { id: String(user.id), email: String(user.email) }
   } catch {
     return null
   }
@@ -56,12 +50,8 @@ export function getUserInfoFromToken(): { id: string; email: string } | null {
  */
 function maskEmail(email: string): string {
   if (!email || !email.includes('@')) return '匿名用户'
-  
   const [local, domain] = email.split('@')
-  if (local.length <= 2) {
-    return `${local[0]}***@${domain}`
-  }
-  
+  if (local.length <= 2) return `${local[0]}***@${domain}`
   const masked = local[0] + '*'.repeat(Math.min(local.length - 2, 3)) + local[local.length - 1]
   return `${masked}@${domain}`
 }
@@ -70,7 +60,6 @@ function maskEmail(email: string): string {
  * 获取需求的评论列表（包含附件）
  */
 export async function getComments(requirement_id: string): Promise<Comment[]> {
-  // 获取评论匿名视图
   const { data, error } = await supabase
     .from('comments_public')
     .select('*')
@@ -84,7 +73,6 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
 
   const comments: Comment[] = (data as any) || []
 
-  // 批量拉附件
   const needIds = comments.filter((c) => (c.attachments_count || 0) > 0).map((c) => c.id)
   if (needIds.length) {
     const { data: attaches, error: aerr } = await supabase
@@ -109,11 +97,6 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
 }
 
 /**
- * 生成上传预签名URL
- */
-
-
-/**
  * 使用 signedUrl/token 上传文件到存储
  */
 export async function uploadToSignedUrls(
@@ -125,7 +108,7 @@ export async function uploadToSignedUrls(
   for (let i = 0; i < items.length; i++) {
     const it = items[i]
     const f = files[i]
-    const { data, error } = await supabase.storage.from(bucket).uploadToSignedUrl(it.path, it.token, f)
+    const { error } = await supabase.storage.from(bucket).uploadToSignedUrl(it.path, it.token, f)
     if (error) {
       console.error('uploadToSignedUrl error:', error)
       throw error
@@ -139,21 +122,19 @@ export async function uploadToSignedUrls(
  * 添加评论（直接数据库操作）
  */
 export async function addComment(params: AddCommentParams): Promise<Comment> {
-  // 获取用户信息
-  const userInfo = getUserInfoFromToken()
+  const userInfo = await getUserInfoFromToken()
   if (!userInfo) {
     throw new Error('用户未登录或令牌无效')
   }
 
-  // 插入评论到数据库
   const { data: comment, error } = await supabase
     .from('comments')
     .insert({
       requirement_id: params.requirement_id,
       content: params.content,
       parent_id: params.parent_id,
-      user_id: userInfo.id,              // 关键：为 RLS/本人判定写入 user_id
-      user_external_id: userInfo.id,     // 兼容旧字段
+      user_id: userInfo.id,
+      user_external_id: userInfo.id,
       user_email: userInfo.email,
       attachments_count: params.attachments?.length || 0
     })
@@ -165,7 +146,6 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
     throw new Error('添加评论失败')
   }
 
-  // 如果有附件，插入附件记录
   if (params.attachments && params.attachments.length > 0) {
     const attachmentRecords = params.attachments.map(att => ({
       comment_id: comment.id,
@@ -181,11 +161,10 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
 
     if (attachError) {
       console.error('添加附件失败:', attachError)
-      // 不抛出错误，因为评论已经成功添加
+      // 不抛出，评论已成功
     }
   }
 
-  // 返回格式化的评论数据
   return {
     id: comment.id,
     requirement_id: comment.requirement_id,
@@ -205,106 +184,83 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
  * 删除评论（直接数据库操作）
  */
 export async function deleteComment(commentId: string): Promise<boolean> {
-  const userInfo = getUserInfoFromToken()
+  const userInfo = await getUserInfoFromToken()
   if (!userInfo) {
     throw new Error('用户未登录或令牌无效')
   }
 
-  // 先删除附件记录
   const { error: attachError } = await supabase
     .from('comment_attachments')
     .delete()
     .eq('comment_id', commentId)
+  if (attachError) console.error('删除附件记录失败:', attachError)
 
-  if (attachError) {
-    console.error('删除附件记录失败:', attachError)
-  }
-
-  // 删除子评论
   const { error: childError } = await supabase
     .from('comments')
     .delete()
     .eq('parent_id', commentId)
+  if (childError) console.error('删除子评论失败:', childError)
 
-  if (childError) {
-    console.error('删除子评论失败:', childError)
-  }
-
-  // 删除主评论：优先使用 user_id（与 RLS 对齐），兼容旧数据的 user_external_id
   const { error } = await supabase
     .from('comments')
     .delete()
     .eq('id', commentId)
     .or(`user_id.eq.${userInfo.id},user_external_id.eq.${userInfo.id}`)
-
   if (error) {
     console.error('删除评论失败:', error)
     throw new Error('删除评论失败')
   }
-
   return true
 }
 
 /**
- * 获取附件的签名URL（直接使用 Supabase Storage）
+ * 获取附件的签名URL
  */
 export async function getAttachmentSignedUrl(path: string): Promise<string> {
   const { data, error } = await supabase.storage
     .from('comments-attachments')
-    .createSignedUrl(path, 3600) // 1小时有效期
-  
+    .createSignedUrl(path, 3600)
   if (error) {
     console.error('获取签名URL失败:', error)
     throw new Error(`获取文件URL失败: ${error.message}`)
   }
-  
   if (!data?.signedUrl) {
     throw new Error('未能获取有效的签名URL')
   }
-  
   return data.signedUrl
 }
 
 /**
- * 检查用户是否可以添加评论
- */
-export function canAddComment(): boolean {
-  return !!getUserInfoFromToken()
-}
-
-/**
- * 生成文件上传预签名URL（使用直接Supabase存储操作）
+ * 生成文件上传预签名URL
  */
 export async function presignUploads(
   requirement_id: string,
   files: Array<{ name: string; type: string; size: number }>
 ): Promise<Array<{ path: string; token: string }>> {
   const results: Array<{ path: string; token: string }> = []
-  
   for (const file of files) {
-    // 生成唯一的文件路径
     const timestamp = Date.now()
     const randomId = Math.random().toString(36).substring(2, 15)
     const fileName = file.name || 'unknown'
-    const fileExtension = fileName.includes('.') ? fileName.split('.').pop() || '' : ''
-    const filePath = `${requirement_id}/${timestamp}_${randomId}${fileExtension ? '.' + fileExtension : ''}`
-    
-    // 使用Supabase存储创建预签名URL
+    const ext = fileName.includes('.') ? (fileName.split('.').pop() || '') : ''
+    const filePath = `${requirement_id}/${timestamp}_${randomId}${ext ? '.' + ext : ''}`
+
     const { data, error } = await supabase.storage
       .from('comments-attachments')
       .createSignedUploadUrl(filePath)
-    
     if (error) {
       console.error('创建预签名URL失败:', error)
       throw new Error(`创建预签名URL失败: ${error.message}`)
     }
-    
-    results.push({
-      path: filePath,
-      token: data.token
-    })
+    results.push({ path: filePath, token: data.token })
   }
-  
   return results
 }
 
+/**
+ * 检查用户是否可以添加评论（异步）
+ */
+export async function canAddComment(): Promise<boolean> {
+  const u = await getUserInfoFromToken()
+  return !!u
+}
