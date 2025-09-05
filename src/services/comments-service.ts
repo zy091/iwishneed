@@ -189,7 +189,9 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     throw new Error('用户未登录或令牌无效')
   }
 
-  // 先检查评论是否存在且用户有权限删除
+  console.log('🗑️ 删除评论:', { commentId, userId: userInfo.id })
+
+  // 先检查评论是否存在
   const { data: comment, error: fetchError } = await supabase
     .from('comments')
     .select('id, user_id, user_external_id')
@@ -201,9 +203,23 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     throw new Error('评论不存在或已被删除')
   }
 
-  // 检查权限：只能删除自己的评论
-  if (comment.user_id !== userInfo.id && comment.user_external_id !== userInfo.id) {
-    throw new Error('您只能删除自己的评论')
+  console.log('🗑️ 评论信息:', comment)
+
+  // 检查用户是否为管理员
+  const { data: isAdminResult, error: adminError } = await supabase.rpc('is_admin')
+  const isAdmin = !adminError && isAdminResult === true
+  
+  console.log('🗑️ 权限检查:', { 
+    isAdmin, 
+    isOwner: comment.user_id === userInfo.id || comment.user_external_id === userInfo.id,
+    adminError 
+  })
+
+  // 检查权限：管理员可以删除任何评论，普通用户只能删除自己的评论
+  const canDelete = isAdmin || comment.user_id === userInfo.id || comment.user_external_id === userInfo.id
+  
+  if (!canDelete) {
+    throw new Error('您没有权限删除此评论')
   }
 
   // 删除附件记录
@@ -220,18 +236,18 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     .eq('parent_id', commentId)
   if (childError) console.error('删除子评论失败:', childError)
 
-  // 删除主评论
+  // 删除主评论 - 不再限制只能删除自己的评论，因为已经在上面做了权限检查
   const { error } = await supabase
     .from('comments')
     .delete()
     .eq('id', commentId)
-    .eq('user_id', userInfo.id)
   
   if (error) {
     console.error('删除评论失败:', error)
     throw new Error('删除评论失败: ' + error.message)
   }
   
+  console.log('🗑️ 评论删除成功')
   return true
 }
 

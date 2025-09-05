@@ -104,31 +104,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // 初始化会话：严格以 Supabase 会话为准，不使用 localStorage
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const u = mapSupabaseUser(session.user)
-        setUser(u)
-        setIsAuthenticated(true)
-        // 异步更新 profile 信息
-        updateUserProfile(session.user.id, setUser, u)
-      } else {
-        // 无会话时清理状态
+      console.log('🔐 初始化认证状态...')
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        console.log('🔐 获取会话结果:', { 
+          hasSession: !!session, 
+          hasUser: !!session?.user, 
+          userId: session?.user?.id,
+          email: session?.user?.email,
+          error 
+        })
+        
+        if (session?.user) {
+          const u = mapSupabaseUser(session.user)
+          console.log('🔐 映射用户信息:', u)
+          setUser(u)
+          setIsAuthenticated(true)
+          // 异步更新 profile 信息
+          updateUserProfile(session.user.id, setUser, u)
+        } else {
+          console.log('🔐 无有效会话，清理状态')
+          // 无会话时清理状态
+          setUser(null)
+          setIsAuthenticated(false)
+          localStorage.removeItem('user') // 清理可能存在的旧数据
+        }
+      } catch (error) {
+        console.error('🔐 初始化认证失败:', error)
         setUser(null)
         setIsAuthenticated(false)
-        localStorage.removeItem('user') // 清理可能存在的旧数据
       }
     }
     init()
 
     // 监听认证状态变化
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 认证状态变化:', { event, hasSession: !!session, hasUser: !!session?.user })
+      
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
+        console.log('🔐 用户登录:', u)
         setUser(u)
         setIsAuthenticated(true)
         // 异步更新 profile 信息
         updateUserProfile(session.user.id, setUser, u)
       } else {
+        console.log('🔐 用户登出或会话失效')
         setUser(null)
         setIsAuthenticated(false)
         localStorage.removeItem('user')
