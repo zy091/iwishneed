@@ -21,12 +21,11 @@ type Json = Record<string, any>
 type Role = { id: number; name: string; permissions?: any }
 type UserRow = { id: string; email: string; name?: string; role_id: number; last_sign_in_at?: string; created_at?: string; active?: boolean }
 
-const readEnv = (k: string, alt?: string) => Deno.env.get(k) ?? (alt ? Deno.env.get(alt) : undefined)
-const SUPABASE_URL = readEnv("SUPABASE_URL", "Project_URL")
-const SERVICE_ROLE_KEY = readEnv("SUPABASE_SERVICE_ROLE_KEY", "SERVICE_ROLE_KEY")
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-  console.error("Missing SUPABASE_URL/Project_URL or SUPABASE_SERVICE_ROLE_KEY/SERVICE_ROLE_KEY in Edge Function secrets")
+  console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in Edge Function secrets")
 }
 
 function serviceClient(authHeader?: string) {

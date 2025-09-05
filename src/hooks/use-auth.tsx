@@ -2,14 +2,13 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import type { User as SupaUser } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 
-
 interface User {
   id: string
   name: string
   email: string
   role: 'admin' | 'manager' | 'developer' | 'submitter'
-  rolename?: string  // 主项目的角色名称，如"超级管理员"、"项目经理"
-  role_id?: number   // 主项目的角色ID
+  rolename?: string
+  role_id?: number
   avatar?: string
 }
 
@@ -40,14 +39,13 @@ function mapSupabaseUser(su: SupaUser): User {
     (su.user_metadata?.avatar_url as string | undefined) ||
     (su.user_metadata?.picture as string | undefined)
 
-  // 先返回基本用户信息，profile 信息会异步更新
   return {
     id: su.id,
     name: fullName || '用户',
     email: su.email ?? '',
-    role: 'submitter', // 默认角色，会被异步更新
-    role_id: 4, // 默认提交者，会被异步更新
-    rolename: '提交者', // 默认角色名，会被异步更新
+    role: 'submitter',
+    role_id: 4,
+    rolename: '提交者',
     avatar
   }
 }
@@ -55,15 +53,10 @@ function mapSupabaseUser(su: SupaUser): User {
 // 异步更新用户 profile 信息
 async function updateUserProfile(userId: string, setUser: (user: User | null) => void, currentUser: User) {
   try {
-    // 使用安全的 RPC 函数获取当前用户 profile
     const { data: profile, error } = await supabase.rpc('get_current_user_profile')
     
     if (error) {
       console.warn('Failed to fetch user profile:', error.message)
-      // 如果是认证错误，可能需要重新登录
-      if (error.message?.includes('JWT') || error.message?.includes('auth')) {
-        console.warn('Authentication issue detected, user may need to re-login')
-      }
       return
     }
     
@@ -73,13 +66,12 @@ async function updateUserProfile(userId: string, setUser: (user: User | null) =>
       const profileName = profileData.name || currentUser.name
       const rolename = profileData.rolename || ROLE_NAME_MAP[role_id] || '提交者'
       
-      // 根据 role_id 映射角色
       const roleMap: Record<number, 'admin' | 'manager' | 'developer' | 'submitter'> = {
-        0: 'admin',    // 超级管理员
-        1: 'admin',    // 管理员
-        2: 'manager',  // 经理
-        3: 'developer', // 开发者
-        4: 'submitter' // 提交者
+        0: 'admin',
+        1: 'admin',
+        2: 'manager',
+        3: 'developer',
+        4: 'submitter'
       }
 
       const updatedUser: User = {
@@ -102,69 +94,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
   useEffect(() => {
-    // 初始化会话：严格以 Supabase 会话为准，不使用 localStorage
+    // 初始化会话
     const init = async () => {
-      console.log('🔐 初始化认证状态...')
       try {
-        // 先清理可能存在的损坏会话
-        await supabase.auth.signOut()
-        
-        const { data: { session }, error } = await supabase.auth.getSession()
-        console.log('🔐 获取会话结果:', { 
-          hasSession: !!session, 
-          hasUser: !!session?.user, 
-          userId: session?.user?.id,
-          email: session?.user?.email,
-          error 
-        })
+        const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
           const u = mapSupabaseUser(session.user)
-          console.log('🔐 映射用户信息:', u)
           setUser(u)
           setIsAuthenticated(true)
-          // 异步更新 profile 信息
           updateUserProfile(session.user.id, setUser, u)
         } else {
-          console.log('🔐 无有效会话，需要重新登录')
-          // 无会话时清理状态并强制跳转到登录页
           setUser(null)
           setIsAuthenticated(false)
-          localStorage.clear() // 清理所有本地存储
-          sessionStorage.clear() // 清理会话存储
-          
-          // 如果当前不在登录页，跳转到登录页
-          if (window.location.pathname !== '/login') {
-            console.log('🔐 跳转到登录页')
-            window.location.href = '/login'
-          }
         }
       } catch (error) {
-        console.error('🔐 初始化认证失败:', error)
+        console.error('Auth initialization failed:', error)
         setUser(null)
         setIsAuthenticated(false)
-        localStorage.clear()
-        sessionStorage.clear()
       }
     }
     init()
 
     // 监听认证状态变化
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('🔐 认证状态变化:', { event, hasSession: !!session, hasUser: !!session?.user })
-      
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
-        console.log('🔐 用户登录:', u)
         setUser(u)
         setIsAuthenticated(true)
-        // 异步更新 profile 信息
         updateUserProfile(session.user.id, setUser, u)
       } else {
-        console.log('🔐 用户登出或会话失效')
         setUser(null)
         setIsAuthenticated(false)
-        localStorage.removeItem('user')
       }
     })
 
@@ -175,29 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error || !data.user) {
-      return false
-    }
-    // 登录成功后，状态会通过 onAuthStateChange 自动更新
-    return true
+    return !error && !!data.user
   }
 
   const logout = async () => {
     await supabase.auth.signOut()
-    // 登出后，状态会通过 onAuthStateChange 自动更新
   }
 
   const setExternalUser = (u: User) => {
-    // 这个方法主要用于测试，实际应用中应该通过 Supabase 认证
-    console.warn('setExternalUser should only be used for testing')
-    const enriched: User = {
-      ...u,
-      rolename:
-        (u.rolename && u.rolename.trim()
-          ? u.rolename
-          : (typeof u.role_id === 'number' ? ROLE_NAME_MAP[u.role_id] : u.rolename)) || u.rolename,
-    }
-    setUser(enriched)
+    setUser(u)
     setIsAuthenticated(true)
   }
 

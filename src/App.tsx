@@ -23,6 +23,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/debug" element={<DebugPage />} />
       <Route path="/" element={<Layout />}>
         {/* 仪表盘 */}
         <Route index element={<Dashboard />} />
@@ -47,7 +48,6 @@ function App() {
         {/* 用户设置 */}
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="debug" element={<DebugPage />} />
 
         {/* 兼容/占位重定向，避免旧入口 404 */}
         <Route path="requirements/*" element={<Navigate to="/departments/tech" replace />} />
