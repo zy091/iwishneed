@@ -85,14 +85,27 @@ export default function DebugPage() {
               'Content-Type': 'application/json'
             }
           })
-          result.edgeFunction = {
-            status: response.status,
-            ok: response.ok,
-            statusText: response.statusText
+          
+          if (response.ok) {
+            const data = await response.json()
+            result.edgeFunction = {
+              status: response.status,
+              ok: response.ok,
+              statusText: response.statusText,
+              data: data
+            }
+          } else {
+            const errorText = await response.text()
+            result.edgeFunction = {
+              status: response.status,
+              ok: response.ok,
+              statusText: response.statusText,
+              error: errorText
+            }
           }
         } else {
           result.edgeFunction = {
-            error: 'No access token available'
+            error: 'No access token available - 需要先登录'
           }
         }
       } catch (error: any) {
@@ -110,10 +123,18 @@ export default function DebugPage() {
   }
 
   const testLogin = async () => {
+    const email = prompt('请输入邮箱:')
+    const password = prompt('请输入密码:')
+    
+    if (!email || !password) {
+      alert('邮箱和密码不能为空')
+      return
+    }
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: 'lin88@iwishweb.com',
-        password: 'your-password' // 需要替换为实际密码
+        email,
+        password
       })
       
       if (error) {
