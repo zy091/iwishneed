@@ -31,7 +31,7 @@ const ROLE_NAME_MAP: Record<number, string> = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-function mapSupabaseUser(su: SupaUser): User {
+async function mapSupabaseUser(su: SupaUser): Promise<User> {
   const fullName =
     (su.user_metadata?.full_name as string | undefined) ||
     (su.user_metadata?.name as string | undefined) ||
@@ -40,12 +40,41 @@ function mapSupabaseUser(su: SupaUser): User {
     (su.user_metadata?.avatar_url as string | undefined) ||
     (su.user_metadata?.picture as string | undefined)
 
-  // 这里默认赋予一个演示角色。若需基于数据库或 JWT 分配角色，请扩展此处逻辑。
+  // 从 profiles 表获取角色信息
+  let role_id = 4 // 默认提交者
+  let profileName = fullName
+  
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name, role_id')
+      .eq('id', su.id)
+      .single()
+    
+    if (profile) {
+      role_id = profile.role_id ?? 4
+      profileName = profile.name || fullName
+    }
+  } catch (error) {
+    console.warn('Failed to fetch user profile:', error)
+  }
+
+  // 根据 role_id 映射角色
+  const roleMap: Record<number, 'admin' | 'manager' | 'developer' | 'submitter'> = {
+    0: 'admin',    // 超级管理员
+    1: 'admin',    // 管理员
+    2: 'manager',  // 经理
+    3: 'developer', // 开发者
+    4: 'submitter' // 提交者
+  }
+
   return {
     id: su.id,
-    name: fullName || '用户',
+    name: profileName || '用户',
     email: su.email ?? '',
-    role: 'submitter',
+    role: roleMap[role_id] || 'submitter',
+    role_id,
+    rolename: ROLE_NAME_MAP[role_id] || '提交者',
     avatar
   }
 }
@@ -59,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const u = mapSupabaseUser(session.user)
+        const u = await mapSupabaseUser(session.user)
         setUser(u)
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
@@ -73,9 +102,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     init()
 
     // 监听认证状态变化
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const u = mapSupabaseUser(session.user)
+        const u = await mapSupabaseUser(session.user)
         setUser(u)
         setIsAuthenticated(true)
         localStorage.setItem('user', JSON.stringify(u))
@@ -96,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data.user) {
       return false
     }
-    const u = mapSupabaseUser(data.user)
+    const u = await mapSupabaseUser(data.user)
     setUser(u)
     setIsAuthenticated(true)
     localStorage.setItem('user', JSON.stringify(u))

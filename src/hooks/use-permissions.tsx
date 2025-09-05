@@ -52,18 +52,21 @@ const getRolePermissions = (roleId: number): Permission[] => {
 export function usePermissions() {
   const { user } = useAuth()
   const [isAdminServer, setIsAdminServer] = useState(false)
+  
   useEffect(() => {
     let mounted = true
-    supabase.rpc('is_admin')
-      .then(({ data }) => { if (mounted) setIsAdminServer(!!data) })
-      .catch(() => {})
+    if (user?.id) {
+      supabase.rpc('is_admin')
+        .then(({ data }) => { if (mounted) setIsAdminServer(!!data) })
+        .catch(() => {})
+    }
     return () => { mounted = false }
   }, [user?.id])
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false
     // 使用主项目的 role_id 来判断权限
-    const roleId = (user as any).role_id || 999 // 默认非超级管理员
+    const roleId = (user as any).role_id ?? 4 // 默认提交者
     const userPermissions = getRolePermissions(roleId)
     return userPermissions.includes(permission)
   }
@@ -81,22 +84,24 @@ export function usePermissions() {
   const canEditRequirements = () => hasPermission('edit_requirements')
   const canDeleteRequirements = () => hasPermission('delete_requirements')
   const canManageUsers = () => {
-    // 统一以后端 is_admin() 为准
-    return isAdminServer || user?.role === 'admin' || (user as any)?.role_id === 0
+    // 统一以后端 is_admin() 为准，或者 role_id 为 0 或 1
+    const roleId = (user as any)?.role_id ?? 4
+    return isAdminServer || roleId === 0 || roleId === 1
   }
   const canViewAnalytics = () => hasPermission('view_analytics')
   const canManageSystem = () => hasPermission('manage_system')
   const canAddComments = () => hasPermission('add_comments')
   const canDeleteOwnComments = () => hasPermission('delete_own_comments')
   const canDeleteAnyComments = () => {
-    // 统一以后端 is_admin() 为准
-    return isAdminServer || user?.role === 'admin' || (user as any)?.role_id === 0
+    // 统一以后端 is_admin() 为准，或者 role_id 为 0 或 1
+    const roleId = (user as any)?.role_id ?? 4
+    return isAdminServer || roleId === 0 || roleId === 1
   }
   const canViewRatings = () => hasPermission('view_ratings')
 
-  const roleId = (user as any)?.role_id || 999
-  const roleName = (user as any)?.rolename || user?.role || '未知角色'
-  const isAdminFinal = isAdminServer || user?.role === 'admin' || roleId === 0
+  const roleId = (user as any)?.role_id ?? 4
+  const roleName = (user as any)?.rolename || (user as any)?.role || '提交者'
+  const isAdminFinal = isAdminServer || roleId === 0 || roleId === 1
 
   return {
     hasPermission,
@@ -116,10 +121,10 @@ export function usePermissions() {
     userRole: user?.role,
     roleName,
     roleId,
-    isSuperAdmin: roleId === 0 || isAdminServer,
+    isSuperAdmin: roleId === 0,
     isAdmin: isAdminFinal,
-    isManager: user?.role === 'manager',
-    isDeveloper: user?.role === 'developer',
-    isSubmitter: user?.role === 'submitter'
+    isManager: roleId === 2,
+    isDeveloper: roleId === 3,
+    isSubmitter: roleId === 4
   }
 }

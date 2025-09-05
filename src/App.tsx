@@ -12,6 +12,8 @@ import CreativeRequirementForm from './pages/creative-requirement-form'
 import CreativeRequirementDetail from './pages/creative-requirement-detail'
 import RequirementImport from './pages/requirement-import'
 import AdminUsersPage from './pages/admin/users'
+import ProfilePage from './pages/profile'
+import SettingsPage from './pages/settings'
 
 function App() {
   const { isAuthenticated } = useAuth()
@@ -40,6 +42,10 @@ function App() {
         {/* 通用导入（用于创意部） */}
         <Route path="requirements/import" element={<RequirementImport />} />
         <Route path="admin/users" element={<AdminUsersPage />} />
+        
+        {/* 用户设置 */}
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
 
         {/* 兼容/占位重定向，避免旧入口 404 */}
         <Route path="requirements/*" element={<Navigate to="/departments/tech" replace />} />

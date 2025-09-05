@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
 import { cn } from './lib/utils'
 import { Button } from './components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar'
@@ -193,8 +193,16 @@ export default function Layout() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>我的账户</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {!isSSO && <DropdownMenuItem>个人资料</DropdownMenuItem>}
-                {!isSSO && <DropdownMenuItem>系统设置</DropdownMenuItem>}
+                {!isSSO && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile">个人资料</Link>
+                  </DropdownMenuItem>
+                )}
+                {!isSSO && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings">系统设置</Link>
+                  </DropdownMenuItem>
+                )}
 
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
