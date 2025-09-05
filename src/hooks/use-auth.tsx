@@ -55,15 +55,19 @@ function mapSupabaseUser(su: SupaUser): User {
 // 异步更新用户 profile 信息
 async function updateUserProfile(userId: string, setUser: (user: User | null) => void, currentUser: User) {
   try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('name, role_id')
-      .eq('id', userId)
-      .single()
+    // 使用安全的 RPC 函数获取当前用户 profile
+    const { data: profile, error } = await supabase.rpc('get_current_user_profile')
     
-    if (profile) {
-      const role_id = profile.role_id ?? 4
-      const profileName = profile.name || currentUser.name
+    if (error) {
+      console.warn('Failed to fetch user profile:', error)
+      return
+    }
+    
+    if (profile && profile.length > 0) {
+      const profileData = profile[0]
+      const role_id = profileData.role_id ?? 4
+      const profileName = profileData.name || currentUser.name
+      const rolename = profileData.rolename || ROLE_NAME_MAP[role_id] || '提交者'
       
       // 根据 role_id 映射角色
       const roleMap: Record<number, 'admin' | 'manager' | 'developer' | 'submitter'> = {
@@ -79,7 +83,7 @@ async function updateUserProfile(userId: string, setUser: (user: User | null) =>
         name: profileName,
         role: roleMap[role_id] || 'submitter',
         role_id,
-        rolename: ROLE_NAME_MAP[role_id] || '提交者'
+        rolename
       }
       
       setUser(updatedUser)
