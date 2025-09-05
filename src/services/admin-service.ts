@@ -2,6 +2,9 @@ import { supabase } from '@/lib/supabaseClient'
 
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`
 
+// 调试：打印URL以确认配置
+console.log('Admin service URL:', FN_BASE)
+
 async function authHeader() {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token

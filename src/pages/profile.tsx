@@ -7,10 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { supabase } from '@/lib/supabaseClient'
-import { toast } from 'sonner'
+import { useToast } from '@/components/ui/use-toast'
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -26,17 +27,28 @@ export default function ProfilePage() {
 
     setLoading(true)
     try {
-      // 更新 profiles 表中的姓名
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ name: formData.name })
-        .eq('id', user.id)
+      // 使用安全的RPC函数更新姓名
+      const { data, error: profileError } = await supabase.rpc('update_current_user_profile', {
+        new_name: formData.name
+      })
 
       if (profileError) throw profileError
 
-      toast.success('个人资料更新成功')
+      toast({
+        title: "成功",
+        description: "个人资料更新成功",
+      })
+
+      // 更新本地状态
+      if (data && data.success) {
+        setFormData(prev => ({ ...prev, name: data.name }))
+      }
     } catch (error: any) {
-      toast.error('更新失败：' + error.message)
+      toast({
+        title: "错误",
+        description: "更新失败：" + error.message,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -45,17 +57,29 @@ export default function ProfilePage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.currentPassword || !formData.newPassword) {
-      toast.error('请填写当前密码和新密码')
+      toast({
+        title: "错误",
+        description: "请填写当前密码和新密码",
+        variant: "destructive",
+      })
       return
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      toast.error('新密码和确认密码不匹配')
+      toast({
+        title: "错误", 
+        description: "新密码和确认密码不匹配",
+        variant: "destructive",
+      })
       return
     }
 
     if (formData.newPassword.length < 6) {
-      toast.error('新密码长度至少6位')
+      toast({
+        title: "错误",
+        description: "新密码长度至少6位", 
+        variant: "destructive",
+      })
       return
     }
 
@@ -67,7 +91,10 @@ export default function ProfilePage() {
 
       if (error) throw error
 
-      toast.success('密码修改成功')
+      toast({
+        title: "成功",
+        description: "密码修改成功",
+      })
       setFormData(prev => ({
         ...prev,
         currentPassword: '',
@@ -75,7 +102,11 @@ export default function ProfilePage() {
         confirmPassword: ''
       }))
     } catch (error: any) {
-      toast.error('密码修改失败：' + error.message)
+      toast({
+        title: "错误",
+        description: "密码修改失败：" + error.message,
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }

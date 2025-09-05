@@ -49,7 +49,8 @@ export default function AdminUsersPage() {
           const r = await listRoles()
           setRoles(r.roles)
           if (!roleId && r.roles.length) setRoleId(r.roles[0].id)
-        } catch {
+        } catch (e: any) {
+          console.error('获取角色列表失败:', e)
           const fallback: Role[] = [
             { id: 0, name: '超级管理员' },
             { id: 1, name: '管理员' },
@@ -74,15 +75,19 @@ export default function AdminUsersPage() {
       const r = await listUsers({ page, pageSize, search, role_id: roleFilter })
       setUsers(r.users)
       setTotal(r.total)
-    } catch {
+      setError('') // 清除之前的错误
+    } catch (e: any) {
+      console.error('获取用户列表失败:', e)
       // 后端未上线时，至少保证管理员列表可见
       try {
         const r = await listAdmins()
         const mapped: UserRow[] = r.admins.map(a => ({ id: a.user_id, email: '', role_id: 1 }))
         setUsers(mapped)
         setTotal(mapped.length)
-      } catch (e: any) {
-        setError(e.message || '加载失败')
+        setError('') // 清除错误
+      } catch (e2: any) {
+        console.error('获取管理员列表也失败:', e2)
+        setError(`加载用户列表失败: ${e.message}。请检查网络连接和Edge Function配置。`)
       }
     }
   }

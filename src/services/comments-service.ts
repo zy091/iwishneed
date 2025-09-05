@@ -189,27 +189,49 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     throw new Error('用户未登录或令牌无效')
   }
 
+  // 先检查评论是否存在且用户有权限删除
+  const { data: comment, error: fetchError } = await supabase
+    .from('comments')
+    .select('id, user_id, user_external_id')
+    .eq('id', commentId)
+    .single()
+
+  if (fetchError) {
+    console.error('获取评论失败:', fetchError)
+    throw new Error('评论不存在或已被删除')
+  }
+
+  // 检查权限：只能删除自己的评论
+  if (comment.user_id !== userInfo.id && comment.user_external_id !== userInfo.id) {
+    throw new Error('您只能删除自己的评论')
+  }
+
+  // 删除附件记录
   const { error: attachError } = await supabase
     .from('comment_attachments')
     .delete()
     .eq('comment_id', commentId)
   if (attachError) console.error('删除附件记录失败:', attachError)
 
+  // 删除子评论
   const { error: childError } = await supabase
     .from('comments')
     .delete()
     .eq('parent_id', commentId)
   if (childError) console.error('删除子评论失败:', childError)
 
+  // 删除主评论
   const { error } = await supabase
     .from('comments')
     .delete()
     .eq('id', commentId)
-    .or(`user_id.eq.${userInfo.id},user_external_id.eq.${userInfo.id}`)
+    .eq('user_id', userInfo.id)
+  
   if (error) {
     console.error('删除评论失败:', error)
-    throw new Error('删除评论失败')
+    throw new Error('删除评论失败: ' + error.message)
   }
+  
   return true
 }
 
