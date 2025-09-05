@@ -14,6 +14,7 @@ import RequirementImport from './pages/requirement-import'
 import AdminUsersPage from './pages/admin/users'
 import ProfilePage from './pages/profile'
 import SettingsPage from './pages/settings'
+import DebugPage from './pages/debug'
 
 function App() {
   const { isAuthenticated } = useAuth()
@@ -46,6 +47,7 @@ function App() {
         {/* 用户设置 */}
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="debug" element={<DebugPage />} />
 
         {/* 兼容/占位重定向，避免旧入口 404 */}
         <Route path="requirements/*" element={<Navigate to="/departments/tech" replace />} />

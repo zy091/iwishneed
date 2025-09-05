@@ -6,18 +6,50 @@ const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`
 console.log('Admin service URL:', FN_BASE)
 
 async function authHeader() {
-  const { data } = await supabase.auth.getSession()
+  console.log('🔑 获取认证头...')
+  const { data, error } = await supabase.auth.getSession()
+  console.log('🔑 会话状态:', { 
+    hasSession: !!data.session, 
+    hasToken: !!data.session?.access_token,
+    error: error?.message 
+  })
+  
   const token = data.session?.access_token
-  if (!token) throw new Error('未登录')
-  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+  if (!token) {
+    console.error('🔑 无有效令牌，用户未登录')
+    throw new Error('用户未登录或会话已过期，请重新登录')
+  }
+  
+  return { 
+    Authorization: `Bearer ${token}`, 
+    'Content-Type': 'application/json',
+    'X-Client-Info': 'requirement-management-system'
+  }
 }
 
 // 兼容旧接口
 export async function listAdmins() {
-  const headers = await authHeader()
-  const res = await fetch(FN_BASE, { method: 'GET', headers })
-  if (!res.ok) throw new Error(await res.text())
-  return res.json() as Promise<{ admins: { user_id: string; created_at: string }[] }>
+  try {
+    console.log('📋 获取管理员列表...')
+    const headers = await authHeader()
+    console.log('📋 请求URL:', FN_BASE)
+    
+    const res = await fetch(FN_BASE, { method: 'GET', headers })
+    console.log('📋 响应状态:', { status: res.status, ok: res.ok, statusText: res.statusText })
+    
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('📋 请求失败:', errorText)
+      throw new Error(`请求失败 (${res.status}): ${errorText}`)
+    }
+    
+    const result = await res.json()
+    console.log('📋 获取成功:', result)
+    return result as { admins: { user_id: string; created_at: string }[] }
+  } catch (error: any) {
+    console.error('📋 listAdmins 错误:', error)
+    throw new Error(`获取管理员列表失败: ${error.message}`)
+  }
 }
 
 // 扩展：支持 role_id（后端未上线时忽略）

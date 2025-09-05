@@ -106,6 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const init = async () => {
       console.log('🔐 初始化认证状态...')
       try {
+        // 先清理可能存在的损坏会话
+        await supabase.auth.signOut()
+        
         const { data: { session }, error } = await supabase.auth.getSession()
         console.log('🔐 获取会话结果:', { 
           hasSession: !!session, 
@@ -123,16 +126,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // 异步更新 profile 信息
           updateUserProfile(session.user.id, setUser, u)
         } else {
-          console.log('🔐 无有效会话，清理状态')
-          // 无会话时清理状态
+          console.log('🔐 无有效会话，需要重新登录')
+          // 无会话时清理状态并强制跳转到登录页
           setUser(null)
           setIsAuthenticated(false)
-          localStorage.removeItem('user') // 清理可能存在的旧数据
+          localStorage.clear() // 清理所有本地存储
+          sessionStorage.clear() // 清理会话存储
+          
+          // 如果当前不在登录页，跳转到登录页
+          if (window.location.pathname !== '/login') {
+            console.log('🔐 跳转到登录页')
+            window.location.href = '/login'
+          }
         }
       } catch (error) {
         console.error('🔐 初始化认证失败:', error)
         setUser(null)
         setIsAuthenticated(false)
+        localStorage.clear()
+        sessionStorage.clear()
       }
     }
     init()
