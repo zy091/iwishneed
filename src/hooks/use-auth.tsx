@@ -59,7 +59,11 @@ async function updateUserProfile(userId: string, setUser: (user: User | null) =>
     const { data: profile, error } = await supabase.rpc('get_current_user_profile')
     
     if (error) {
-      console.warn('Failed to fetch user profile:', error)
+      console.warn('Failed to fetch user profile:', error.message)
+      // 如果是认证错误，可能需要重新登录
+      if (error.message?.includes('JWT') || error.message?.includes('auth')) {
+        console.warn('Authentication issue detected, user may need to re-login')
+      }
       return
     }
     
@@ -87,7 +91,6 @@ async function updateUserProfile(userId: string, setUser: (user: User | null) =>
       }
       
       setUser(updatedUser)
-      localStorage.setItem('user', JSON.stringify(updatedUser))
     }
   } catch (error) {
     console.warn('Failed to fetch user profile:', error)
@@ -99,21 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
   useEffect(() => {
-    // 初始化会话：严格以 Supabase 会话为准
+    // 初始化会话：严格以 Supabase 会话为准，不使用 localStorage
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         const u = mapSupabaseUser(session.user)
         setUser(u)
         setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(u))
         // 异步更新 profile 信息
         updateUserProfile(session.user.id, setUser, u)
       } else {
-        // 无会话时清理本地缓存，强制走登录
+        // 无会话时清理状态
         setUser(null)
         setIsAuthenticated(false)
-        localStorage.removeItem('user')
+        localStorage.removeItem('user') // 清理可能存在的旧数据
       }
     }
     init()
@@ -124,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const u = mapSupabaseUser(session.user)
         setUser(u)
         setIsAuthenticated(true)
-        localStorage.setItem('user', JSON.stringify(u))
         // 异步更新 profile 信息
         updateUserProfile(session.user.id, setUser, u)
       } else {
@@ -144,23 +145,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data.user) {
       return false
     }
-    const u = mapSupabaseUser(data.user)
-    setUser(u)
-    setIsAuthenticated(true)
-    localStorage.setItem('user', JSON.stringify(u))
-    // 异步更新 profile 信息
-    updateUserProfile(data.user.id, setUser, u)
+    // 登录成功后，状态会通过 onAuthStateChange 自动更新
     return true
   }
 
   const logout = async () => {
     await supabase.auth.signOut()
-    setUser(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem('user')
+    // 登出后，状态会通过 onAuthStateChange 自动更新
   }
 
   const setExternalUser = (u: User) => {
+    // 这个方法主要用于测试，实际应用中应该通过 Supabase 认证
+    console.warn('setExternalUser should only be used for testing')
     const enriched: User = {
       ...u,
       rolename:
@@ -170,7 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(enriched)
     setIsAuthenticated(true)
-    localStorage.setItem('user', JSON.stringify(enriched))
   }
 
   return (
