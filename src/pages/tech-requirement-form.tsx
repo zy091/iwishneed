@@ -54,14 +54,14 @@ export default function TechRequirementForm() {
       title: '',
       month: new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
       expected_completion_time: new Date(),
-      urgency: '中',
+      urgency: 'medium',
       client_url: '',
       description: '',
       // 重要：Radix Select 禁止空字符串，使用占位值
       tech_assignee: '__none__',
-      client_type: '流量运营服务',
+      client_type: 'traffic_operation',
       assignee_estimated_time: undefined,
-      progress: '未开始',
+      progress: 'not_started',
     }
   })
 
@@ -269,9 +269,9 @@ export default function TechRequirementForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="高">高</SelectItem>
-                          <SelectItem value="中">中</SelectItem>
-                          <SelectItem value="低">低</SelectItem>
+                          <SelectItem value="high">高</SelectItem>
+                          <SelectItem value="medium">中</SelectItem>
+                          <SelectItem value="low">低</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -308,8 +308,8 @@ export default function TechRequirementForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="流量运营服务">流量运营服务</SelectItem>
-                          <SelectItem value="全案深度服务">全案深度服务</SelectItem>
+                          <SelectItem value="traffic_operation">流量运营服务</SelectItem>
+                          <SelectItem value="full_service">全案深度服务</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -361,10 +361,10 @@ export default function TechRequirementForm() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="未开始">未开始</SelectItem>
-                            <SelectItem value="处理中">处理中</SelectItem>
-                            <SelectItem value="已完成">已完成</SelectItem>
-                            <SelectItem value="已沟通延迟">已沟通延迟</SelectItem>
+                            <SelectItem value="not_started">未开始</SelectItem>
+                            <SelectItem value="in_progress">处理中</SelectItem>
+                            <SelectItem value="completed">已完成</SelectItem>
+                            <SelectItem value="delayed">已沟通延迟</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
