@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabaseClient'
-import { unifiedRequirementService } from '@/services/unified-requirement-service'
 
 export interface TechRequirement {
   id?: string
@@ -98,14 +97,14 @@ export interface TechAssignee {
 class SupabaseRequirementService {
   // 获取技术负责人列表
   async getTechAssignees(): Promise<TechAssignee[]> {
-    const names = await unifiedRequirementService.getTechStaff()
-    const now = new Date().toISOString()
-    return names.map((name, idx) => ({
-      id: idx + 1,
-      name,
-      is_active: true,
-      created_at: now,
-    }))
+    const { data, error } = await supabase
+      .from('tech_assignees')
+      .select('*')
+      .eq('is_active', true)
+      .order('name')
+    
+    if (error) throw error
+    return data || []
   }
 
   // 添加技术负责人
@@ -127,90 +126,27 @@ class SupabaseRequirementService {
     assignee?: string
     submitter?: string
   }): Promise<Requirement[]> {
-    const dept = filters?.department
-    const status = filters?.status as any
+    let query = supabase
+      .from('requirements')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-    const mapTech = (t: any): Requirement => ({
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      department: '技术部',
-      type: 'tech',
-      submitter: t.submitter_name ? { id: t.created_by || '', name: t.submitter_name, avatar: undefined } : undefined,
-      submitter_id: t.created_by,
-      submit_time: t.submit_time,
-      tech_month: t.month,
-      tech_expected_completion_time: t.expected_completion_time,
-      tech_urgency: t.urgency,
-      tech_client_url: t.client_url,
-      tech_client_type: t.client_type === 'full_service' ? '全案深度服务' : (t.client_type === 'traffic_operation' ? '流量运营服务' : t.client_type),
-      tech_attachments: t.attachments,
-      tech_assignee: t.tech_assignee || t.assigned_to,
-      tech_estimated_completion_time: t.assignee_estimated_time,
-      tech_progress: (() => {
-        const p = String(t.progress || '')
-        if (p === 'not_started') return '未开始'
-        if (p === 'in_progress') return '处理中'
-        if (p === 'completed') return '已完成'
-        if (p === 'delayed') return '已沟通延迟'
-        return t.progress
-      })(),
-      status: t.status,
-      priority: t.priority,
-      due_date: t.due_date || t.expected_completion_time,
-      tags: t.tags,
-      extra: t.metadata,
-      created_at: t.created_at,
-      updated_at: t.updated_at,
-    })
-
-    const mapCreative = (c: any): Requirement => ({
-      id: c.id,
-      title: c.title,
-      description: c.description,
-      department: '创意部',
-      type: 'creative',
-      submitter: c.submitter_name ? { id: c.created_by || '', name: c.submitter_name, avatar: undefined } : undefined,
-      submitter_id: c.created_by,
-      creative_type: c.creative_type,
-      creative_target_audience: c.target_audience,
-      creative_brand_guidelines: c.brand_guidelines,
-      creative_deliverables: (c.deliverables as any) || undefined,
-      status: c.status,
-      priority: c.priority,
-      due_date: c.due_date || c.expected_delivery_time,
-      tags: undefined,
-      extra: c.metadata,
-      created_at: c.created_at,
-      updated_at: c.updated_at,
-    })
-
-    let items: Requirement[] = []
-
-    if (dept === '技术部') {
-      const tech = await unifiedRequirementService.getTechRequirements({ status })
-      items = tech.map(mapTech)
-    } else if (dept === '创意部') {
-      const creative = await unifiedRequirementService.getCreativeRequirements({ status })
-      items = creative.map(mapCreative)
-    } else {
-      const [tech, creative] = await Promise.all([
-        unifiedRequirementService.getTechRequirements({ status }),
-        unifiedRequirementService.getCreativeRequirements({ status }),
-      ])
-      items = [...tech.map(mapTech), ...creative.map(mapCreative)]
-      items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    if (filters?.department) {
+      query = query.eq('department', filters.department)
     }
-
-    // 额外过滤（负责人、提交者）
+    if (filters?.status) {
+      query = query.eq('status', filters.status)
+    }
     if (filters?.assignee) {
-      items = items.filter(r => r.type === 'tech' && r.tech_assignee === filters.assignee)
+      query = query.eq('tech_assignee', filters.assignee)
     }
     if (filters?.submitter) {
-      items = items.filter(r => r.submitter?.name === filters.submitter)
+      query = query.eq('submitter->name', filters.submitter)
     }
 
-    return items
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
   }
 
   // 获取需求详情
@@ -369,36 +305,42 @@ class SupabaseRequirementService {
 
   // 获取统计数据
   async getStats(): Promise<RequirementStats> {
-    try {
-      const s: any = await unifiedRequirementService.getRequirementStats()
-      return {
-        total: s.total || 0,
-        pending: s.pending || 0,
-        inProgress: (s.in_progress as number) || 0,
-        completed: s.completed || 0,
-        overdue: 0,
-        byDepartment: {
-          tech: s.by_department?.tech || 0,
-          creative: s.by_department?.creative || 0,
-        },
-        byPriority: {
-          high: s.by_priority?.high || 0,
-          medium: s.by_priority?.medium || 0,
-          low: s.by_priority?.low || 0,
-        }
-      }
-    } catch {
-      return {
-        total: 0, pending: 0, inProgress: 0, completed: 0, overdue: 0,
-        byDepartment: { tech: 0, creative: 0 },
-        byPriority: { high: 0, medium: 0, low: 0 }
+    const { data, error } = await supabase
+      .from('requirements')
+      .select('status, department, priority')
+
+    if (error) throw error
+
+    const requirements = data || []
+    
+    return {
+      total: requirements.length,
+      pending: requirements.filter(r => r.status === 'pending').length,
+      inProgress: requirements.filter(r => r.status === 'inProgress').length,
+      completed: requirements.filter(r => r.status === 'completed').length,
+      overdue: requirements.filter(r => r.status === 'overdue').length,
+      byDepartment: {
+        tech: requirements.filter(r => r.department === '技术部').length,
+        creative: requirements.filter(r => r.department === '创意部').length,
+      },
+      byPriority: {
+        high: requirements.filter(r => r.priority === 'high').length,
+        medium: requirements.filter(r => r.priority === 'medium').length,
+        low: requirements.filter(r => r.priority === 'low').length,
       }
     }
   }
 
   // 计算技术耗时（小时）
   calculateTechDuration(startTime?: string, endTime?: string): number {
-    return unifiedRequirementService.calculateDuration(startTime, endTime)
+    if (!startTime || !endTime) return 0
+    
+    const start = new Date(startTime)
+    const end = new Date(endTime)
+    const diffMs = end.getTime() - start.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    
+    return Math.round(diffHours * 100) / 100 // 保留两位小数
   }
 
   // 获取技术部需求统计（按负责人）

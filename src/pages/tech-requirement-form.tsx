@@ -17,20 +17,21 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
-import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
+import { unifiedRequirementService } from '@/services/unified-requirement-service'
+import type { TechRequirement } from '@/types'
 
 // 技术需求表单验证
 const techRequirementSchema = z.object({
   title: z.string().min(1, '需求标题不能为空'),
   month: z.string().min(1, '月份不能为空'),
-  expected_completion_time: z.date({ required_error: '期望完成时间不能为空' }),
-  urgency: z.enum(['高', '中', '低'], { required_error: '请选择紧急程度' }),
+  expected_completion_time: z.date({ message: '期望完成时间不能为空' }),
+  urgency: z.enum(['high', 'medium', 'low'], { message: '请选择紧急程度' }),
   client_url: z.string().url('请输入有效的网址').optional().or(z.literal('')),
   description: z.string().min(1, '具体需求描述不能为空'),
   tech_assignee: z.string().optional(),
-  client_type: z.enum(['流量运营服务', '全案深度服务'], { required_error: '请选择客户类型' }),
+  client_type: z.enum(['traffic_operation', 'full_service'], { message: '请选择客户类型' }),
   assignee_estimated_time: z.date().optional(),
-  progress: z.enum(['未开始', '处理中', '已完成', '已沟通延迟']).optional(),
+  progress: z.enum(['not_started', 'in_progress', 'completed', 'delayed']).optional(),
 })
 
 type TechRequirementForm = z.infer<typeof techRequirementSchema>
@@ -69,12 +70,12 @@ export default function TechRequirementForm() {
     const loadData = async () => {
       try {
         // 加载技术负责人列表
-        const assignees = await techRequirementService.getTechAssignees()
+        const assignees = await unifiedRequirementService.getTechStaff()
         setTechAssignees(assignees)
 
         // 加载需求详情
         if (isEdit && id) {
-          const req = await techRequirementService.getTechRequirement(id)
+          const req = await unifiedRequirementService.getTechRequirement(id)
           if (req) {
             setRequirement(req)
             form.reset({
@@ -85,10 +86,10 @@ export default function TechRequirementForm() {
               client_url: req.client_url || '',
               description: req.description,
               // 编辑态：为空时也使用占位值
-              tech_assignee: (req.tech_assignee && req.tech_assignee.trim() !== '') ? req.tech_assignee : '__none__',
+              tech_assignee: (req.assigned_to && req.assigned_to.trim() !== '') ? req.assigned_to : '__none__',
               client_type: req.client_type,
               assignee_estimated_time: req.assignee_estimated_time ? new Date(req.assignee_estimated_time) : undefined,
-              progress: req.progress || '未开始',
+              progress: req.progress || 'not_started',
             })
           }
         }
@@ -135,9 +136,9 @@ export default function TechRequirementForm() {
       }
 
       if (isEdit && id) {
-        await techRequirementService.updateTechRequirement(id, techData)
+        await unifiedRequirementService.updateTechRequirement(id, techData)
       } else {
-        await techRequirementService.createTechRequirement(techData)
+        await unifiedRequirementService.createTechRequirement(techData)
       }
 
       navigate('/departments/tech')

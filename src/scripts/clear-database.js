@@ -32,7 +32,7 @@ async function getCount(table) {
 
 async function getStats() {
   const tech = await getCount('tech_requirements').catch(() => 0)
-  const creative = await getCount('requirements').catch(() => 0)
+  const creative = await getCount('creative_requirements').catch(() => 0)
   const activities = await getCount('user_activities').catch(() => 0)
   return {
     techRequirements: tech,
@@ -55,8 +55,8 @@ async function clearAll() {
   await clearTable('tech_requirements')
   console.log('✅ 已清空 tech_requirements')
 
-  await clearTable('requirements')
-  console.log('✅ 已清空 requirements')
+  await clearTable('creative_requirements')
+  console.log('✅ 已清空 creative_requirements')
 
   await clearTable('user_activities')
   console.log('✅ 已清空 user_activities')

@@ -3,7 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { creativeRequirementService, CreativeRequirement } from '@/services/creative-requirement-service'
+import { unifiedRequirementService } from '@/services/unified-requirement-service'
+import type { CreativeRequirement } from '@/types'
+// 兼容旧变量名
+const creativeRequirementService = unifiedRequirementService
 import CommentsSection from '@/components/CommentsSection'
 import { Edit, ExternalLink } from 'lucide-react'
 

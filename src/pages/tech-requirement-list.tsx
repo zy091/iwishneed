@@ -31,7 +31,8 @@ import {
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useAuth } from '@/hooks/use-auth'
-import { techRequirementService, TechRequirement, TechRequirementStats } from '@/services/tech-requirement-service'
+import { unifiedRequirementService } from '@/services/unified-requirement-service'
+import type { TechRequirement, RequirementStats } from '@/types'
 
 export default function TechRequirementList() {
   const [requirements, setRequirements] = useState<TechRequirement[]>([])
