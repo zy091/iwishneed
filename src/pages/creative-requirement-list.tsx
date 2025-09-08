@@ -8,10 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Search, Plus, Upload, Edit, Trash2, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { unifiedRequirementService } from '@/services/unified-requirement-service'
-import type { CreativeRequirement } from '@/types'
-// 兼容旧变量名，减少大规模改动
-const creativeRequirementService = unifiedRequirementService
+import { creativeRequirementService } from '@/services/creative-requirement-service'
+import type { CreativeRequirement } from '@/services/creative-requirement-service'
+
 
 export default function CreativeRequirementList() {
   const [list, setList] = useState<CreativeRequirement[]>([])

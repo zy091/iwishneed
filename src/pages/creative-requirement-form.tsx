@@ -6,10 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { unifiedRequirementService } from '@/services/unified-requirement-service'
-import type { CreativeRequirement } from '@/types'
-// 兼容旧变量名
-const creativeRequirementService = unifiedRequirementService
+import { creativeRequirementService } from '@/services/creative-requirement-service'
+import type { CreativeRequirement } from '@/services/creative-requirement-service'
+
 import { useAuth } from '@/hooks/use-auth'
 
 const PLATFORMS = ['GG', 'FB', 'CT', '网站'] as const

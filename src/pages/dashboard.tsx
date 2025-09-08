@@ -10,11 +10,10 @@ import {
   Target,
   CheckCircle
 } from 'lucide-react'
-import { unifiedRequirementService } from '@/services/unified-requirement-service'
-// 兼容旧变量名
-const techRequirementService = unifiedRequirementService
-import type { TechRequirement, RequirementStats } from '@/types'
-import { supabase } from '@/lib/supabaseClient'
+import { techRequirementService } from '@/services/tech-requirement-service'
+import { creativeRequirementService } from '@/services/creative-requirement-service'
+import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
+
 
 interface OverviewStats {
   total: number
@@ -70,12 +69,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchOverview = async () => {
       try {
-        const techReqs = await unifiedRequirementService.getTechRequirements()
+        const techReqs = await techRequirementService.getTechRequirements()
         const totalTech = techReqs.length
-        const completedTech = techReqs.filter(r => r.progress === 'completed').length
-        const inProgressTech = techReqs.filter(r => r.progress === 'in_progress').length
-        const pendingTech = techReqs.filter(r => r.progress === 'not_started').length
-        const overdueTech = techReqs.filter(r => r.progress === 'delayed').length
+        const completedTech = techReqs.filter(r => r.progress === '已完成').length
+        const inProgressTech = techReqs.filter(r => r.progress === '处理中').length
+        const pendingTech = techReqs.filter(r => r.progress === '未开始').length
+        const overdueTech = techReqs.filter(r => r.progress === '已沟通延迟').length
         const total = totalTech
         const completed = completedTech
         const inProgress = inProgressTech
@@ -113,22 +112,16 @@ export default function Dashboard() {
     const fetchUsersAgg = async () => {
       try {
         // 读取启用人员
-        const { data: staff, error: staffErr } = await supabase
-          .from('tech_staff')
-          .select('name, department, active')
-          .eq('active', true)
-          .order('name', { ascending: true })
-        if (staffErr) throw staffErr
-        const techNames = (staff || []).filter(s => s.department === '技术部').map(s => s.name as string)
-        const creativeNames = (staff || []).filter(s => s.department === '创意部').map(s => s.name as string)
+        const techNames = await techRequirementService.getTechAssignees()
+        const creativeNames = await creativeRequirementService.getDesigners()
 
         // 技术部聚合（服务已有统计）
-        const techStatsMap = await unifiedRequirementService.getTechRequirements()
+        const techStatsMap = await techRequirementService.getTechRequirements()
         const techStatsGrouped: Record<string, any> = {}
         
         // 手动聚合统计数据
         for (const req of techStatsMap) {
-          const assignee = req.assigned_to || '未分配'
+          const assignee = (req as any).tech_assignee || '未分配'
           if (!techStatsGrouped[assignee]) {
             techStatsGrouped[assignee] = {
               total: 0,
@@ -141,10 +134,10 @@ export default function Dashboard() {
           }
           
           techStatsGrouped[assignee].total++
-          if (req.progress === 'not_started') techStatsGrouped[assignee].pending++
-          else if (req.progress === 'in_progress') techStatsGrouped[assignee].inProgress++
-          else if (req.progress === 'completed') techStatsGrouped[assignee].completed++
-          else if (req.progress === 'delayed') techStatsGrouped[assignee].delayed++
+          if (req.progress === '未开始') techStatsGrouped[assignee].pending++
+          else if (req.progress === '处理中') techStatsGrouped[assignee].inProgress++
+          else if (req.progress === '已完成') techStatsGrouped[assignee].completed++
+          else if (req.progress === '已沟通延迟') techStatsGrouped[assignee].delayed++
         }
         const techRows: TechAssigneeAgg[] = techNames.map(name => {
           const s = techStatsGrouped[name] || { total: 0, pending: 0, inProgress: 0, completed: 0, delayed: 0, avgDuration: 0 }
@@ -153,10 +146,7 @@ export default function Dashboard() {
         setTechAgg(techRows)
 
         // 创意部聚合（按 designer 与 status）
-        const { data: creatives, error: cErr } = await supabase
-          .from('creative_requirements')
-          .select('designer,status')
-        if (cErr) throw cErr
+        const creatives = await creativeRequirementService.getCreativeRequirements()
         const counters = new Map<string, CreativeDesignerAgg>()
         for (const name of creativeNames) {
           counters.set(name, { name, total: 0, notStarted: 0, inProgress: 0, completed: 0, noAction: 0 })
@@ -187,12 +177,12 @@ export default function Dashboard() {
     fetchUsersAgg()
   }, [])
 
-  const statusBadge = (r: TechRequirement) => {
+  const statusBadge = (r: ServiceTechRequirement) => {
     switch (r.progress) {
-      case 'completed': return <Badge className="bg-green-500">已完成</Badge>
-      case 'in_progress': return <Badge className="bg-blue-500">处理中</Badge>
-      case 'delayed': return <Badge className="bg-red-500">已沟通延迟</Badge>
-      case 'not_started': return <Badge className="bg-yellow-500">未开始</Badge>
+      case '已完成': return <Badge className="bg-green-500">已完成</Badge>
+      case '处理中': return <Badge className="bg-blue-500">处理中</Badge>
+      case '已沟通延迟': return <Badge className="bg-red-500">已沟通延迟</Badge>
+      case '未开始': return <Badge className="bg-yellow-500">未开始</Badge>
       default: return <Badge>未知</Badge>
     }
   }
