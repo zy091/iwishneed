@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/use-auth'
+import { usePermissions } from './hooks/use-permissions'
 import Layout from './layout'
 import Login from './pages/login'
 import Dashboard from './pages/dashboard'
@@ -13,12 +14,14 @@ import CreativeRequirementDetail from './pages/creative-requirement-detail'
 import RequirementImport from './pages/requirement-import'
 import AdminUsersPage from './pages/admin/users'
 import StaffManagementPage from './pages/admin/staff-management'
+import StaffManagementPage from './pages/admin/staff-management'
 import ProfilePage from './pages/profile'
 import SettingsPage from './pages/settings'
 import DebugPage from './pages/debug'
 
 function App() {
   const { isAuthenticated } = useAuth()
+  const { isAdmin } = usePermissions()
 
   // 顶层开放 /login，避免任何情况下出现 "No routes matched /login"
   return (
@@ -44,7 +47,8 @@ function App() {
 
         {/* 通用导入（用于创意部） */}
         <Route path="requirements/import" element={<RequirementImport />} />
-        <Route path="admin/users" element={<AdminUsersPage />} />
+        <Route path="admin/users" element={isAdmin ? <AdminUsersPage /> : <Navigate to="/" replace />} />
+        <Route path="admin/staff" element={isAdmin ? <StaffManagementPage /> : <Navigate to="/" replace />} />
         <Route path="admin/staff" element={<StaffManagementPage />} />
         
         {/* 用户设置 */}

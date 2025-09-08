@@ -130,6 +130,19 @@ export default function Layout() {
                 <Users className="mr-2 h-5 w-5" />
                 用户管理
               </NavLink>
+
+              <NavLink
+                to="/admin/staff"
+                className={({ isActive }) => cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+                  isActive
+                    ? "bg-blue-100 text-blue-900"
+                    : "text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <Users className="mr-2 h-5 w-5" />
+                人员管理
+              </NavLink>
             </>
           )}
         </nav>
