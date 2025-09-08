@@ -14,7 +14,6 @@ import CreativeRequirementDetail from './pages/creative-requirement-detail'
 import RequirementImport from './pages/requirement-import'
 import AdminUsersPage from './pages/admin/users'
 import StaffManagementPage from './pages/admin/staff-management'
-import StaffManagementPage from './pages/admin/staff-management'
 import ProfilePage from './pages/profile'
 import SettingsPage from './pages/settings'
 import DebugPage from './pages/debug'
@@ -49,7 +48,6 @@ function App() {
         <Route path="requirements/import" element={<RequirementImport />} />
         <Route path="admin/users" element={isAdmin ? <AdminUsersPage /> : <Navigate to="/" replace />} />
         <Route path="admin/staff" element={isAdmin ? <StaffManagementPage /> : <Navigate to="/" replace />} />
-        <Route path="admin/staff" element={<StaffManagementPage />} />
         
         {/* 用户设置 */}
         <Route path="profile" element={<ProfilePage />} />
