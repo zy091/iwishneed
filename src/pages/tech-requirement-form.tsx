@@ -18,7 +18,7 @@ import { zhCN } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { techRequirementService } from '@/services/tech-requirement-service'
-import type { TechRequirement } from '@/types'
+import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
 
 // 技术需求表单验证
 const techRequirementSchema = z.object({
@@ -41,7 +41,7 @@ export default function TechRequirementForm() {
   const navigate = useNavigate()
   const { user } = useAuth()
   
-  const [requirement, setRequirement] = useState<TechRequirement | null>(null)
+  const [requirement, setRequirement] = useState<ServiceTechRequirement | null>(null)
   const [techAssignees, setTechAssignees] = useState<string[]>([])
   const [attachments, setAttachments] = useState<File[]>([])
   const [loading, setLoading] = useState(false)
@@ -129,7 +129,7 @@ export default function TechRequirementForm() {
     
     setLoading(true)
     try {
-      const techData: Omit<TechRequirement, 'id' | 'created_at' | 'updated_at'> = {
+      const techData: Omit<ServiceTechRequirement, 'id' | 'created_at' | 'updated_at'> = {
         title: data.title,
         month: data.month,
         expected_completion_time: data.expected_completion_time.toISOString(),

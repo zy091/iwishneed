@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { techRequirementService } from '@/services/tech-requirement-service'
-import type { TechRequirement } from '@/types'
+import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
 import CommentsSection from '@/components/CommentsSection'
 import { Edit, ExternalLink } from 'lucide-react'
 
 export default function TechRequirementDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [data, setData] = useState<TechRequirement | null>(null)
+  const [data, setData] = useState<ServiceTechRequirement | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
