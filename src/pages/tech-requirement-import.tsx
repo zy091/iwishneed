@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/hooks/use-auth'
 import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 
 function detectDelimiter(sample: string): string {
   const lines = sample.split(/\r?\n/).slice(0, 5)

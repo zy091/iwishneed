@@ -42,7 +42,7 @@ import { creativeRequirementService } from '@/services/creative-requirement-serv
 import type { CreativeRequirement } from '@/services/creative-requirement-service'
 import { useAuth } from '@/hooks/use-auth'
 import { usePermissions } from '@/hooks/use-permissions'
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -220,7 +220,7 @@ export default function RequirementList() {
         
         setIsLoading(false)
       } catch (error) {
-        Logger.error('Failed to fetch requirements list', error)
+        logger.error('Failed to fetch requirements list', error)
         setIsLoading(false)
       }
     }
@@ -284,7 +284,7 @@ export default function RequirementList() {
       }
       setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
     } catch (error) {
-      Logger.error('Failed to delete requirement', error)
+      logger.error('Failed to delete requirement', error)
     }
   }
 

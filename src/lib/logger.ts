@@ -138,6 +138,9 @@ class Logger {
 // 创建全局日志实例
 export const logger = new Logger()
 
+// Alias for compatibility with existing imports expecting `Logger`
+export { logger as Logger }
+
 // 便捷的导出函数
 export const log = {
   debug: (message: string, data?: any) => logger.debug(message, data),

@@ -2,7 +2,7 @@
 // 注意：此文件已重构，移除了 mock 数据和本地存储逻辑
 // 实际的需求管理功能请使用 tech-requirement-service.ts 和 creative-requirement-service.ts
 
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 
 // 基础需求接口（保留用于向后兼容）
 export interface Requirement {

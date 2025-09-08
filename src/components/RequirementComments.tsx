@@ -15,7 +15,7 @@ import {
   type AddCommentParams 
 } from '@/services/comments-service'
 import { useAuth } from '@/hooks/use-auth'
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { 
   MessageCircle, 
   Reply, 
@@ -172,7 +172,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
       const data = await getComments(requirementId)
       setComments(data)
     } catch (err: any) {
-      Logger.error('获取评论失败', { error: err, requirementId })
+      logger.error('获取评论失败', { error: err, requirementId })
       setError('获取评论失败，请稍后再试')
       toast({
         title: '获取评论失败',
@@ -190,7 +190,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
       const canAdd = await canAddComment()
       setCanComment(canAdd)
     } catch (err) {
-      Logger.warn('检查评论权限失败', { error: err })
+      logger.warn('检查评论权限失败', { error: err })
       setCanComment(false)
     }
   }
@@ -220,7 +220,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
         description: '您的评论已成功发布'
       })
     } catch (err: any) {
-      Logger.error('添加评论失败', { error: err, requirementId })
+      logger.error('添加评论失败', { error: err, requirementId })
       toast({
         title: '添加评论失败',
         description: err.message || '请稍后再试',
@@ -253,7 +253,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
         description: '您的回复已成功发布'
       })
     } catch (err: any) {
-      Logger.error('添加回复失败', { error: err, requirementId })
+      logger.error('添加回复失败', { error: err, requirementId })
       toast({
         title: '添加回复失败',
         description: err.message || '请稍后再试',
@@ -275,7 +275,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
         description: '评论已成功删除'
       })
     } catch (err: any) {
-      Logger.error('删除评论失败', { error: err, commentId })
+      logger.error('删除评论失败', { error: err, commentId })
       toast({
         title: '删除评论失败',
         description: err.message || '请稍后再试',

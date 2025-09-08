@@ -31,7 +31,7 @@ import {
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useAuth } from '@/hooks/use-auth'
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { techRequirementService, type TechRequirementStats } from '@/services/tech-requirement-service'
 import type { TechRequirement } from '@/services/tech-requirement-service'
 
@@ -71,7 +71,7 @@ export default function TechRequirementList() {
         setTechAssignees(assignees)
         setIsLoading(false)
       } catch (error) {
-        Logger.error('获取技术需求列表失败', { error })
+        logger.error('获取技术需求列表失败', { error })
         setIsLoading(false)
       }
     }
@@ -120,7 +120,7 @@ export default function TechRequirementList() {
       await techRequirementService.deleteTechRequirement(id)
       setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
     } catch (error) {
-      Logger.error('删除需求失败', { error, id })
+      logger.error('删除需求失败', { error, id })
     }
   }
 

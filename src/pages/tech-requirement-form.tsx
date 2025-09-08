@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 
 // 技术需求表单验证
 const techRequirementSchema = z.object({
@@ -107,7 +107,7 @@ export default function TechRequirementForm() {
           }
         }
       } catch (error) {
-        Logger.error('Failed to load tech requirement data', error)
+        logger.error('Failed to load tech requirement data', error)
       }
     }
 
@@ -159,7 +159,7 @@ export default function TechRequirementForm() {
 
       navigate('/departments/tech')
     } catch (error) {
-      Logger.error('Failed to save tech requirement', error)
+      logger.error('Failed to save tech requirement', error)
     } finally {
       setLoading(false)
     }

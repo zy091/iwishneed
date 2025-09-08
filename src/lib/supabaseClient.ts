@@ -16,9 +16,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
+import { logger } from './logger'
+
 if (import.meta.env.DEV) {
   // 仅开发环境打印
-  import('./logger').then(({ logger }) => {
-    logger.debug('Supabase client initialized')
-  })
+  logger.debug('Supabase client initialized')
 }

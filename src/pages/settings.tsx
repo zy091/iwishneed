@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { systemSettingsService, type SystemSettings } from '@/services/system-settings-service'
-import { Logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 
 export default function SettingsPage() {
   const [form, setForm] = useState<SystemSettings>({ enableCreativeModule: true, enableTechModule: true })
@@ -18,7 +18,7 @@ export default function SettingsPage() {
         const s = await systemSettingsService.getSettings()
         setForm(s)
       } catch (e) {
-        Logger.error('Failed to load settings', e)
+        logger.error('Failed to load settings', e)
       } finally {
         setLoading(false)
       }
@@ -31,7 +31,7 @@ export default function SettingsPage() {
     try {
       await systemSettingsService.saveSettings(form)
     } catch (e) {
-      Logger.error('Failed to save settings', e)
+      logger.error('Failed to save settings', e)
     } finally {
       setSaving(false)
     }
