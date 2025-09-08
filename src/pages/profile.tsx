@@ -1,102 +1,149 @@
 import React, { useEffect, useState } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { authService } from '@/services/auth-service'
 import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/components/ui/use-toast'
+import { authService } from '@/services/auth-service'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 export default function ProfilePage() {
-  const { user } = useAuth()
-  const [name, setName] = useState('')
-  const [avatar, setAvatar] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [pwdSaving, setPwdSaving] = useState(false)
+  const { user, setExternalUser } = useAuth()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    newPassword: '',
+    confirmPassword: ''
+  })
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        const p = await authService.getCurrentProfile()
-        if (p) {
-          setName(p.name || '')
-          setAvatar(p.avatar || '')
-          setEmail(p.email || '')
-        }
-      } catch (e) {
-        console.error('加载个人资料失败', e)
-      } finally {
-        setLoading(false)
+    setFormData(prev => ({
+      ...prev,
+      name: user?.name || '',
+      email: user?.email || ''
+    }))
+  }, [user?.name, user?.email])
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.name || !/^[\u4e00-\u9fa5]+$/.test(formData.name.trim())) {
+      toast({ title: '错误', description: '昵称必须为中文字符', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
+    try {
+      await authService.updateProfile({ name: formData.name.trim() })
+      // 刷新本地上下文（如不可用则回退刷新页面）
+      if (typeof setExternalUser === 'function') {
+        setExternalUser({
+          ...(user as any),
+          name: formData.name.trim(),
+          avatar: undefined
+        })
+      } else {
+        // 回退方案，避免上下文不同步
+        setTimeout(() => window.location.reload(), 300)
       }
-    }
-    run()
-  }, [])
-
-  const saveProfile = async () => {
-    setSaving(true)
-    try {
-      await authService.updateProfile({ name, avatar })
-    } catch (e) {
-      console.error('更新资料失败', e)
+      toast({ title: '成功', description: '个人资料更新成功' })
+    } catch (err: any) {
+      toast({ title: '错误', description: '更新失败：' + (err?.message || ''), variant: 'destructive' })
     } finally {
-      setSaving(false)
+      setLoading(false)
     }
   }
 
-  const changePassword = async () => {
-    if (!password) return
-    setPwdSaving(true)
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast({ title: '错误', description: '新密码和确认密码不匹配', variant: 'destructive' })
+      return
+    }
+    if (!formData.newPassword || formData.newPassword.length < 6) {
+      toast({ title: '错误', description: '新密码长度至少6位', variant: 'destructive' })
+      return
+    }
+    setLoading(true)
     try {
-      await authService.updatePassword(password)
-      setPassword('')
-    } catch (e) {
-      console.error('修改密码失败', e)
+      await authService.updatePassword(formData.newPassword)
+      toast({ title: '成功', description: '密码修改成功' })
+      setFormData(prev => ({ ...prev, newPassword: '', confirmPassword: '' }))
+    } catch (err: any) {
+      toast({ title: '错误', description: '密码修改失败：' + (err?.message || ''), variant: 'destructive' })
     } finally {
-      setPwdSaving(false)
+      setLoading(false)
     }
   }
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">加载中...</div>
-  }
+  const firstChar = (formData.name || user?.name || '用').slice(0, 1)
 
   return (
-    <div className="container mx-auto py-6">
-      <Card className="max-w-2xl mx-auto">
+    <div className="container max-w-2xl mx-auto py-6 space-y-6">
+      <Card>
         <CardHeader>
           <CardTitle>个人资料</CardTitle>
-          <CardDescription>查看和更新您的账户信息</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarFallback className="text-lg">{firstChar}</AvatarFallback>
+            </Avatar>
+            <div className="text-sm text-muted-foreground">
+              头像默认显示昵称首字
+            </div>
+          </div>
+          <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div>
-              <Label>邮箱</Label>
-              <Input value={email} disabled />
+              <Label htmlFor="name">昵称（中文）</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="请输入中文昵称"
+              />
             </div>
             <div>
-              <Label>昵称</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="您的显示名称" />
+              <Label htmlFor="email">邮箱</Label>
+              <Input id="email" value={formData.email} disabled />
             </div>
-          </div>
-          <div>
-            <Label>头像地址</Label>
-            <Input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="https://..." />
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={saveProfile} disabled={saving}>{saving ? '保存中...' : '保存资料'}</Button>
-          </div>
-          <hr />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button type="submit" disabled={loading}>
+              保存资料
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>修改密码</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
-              <Label>新密码</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="至少 6 位" />
+              <Label htmlFor="newPassword">新密码</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={formData.newPassword}
+                onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
+                placeholder="至少6位"
+              />
             </div>
-            <div className="flex items-end">
-              <Button onClick={changePassword} disabled={pwdSaving || !password}>{pwdSaving ? '提交中...' : '修改密码'}</Button>
+            <div>
+              <Label htmlFor="confirmPassword">确认新密码</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+              />
             </div>
-          </div>
+            <Button type="submit" disabled={loading}>
+              修改密码
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

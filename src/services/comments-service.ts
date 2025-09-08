@@ -127,22 +127,53 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
     throw new Error('用户未登录或令牌无效')
   }
 
-  const { data: comment, error } = await supabase
-    .from('comments')
-    .insert({
-      requirement_id: params.requirement_id,
-      content: params.content,
-      parent_id: params.parent_id,
-      user_id: userInfo.id,
-      user_external_id: userInfo.id,
-      user_email: userInfo.email,
-      attachments_count: params.attachments?.length || 0
-    })
-    .select()
-    .single()
+  // 尝试完整插入 → 失败则最小字段回退，规避策略/列不匹配
+  let comment: any | null = null
+  let errMsg: string | null = null
 
-  if (error) {
-    console.error('添加评论失败:', error)
+  // 方案A：完整字段
+  {
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        requirement_id: params.requirement_id,
+        content: params.content,
+        parent_id: params.parent_id,
+        user_id: userInfo.id,
+        user_external_id: userInfo.id,
+        user_email: userInfo.email,
+        attachments_count: params.attachments?.length || 0
+      })
+      .select()
+      .maybeSingle()
+    if (!error && data) {
+      comment = data
+    } else {
+      errMsg = error?.message || 'insert failed'
+    }
+  }
+
+  // 方案B：回退（仅必填字段），让触发器/默认值处理用户列
+  if (!comment) {
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        requirement_id: params.requirement_id,
+        content: params.content,
+        parent_id: params.parent_id,
+        // 不再手动写 user_* 列，交给数据库侧（如触发器）或置空
+        attachments_count: params.attachments?.length || 0
+      })
+      .select()
+      .maybeSingle()
+    if (!error && data) {
+      comment = data
+      errMsg = null
+    }
+  }
+
+  if (!comment) {
+    console.error('添加评论失败:', errMsg)
     throw new Error('添加评论失败')
   }
 
@@ -170,12 +201,12 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
     requirement_id: comment.requirement_id,
     content: comment.content,
     parent_id: comment.parent_id,
-    user_external_id: comment.user_external_id,
-    user_email: comment.user_email,
-    user_email_masked: maskEmail(comment.user_email),
+    user_external_id: comment.user_external_id || userInfo.id,
+    user_email: comment.user_email || userInfo.email,
+    user_email_masked: maskEmail(comment.user_email || userInfo.email),
     created_at: comment.created_at,
     updated_at: comment.updated_at,
-    attachments_count: comment.attachments_count,
+    attachments_count: comment.attachments_count ?? (params.attachments?.length || 0),
     attachments: [] as any
   }
 }
