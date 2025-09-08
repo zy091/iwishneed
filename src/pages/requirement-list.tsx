@@ -36,13 +36,39 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card'
-import { supabaseRequirementService, Requirement, TechRequirement } from '../services/supabase-requirement-service'
-import { creativeRequirementService, CreativeRequirement } from '@/services/creative-requirement-service'
+import { techRequirementService } from '@/services/tech-requirement-service'
+import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
+import { creativeRequirementService } from '@/services/creative-requirement-service'
+import type { CreativeRequirement } from '@/services/creative-requirement-service'
 import { useAuth } from '../hooks/use-auth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+
+type CombinedRequirement = {
+  id?: string
+  title: string
+  description?: string
+  submitter?: { id?: string; name?: string; avatar?: string }
+  created_at?: string
+  type: 'tech' | 'creative'
+  department: '技术部' | '创意部'
+  status?: 'completed' | 'inProgress' | 'pending' | 'overdue'
+  priority?: 'high' | 'medium' | 'low'
+  due_date?: string
+  tech_month?: string
+  tech_urgency?: '高' | '中' | '低'
+  tech_client_type?: '流量运营服务' | '全案深度服务'
+  tech_assignee?: string
+  tech_progress?: '未开始' | '处理中' | '已完成' | '已沟通延迟'
+  tech_expected_completion_time?: string
+  tech_start_time?: string
+  tech_end_time?: string
+}
+
+type Requirement = CombinedRequirement
+type TechRequirement = CombinedRequirement
 
 export default function RequirementList() {
   const [requirements, setRequirements] = useState<Requirement[]>([])
@@ -96,6 +122,71 @@ export default function RequirementList() {
            submitter.id?.toString() === uid
   }
 
+  // 数据聚合工具
+  const fetchCombinedRequirements = async (filters: any): Promise<CombinedRequirement[]> => {
+    const [tech, creative] = await Promise.all([
+      techRequirementService.getTechRequirements(),
+      creativeRequirementService.getCreativeRequirements()
+    ])
+
+    const techMapped: CombinedRequirement[] = (tech || []).map(t => ({
+      id: (t as any).id,
+      title: (t as any).title,
+      description: (t as any).description,
+      submitter: { id: (t as any).submitter_id, name: (t as any).submitter_name, avatar: (t as any).submitter_avatar },
+      created_at: (t as any).created_at,
+      type: 'tech',
+      department: '技术部',
+      status: (t as any).progress === '已完成' ? 'completed'
+            : (t as any).progress === '处理中' ? 'inProgress'
+            : (t as any).progress === '未开始' ? 'pending'
+            : (t as any).progress === '已沟通延迟' ? 'overdue'
+            : undefined,
+      priority: (t as any).urgency === '高' ? 'high' : (t as any).urgency === '低' ? 'low' : 'medium',
+      due_date: (t as any).expected_completion_time,
+      tech_month: (t as any).month,
+      tech_urgency: (t as any).urgency,
+      tech_client_type: (t as any).client_type,
+      tech_assignee: (t as any).tech_assignee,
+      tech_progress: (t as any).progress,
+      tech_expected_completion_time: (t as any).expected_completion_time,
+      tech_start_time: (t as any).start_time,
+      tech_end_time: (t as any).end_time,
+    }))
+
+    const creativeMapped: CombinedRequirement[] = (creative || []).map(c => ({
+      id: (c as any).id,
+      title: (c as any).site_name || (c as any).asset_type || '创意需求',
+      description: undefined,
+      submitter: { id: (c as any).submitter_id, name: (c as any).submitter_name },
+      created_at: (c as any).created_at,
+      type: 'creative',
+      department: '创意部',
+      status: (c as any).status === '已完成' ? 'completed'
+            : (c as any).status === '处理中' ? 'inProgress'
+            : (c as any).status === '未开始' ? 'pending'
+            : undefined,
+      priority: (c as any).urgency === '高' ? 'high' : (c as any).urgency === '低' ? 'low' : 'medium',
+      due_date: (c as any).expected_delivery_time
+    }))
+
+    let merged = [...techMapped, ...creativeMapped]
+    if (filters?.department === '技术部') merged = merged.filter(x => x.department === '技术部')
+    else if (filters?.department === '创意部') merged = merged.filter(x => x.department === '创意部')
+    return merged
+  }
+
+  const computeStats = (data: CombinedRequirement[]) => {
+    const t = data.filter(x => x.type === 'tech')
+    const completed = t.filter(r => r.tech_progress === '已完成').length
+    const inProgress = t.filter(r => r.tech_progress === '处理中').length
+    const pending = t.filter(r => r.tech_progress === '未开始').length
+    const overdue = t.filter(r => r.tech_progress === '已沟通延迟').length
+    const total = t.length
+    const completionRate = total > 0 ? (completed / total) * 100 : 0
+    return { total, completed, inProgress, pending, overdue, completionRate, techDept: t.length, creativeDept: data.filter(x => x.type === 'creative').length }
+  }
+
   // 处理行点击事件
   const handleRowClick = (requirementId: string, event: React.MouseEvent) => {
     // 如果点击的是按钮或链接，不触发行点击
@@ -113,8 +204,8 @@ export default function RequirementList() {
           filters.department = currentDepartment
         }
         
-        const data = await supabaseRequirementService.getRequirements(filters)
-        const statsData = await supabaseRequirementService.getStats()
+        const data = await fetchCombinedRequirements(filters)
+        const statsData = computeStats(data)
         
         setRequirements(data)
         setFilteredRequirements(data)
@@ -122,8 +213,8 @@ export default function RequirementList() {
         
         // 获取技术负责人列表
         if (currentDepartment === '技术部') {
-          const assignees = await supabaseRequirementService.getTechAssignees()
-          setTechAssignees(assignees.map(a => a.name))
+          const assignees = await techRequirementService.getTechAssignees()
+          setTechAssignees(assignees)
         }
         
         setIsLoading(false)
@@ -184,7 +275,12 @@ export default function RequirementList() {
 
   const handleDelete = async (id: string) => {
     try {
-      await supabaseRequirementService.deleteRequirement(id)
+      const target = requirements.find(r => r.id === id)
+      if ((target as any)?.type === 'tech') {
+        await techRequirementService.deleteTechRequirement(id)
+      } else if ((target as any)?.type === 'creative') {
+        await creativeRequirementService.deleteCreativeRequirement(id)
+      }
       setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
     } catch (error) {
       console.error('删除需求失败:', error)
@@ -251,7 +347,8 @@ export default function RequirementList() {
 
   const calculateTechDuration = (req: TechRequirement) => {
     if (req.tech_start_time && req.tech_end_time) {
-      return supabaseRequirementService.calculateTechDuration(req.tech_start_time, req.tech_end_time)
+      const diffMs = new Date(req.tech_end_time).getTime() - new Date(req.tech_start_time).getTime()
+      return Math.max(0, Math.round((diffMs / 3600000) * 100) / 100)
     }
     return 0
   }
