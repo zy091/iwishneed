@@ -53,15 +53,22 @@ function mapSupabaseUser(su: SupaUser): User {
 // 异步更新用户 profile 信息
 async function updateUserProfile(userId: string, setUser: (user: User | null) => void, currentUser: User) {
   try {
-    const { data: profile, error } = await supabase.rpc('get_current_user_profile')
-    
-    if (error) {
-      console.warn('Failed to fetch user profile:', error.message)
-      return
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_current_user_profile')
+    let profileData: any | null = null
+    if (!rpcError && rpcData) {
+      if (Array.isArray(rpcData) && rpcData.length > 0) profileData = rpcData[0]
+      else if (!Array.isArray(rpcData)) profileData = rpcData as any
+    }
+    if (rpcError || !profileData) {
+      const { data: row, error: pErr } = await supabase.from('profiles').select('name, role_id').eq('id', userId).maybeSingle()
+      if (!pErr && row) profileData = row as any
     }
     
-    if (profile && profile.length > 0) {
-      const profileData = profile[0]
+    if (rpcError) {
+      console.warn('Failed to fetch user profile via RPC:', rpcError.message)
+    }
+    
+    if (profileData) {
       const role_id = profileData.role_id ?? 4
       const profileName = profileData.name || currentUser.name
       const rolename = profileData.rolename || ROLE_NAME_MAP[role_id] || '提交者'

@@ -60,18 +60,34 @@ function maskEmail(email: string): string {
  * 获取需求的评论列表（包含附件）
  */
 export async function getComments(requirement_id: string): Promise<Comment[]> {
-  const { data, error } = await supabase
-    .from('comments_public')
-    .select('*')
-    .eq('requirement_id', requirement_id)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('获取评论失败:', error)
-    throw error
+  // 优先从视图读取，失败则回退到基础表
+  let rows: any[] = []
+  {
+    const { data, error } = await supabase
+      .from('comments_public')
+      .select('*')
+      .eq('requirement_id', requirement_id)
+      .order('created_at', { ascending: false })
+    if (!error && data) {
+      rows = data as any[]
+    } else {
+      console.warn('comments_public 查询失败，回退到 comments:', error?.message)
+      const { data: data2, error: err2 } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('requirement_id', requirement_id)
+        .order('created_at', { ascending: false })
+      if (err2) {
+        console.error('获取评论失败:', err2)
+        throw err2
+      }
+      rows = (data2 as any[]) || []
+      // 回退数据无脱敏字段，补充 user_email_masked
+      rows = rows.map((r: any) => ({ ...r, user_email_masked: maskEmail(r.user_email || '') }))
+    }
   }
 
-  const comments: Comment[] = (data as any) || []
+  const comments: Comment[] = rows as any
 
   const needIds = comments.filter((c) => (c.attachments_count || 0) > 0).map((c) => c.id)
   if (needIds.length) {
