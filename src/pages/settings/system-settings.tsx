@@ -6,7 +6,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Button } from '@/components/ui/button'
 import { systemSettingsService, type SystemSettings } from '@/services/system-settings-service'
 
-export default function SettingsPage() {
+export default function SystemSettingsPage() {
   const [form, setForm] = useState<SystemSettings>({ enableCreativeModule: true, enableTechModule: true })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
