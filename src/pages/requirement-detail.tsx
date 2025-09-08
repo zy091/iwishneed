@@ -23,8 +23,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { RequirementService, Requirement } from '../services/requirement-service'
-import { useAuth } from '../hooks/use-auth'
+import { RequirementService, Requirement } from '@/services/requirement-service'
+import { useAuth } from '@/hooks/use-auth'
 import { 
   Calendar, 
   Clock, 

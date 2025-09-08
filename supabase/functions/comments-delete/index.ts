@@ -1,6 +1,7 @@
 // 评论删除 Edge Function（支持管理员删除与清理附件）
 // 验证主项目访问令牌并删除评论（本人可删；role_id=0 或 ADMIN_EMAILS 可删任意评论）
 
+/* @ts-nocheck */
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 

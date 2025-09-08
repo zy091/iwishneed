@@ -1,9 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
+import { TechRequirement as BaseTechRequirement, RequirementPriority, RequirementStatus } from '@/types/requirement'
 
-export interface TechRequirement {
-  id?: string
-  title: string
-  
+export interface TechRequirement extends BaseTechRequirement {
   // 提交人填写字段（严格按照飞书表格）
   month: string // 月份
   submit_time?: string // 需求提交时间
@@ -25,8 +23,10 @@ export interface TechRequirement {
   // 系统字段
   submitter_id?: string
   submitter_avatar?: string
-  created_at?: string
-  updated_at?: string
+  
+  // 必需的基础字段
+  priority: RequirementPriority
+  status: RequirementStatus
 }
 
 export interface TechRequirementStats {
@@ -74,7 +74,36 @@ class TechRequirementService {
 
     const { data, error } = await query
     if (error) throw error
-    return data || []
+    
+    // 为每个需求添加默认的priority和status字段
+    const requirements = (data || []).map(req => ({
+      ...req,
+      priority: this.mapUrgencyToPriority(req.urgency),
+      status: this.mapProgressToStatus(req.progress)
+    })) as TechRequirement[]
+    
+    return requirements
+  }
+
+  // 映射紧急程度到优先级
+  private mapUrgencyToPriority(urgency?: string): RequirementPriority {
+    switch (urgency) {
+      case '高': return 'high'
+      case '中': return 'medium'
+      case '低': return 'low'
+      default: return 'medium'
+    }
+  }
+
+  // 映射进度到状态
+  private mapProgressToStatus(progress?: string): RequirementStatus {
+    switch (progress) {
+      case '未开始': return 'pending'
+      case '处理中': return 'in_progress'
+      case '已完成': return 'completed'
+      case '已沟通延迟': return 'pending'
+      default: return 'pending'
+    }
   }
 
   // 获取技术需求详情
@@ -89,7 +118,15 @@ class TechRequirementService {
       if (error.code === 'PGRST116') return null
       throw error
     }
-    return data
+    
+    if (!data) return null
+    
+    // 添加默认的priority和status字段
+    return {
+      ...data,
+      priority: this.mapUrgencyToPriority(data.urgency),
+      status: this.mapProgressToStatus(data.progress)
+    } as TechRequirement
   }
 
   // 创建技术需求

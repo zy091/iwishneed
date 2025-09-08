@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
 import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
+import { Logger } from '@/lib/logger'
 
 // 技术需求表单验证
 const techRequirementSchema = z.object({
@@ -106,7 +107,7 @@ export default function TechRequirementForm() {
           }
         }
       } catch (error) {
-        console.error('加载数据失败:', error)
+        Logger.error('Failed to load tech requirement data', error)
       }
     }
 
@@ -145,6 +146,9 @@ export default function TechRequirementForm() {
         progress: data.progress ? toCnProgress(data.progress as any) : '未开始',
         submitter_id: user.id,
         submitter_avatar: user.avatar,
+        // 添加必需的字段
+        priority: toCnUrgency(data.urgency as any), // 使用urgency映射为priority
+        status: data.progress ? toCnProgress(data.progress as any) : '未开始', // 使用progress映射为status
       }
 
       if (isEdit && id) {
@@ -155,7 +159,7 @@ export default function TechRequirementForm() {
 
       navigate('/departments/tech')
     } catch (error) {
-      console.error('保存失败:', error)
+      Logger.error('Failed to save tech requirement', error)
     } finally {
       setLoading(false)
     }

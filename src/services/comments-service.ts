@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { Logger } from '@/lib/logger'
 
 export interface Comment {
   id: string
@@ -85,14 +86,14 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
     if (!error && data) {
       rows = data as any[]
     } else {
-      console.warn('comments_public 查询失败，回退到 comments:', error?.message)
+      Logger.warn('comments_public 查询失败，回退到 comments', { error: error?.message })
       const { data: data2, error: err2 } = await supabase
         .from('comments')
         .select('*')
         .eq('requirement_id', requirement_id)
         .order('created_at', { ascending: false })
       if (err2) {
-        console.error('获取评论失败:', err2)
+        Logger.error('获取评论失败', { error: err2 })
         throw err2
       }
       rows = (data2 as any[]) || []
@@ -115,7 +116,7 @@ export async function getComments(requirement_id: string): Promise<Comment[]> {
       if (!error && data) {
         attaches = data as any
       } else {
-        console.warn('comment_attachments_public 查询失败，回退到 comment_attachments:', error?.message)
+        Logger.warn('comment_attachments_public 查询失败，回退到 comment_attachments', { error: error?.message })
         const { data: data2, error: err2 } = await supabase
           .from('comment_attachments')
           .select('*')
@@ -155,7 +156,7 @@ export async function uploadToSignedUrls(
     const f = files[i]
     const { error } = await supabase.storage.from(bucket).uploadToSignedUrl(it.path, it.token, f)
     if (error) {
-      console.error('uploadToSignedUrl error:', error)
+      Logger.error('uploadToSignedUrl 失败', { error })
       throw error
     }
     results.push({ path: it.path, name: f.name, type: f.type, size: f.size })
@@ -205,10 +206,10 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
       }
     } else {
       const txt = await res.text().catch(() => '')
-      console.warn('comments-add 调用失败:', res.status, txt)
+      Logger.warn('comments-add 调用失败', { status: res.status, response: txt })
     }
   } catch (err) {
-    console.warn('comments-add 异常:', (err as any)?.message || err)
+    Logger.warn('comments-add 异常', { error: (err as any)?.message || err })
   }
 
   // 方案F：回退（直连数据库）——完整插入 → 最小字段回退
@@ -256,7 +257,7 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
   }
 
   if (!comment) {
-    console.error('添加评论失败:', errMsg)
+    Logger.error('添加评论失败', { error: errMsg })
     throw new Error('添加评论失败')
   }
 
@@ -270,7 +271,7 @@ export async function addComment(params: AddCommentParams): Promise<Comment> {
     }))
 
     const { error: attachError } = await supabase.from('comment_attachments').insert(attachmentRecords)
-    if (attachError) console.error('添加附件失败:', attachError) // 不抛出，评论已成功
+    if (attachError) Logger.error('添加附件失败', { error: attachError }) // 不抛出，评论已成功
   }
 
   return {
@@ -309,10 +310,10 @@ export async function deleteComment(commentId: string): Promise<boolean> {
       return true
     } else {
       const txt = await res.text().catch(() => '')
-      console.warn('comments-delete 调用失败:', res.status, txt)
+      Logger.warn('comments-delete 调用失败', { status: res.status, response: txt })
     }
   } catch (err) {
-    console.warn('comments-delete 异常:', (err as any)?.message || err)
+    Logger.warn('comments-delete 异常', { error: (err as any)?.message || err })
   }
 
   // 回退：直连数据库删除（含权限检查）
@@ -324,7 +325,7 @@ export async function deleteComment(commentId: string): Promise<boolean> {
     .single()
 
   if (fetchError) {
-    console.error('获取评论失败:', fetchError)
+    Logger.error('获取评论失败', { error: fetchError })
     throw new Error('评论不存在或已被删除')
   }
 
@@ -340,16 +341,16 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 
   // 删除附件记录
   const { error: attachError } = await supabase.from('comment_attachments').delete().eq('comment_id', commentId)
-  if (attachError) console.error('删除附件记录失败:', attachError)
+  if (attachError) Logger.error('删除附件记录失败', { error: attachError })
 
   // 删除子评论
   const { error: childError } = await supabase.from('comments').delete().eq('parent_id', commentId)
-  if (childError) console.error('删除子评论失败:', childError)
+  if (childError) Logger.error('删除子评论失败', { error: childError })
 
   // 删除主评论
   const { error } = await supabase.from('comments').delete().eq('id', commentId)
   if (error) {
-    console.error('删除评论失败:', error)
+    Logger.error('删除评论失败', { error })
     throw new Error('删除评论失败: ' + error.message)
   }
 
@@ -373,16 +374,16 @@ export async function getAttachmentSignedUrl(path: string): Promise<string> {
       if (url) return url
     } else {
       const txt = await res.text().catch(() => '')
-      console.warn('comments-file-url 调用失败:', res.status, txt)
+      Logger.warn('comments-file-url 调用失败', { status: res.status, response: txt })
     }
   } catch (err) {
-    console.warn('comments-file-url 异常:', (err as any)?.message || err)
+    Logger.warn('comments-file-url 异常', { error: (err as any)?.message || err })
   }
 
   // 回退：直连 storage
   const { data, error } = await supabase.storage.from('comments-attachments').createSignedUrl(path, 3600)
   if (error) {
-    console.error('获取签名URL失败:', error)
+    Logger.error('获取签名URL失败', { error })
     throw new Error(`获取文件URL失败: ${error.message}`)
   }
   if (!data?.signedUrl) {
@@ -416,10 +417,10 @@ export async function presignUploads(
       }
     } else {
       const txt = await res.text().catch(() => '')
-      console.warn('comments-upload-presign 调用失败:', res.status, txt)
+      Logger.warn('comments-upload-presign 调用失败', { status: res.status, response: txt })
     }
   } catch (err) {
-    console.warn('comments-upload-presign 异常:', (err as any)?.message || err)
+    Logger.warn('comments-upload-presign 异常', { error: (err as any)?.message || err })
   }
 
   // 回退：前端自行生成路径并创建签名上传
@@ -432,7 +433,7 @@ export async function presignUploads(
 
     const { data, error } = await supabase.storage.from('comments-attachments').createSignedUploadUrl(filePath)
     if (error) {
-      console.error('创建预签名URL失败:', error)
+      Logger.error('创建预签名URL失败', { error })
       throw new Error(`创建预签名URL失败: ${error.message}`)
     }
     results.push({ path: filePath, token: data.token })

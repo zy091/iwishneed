@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './use-auth'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from '@/lib/supabaseClient'
 
 type Permission = 
   | 'view_requirements'

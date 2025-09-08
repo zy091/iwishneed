@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/hooks/use-auth'
 import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
+import { Logger } from '@/lib/logger'
+import { Logger } from '@/lib/logger'
 
 function detectDelimiter(sample: string): string {
   const lines = sample.split(/\r?\n/).slice(0, 5)
@@ -214,7 +216,7 @@ export default function RequirementImport() {
 
       setLog(['未识别的部门，暂不导入。请在地址中指定 ?department=tech 或 ?department=creative'])
     } catch (e: any) {
-      console.error('导入失败:', e)
+      Logger.error('Requirement import failed', e)
       setLog([`导入失败：${e?.message || '未知错误'}`])
     }
   }

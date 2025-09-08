@@ -1,3 +1,4 @@
+/* @ts-nocheck */
 // 生成评论附件的签名上传令牌
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'

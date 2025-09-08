@@ -1,6 +1,7 @@
 // 评论添加 Edge Function（支持一级回复与附件）
 // 验证主项目访问令牌并添加评论与附件元数据
 
+/* @ts-nocheck */
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 

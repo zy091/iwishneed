@@ -31,8 +31,9 @@ import {
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useAuth } from '@/hooks/use-auth'
+import { Logger } from '@/lib/logger'
 import { techRequirementService, type TechRequirementStats } from '@/services/tech-requirement-service'
-import type { TechRequirement } from '@/types'
+import type { TechRequirement } from '@/services/tech-requirement-service'
 
 export default function TechRequirementList() {
   const [requirements, setRequirements] = useState<TechRequirement[]>([])
@@ -70,7 +71,7 @@ export default function TechRequirementList() {
         setTechAssignees(assignees)
         setIsLoading(false)
       } catch (error) {
-        console.error('获取技术需求列表失败:', error)
+        Logger.error('获取技术需求列表失败', { error })
         setIsLoading(false)
       }
     }
@@ -85,8 +86,8 @@ export default function TechRequirementList() {
     if (searchTerm) {
       result = result.filter(req => 
         req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        req.submitter_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (req.submitter_name && req.submitter_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (req.tech_assignee && req.tech_assignee.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
@@ -119,7 +120,7 @@ export default function TechRequirementList() {
       await techRequirementService.deleteTechRequirement(id)
       setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
     } catch (error) {
-      console.error('删除需求失败:', error)
+      Logger.error('删除需求失败', { error, id })
     }
   }
 
@@ -362,10 +363,10 @@ export default function TechRequirementList() {
                     </div>
                   </div>
                   <div className="mt-3 flex justify-end gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => navigate(`/tech-requirements/${req.id}`)}>
+                    <Button variant="secondary" size="sm" onClick={() => navigate(`/tech-requirements/${req.id!}`)}>
                       <Eye className="h-4 w-4 mr-1" /> 查看
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/tech-requirements/${req.id}/edit`)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/tech-requirements/${req.id!}/edit`)}>
                       <Edit className="h-4 w-4 mr-1" /> 编辑
                     </Button>
                   </div>

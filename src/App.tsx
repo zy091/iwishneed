@@ -16,7 +16,7 @@ import AdminUsersPage from './pages/admin/users'
 import StaffManagementPage from './pages/admin/staff-management'
 import ProfilePage from './pages/profile'
 import SettingsPage from './pages/settings'
-import DebugPage from './pages/debug'
+
 
 function App() {
   const { isAuthenticated } = useAuth()
@@ -26,7 +26,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/debug" element={<DebugPage />} />
+
       <Route path="/" element={<Layout />}>
         {/* 仪表盘 */}
         <Route index element={<Dashboard />} />
@@ -61,7 +61,7 @@ function App() {
         <Route path="tech/requirements/import" element={<Navigate to="/tech-requirement-import" replace />} />
         <Route path="reports" element={<Navigate to="/" replace />} />
         <Route path="analytics" element={<Navigate to="/" replace />} />
-        <Route path="database-management" element={<Navigate to="/" replace />} />
+
       </Route>
 
       {/* 未匹配路径：根据是否登录跳转 */}

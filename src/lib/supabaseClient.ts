@@ -18,6 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 if (import.meta.env.DEV) {
   // 仅开发环境打印
-  // eslint-disable-next-line no-console
-  console.log('✅ Supabase client initialized')
+  import('./logger').then(({ logger }) => {
+    logger.debug('Supabase client initialized')
+  })
 }
