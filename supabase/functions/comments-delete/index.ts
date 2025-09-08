@@ -43,7 +43,7 @@ function corsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '*'
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Main-Access-Token, Authorization',
     'Access-Control-Allow-Credentials': 'true',
   }
@@ -84,14 +84,16 @@ serve(async (req) => {
       headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     })
   }
-  if (req.method !== 'DELETE') {
+  if (req.method !== 'DELETE' && req.method !== 'POST') {
     return new Response(JSON.stringify({ error: '方法不允许' }), {
       status: 405,
       headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     })
   }
 
-  const token = req.headers.get('X-Main-Access-Token') || ''
+  const authHeader = req.headers.get('Authorization') || ''
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const token = req.headers.get('X-Main-Access-Token') || bearer || ''
   const user = await verifyMainAccessToken(token)
   if (!user) {
     return new Response(JSON.stringify({ error: '主项目访问令牌无效' }), {
@@ -101,8 +103,18 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url)
-    const commentId = url.searchParams.get('id')
+    let commentId: string | null = null
+    if (req.method === 'DELETE') {
+      const url = new URL(req.url)
+      commentId = url.searchParams.get('id')
+    } else {
+      try {
+        const body = await req.json()
+        commentId = body?.comment_id ?? null
+      } catch {
+        commentId = null
+      }
+    }
     if (!commentId) {
       return new Response(JSON.stringify({ error: '缺少评论 ID' }), {
         status: 400,

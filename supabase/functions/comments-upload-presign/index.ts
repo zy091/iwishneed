@@ -69,7 +69,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: '方法不允许' }), { status: 405, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
   }
 
-  const token = req.headers.get('X-Main-Access-Token') || ''
+  const authHeader = req.headers.get('Authorization') || ''
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const token = req.headers.get('X-Main-Access-Token') || bearer || ''
   const user = await verifyMainAccessToken(token)
   if (!user) {
     return new Response(JSON.stringify({ error: '主项目访问令牌无效' }), { status: 401, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
@@ -102,7 +104,7 @@ serve(async (req) => {
       uploads.push({ path, token: data.token, signedUrl: data.signedUrl })
     }
 
-    return new Response(JSON.stringify({ success: true, uploads }), { status: 200, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ success: true, uploads, items: uploads }), { status: 200, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
   } catch (e) {
     console.error('presign error:', e)
     return new Response(JSON.stringify({ error: '处理请求时出错' }), { status: 500, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })

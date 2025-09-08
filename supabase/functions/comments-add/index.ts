@@ -86,7 +86,9 @@ serve(async (req) => {
     })
   }
 
-  const token = req.headers.get('X-Main-Access-Token') || ''
+  const authHeader = req.headers.get('Authorization') || ''
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const token = req.headers.get('X-Main-Access-Token') || bearer || ''
   const user = await verifyMainAccessToken(token)
   if (!user) {
     return new Response(JSON.stringify({ error: '主项目访问令牌无效' }), {
@@ -165,7 +167,7 @@ serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ success: true, data: masked }), {
+    return new Response(JSON.stringify({ success: true, data: masked, comment: masked }), {
       status: 200,
       headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     })

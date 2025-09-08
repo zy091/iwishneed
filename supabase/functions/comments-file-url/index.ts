@@ -66,7 +66,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: '方法不允许' }), { status: 405, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
   }
 
-  const token = req.headers.get('X-Main-Access-Token') || ''
+  const authHeader = req.headers.get('Authorization') || ''
+  const bearer = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const token = req.headers.get('X-Main-Access-Token') || bearer || ''
   const ok = await verifyMainAccessToken(token)
   if (!ok) {
     return new Response(JSON.stringify({ error: '主项目访问令牌无效' }), { status: 401, headers: { ...corsHeaders(req), 'Content-Type': 'application/json' } })
