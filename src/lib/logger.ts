@@ -168,4 +168,3 @@ if (typeof window !== 'undefined') {
   })
 }
 
-export default logger
