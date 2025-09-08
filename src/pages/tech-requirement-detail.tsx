@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { unifiedRequirementService } from '@/services/unified-requirement-service'
+import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement } from '@/types'
 import CommentsSection from '@/components/CommentsSection'
 import { Edit, ExternalLink } from 'lucide-react'

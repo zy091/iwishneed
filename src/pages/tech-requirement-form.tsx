@@ -17,7 +17,7 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
-import { unifiedRequirementService } from '@/services/unified-requirement-service'
+import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement } from '@/types'
 
 // 技术需求表单验证
@@ -48,6 +48,18 @@ export default function TechRequirementForm() {
   
   const isEdit = !!id
 
+  const toCnUrgency = (v: 'high'|'medium'|'low'): '高'|'中'|'低' => (v === 'high' ? '高' : v === 'low' ? '低' : '中')
+  const toCnClient = (v: 'traffic_operation'|'full_service'): '流量运营服务'|'全案深度服务' => (v === 'full_service' ? '全案深度服务' : '流量运营服务')
+  const toCnProgress = (v: 'not_started'|'in_progress'|'completed'|'delayed'): '未开始'|'处理中'|'已完成'|'已沟通延迟' =>
+    (v === 'completed' ? '已完成' : v === 'in_progress' ? '处理中' : v === 'delayed' ? '已沟通延迟' : '未开始')
+
+  const toEnUrgency = (v?: string): 'high'|'medium'|'low' =>
+    v === '高' ? 'high' : v === '低' ? 'low' : 'medium'
+  const toEnClient = (v?: string): 'traffic_operation'|'full_service' =>
+    v === '全案深度服务' ? 'full_service' : 'traffic_operation'
+  const toEnProgress = (v?: string): 'not_started'|'in_progress'|'completed'|'delayed' =>
+    v === '已完成' ? 'completed' : v === '处理中' ? 'in_progress' : v === '已沟通延迟' ? 'delayed' : 'not_started'
+
   const form = useForm<TechRequirementForm>({
     resolver: zodResolver(techRequirementSchema),
     defaultValues: {
@@ -70,26 +82,26 @@ export default function TechRequirementForm() {
     const loadData = async () => {
       try {
         // 加载技术负责人列表
-        const assignees = await unifiedRequirementService.getTechStaff()
+        const assignees = await techRequirementService.getTechAssignees()
         setTechAssignees(assignees)
 
         // 加载需求详情
         if (isEdit && id) {
-          const req = await unifiedRequirementService.getTechRequirement(id)
+          const req = await techRequirementService.getTechRequirement(id)
           if (req) {
             setRequirement(req)
             form.reset({
               title: req.title,
               month: req.month,
               expected_completion_time: req.expected_completion_time ? new Date(req.expected_completion_time) : new Date(),
-              urgency: req.urgency,
+              urgency: toEnUrgency(req.urgency as any),
               client_url: req.client_url || '',
               description: req.description,
               // 编辑态：为空时也使用占位值
-              tech_assignee: (req.assigned_to && req.assigned_to.trim() !== '') ? req.assigned_to : '__none__',
-              client_type: req.client_type,
+              tech_assignee: (req.tech_assignee && req.tech_assignee.trim() !== '') ? req.tech_assignee : '__none__',
+              client_type: toEnClient(req.client_type as any),
               assignee_estimated_time: req.assignee_estimated_time ? new Date(req.assignee_estimated_time) : undefined,
-              progress: req.progress || 'not_started',
+              progress: toEnProgress(req.progress as any),
             })
           }
         }
@@ -121,24 +133,24 @@ export default function TechRequirementForm() {
         title: data.title,
         month: data.month,
         expected_completion_time: data.expected_completion_time.toISOString(),
-        urgency: data.urgency,
+        urgency: toCnUrgency(data.urgency as any),
         submitter_name: user.name,
         client_url: data.client_url || undefined,
         description: data.description,
         // 映射占位值为 undefined，避免写入无效值
         tech_assignee: (data.tech_assignee && data.tech_assignee !== '__none__') ? data.tech_assignee : undefined,
-        client_type: data.client_type,
+        client_type: toCnClient(data.client_type as any),
         attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
         assignee_estimated_time: data.assignee_estimated_time?.toISOString(),
-        progress: data.progress || '未开始',
+        progress: data.progress ? toCnProgress(data.progress as any) : '未开始',
         submitter_id: user.id,
         submitter_avatar: user.avatar,
       }
 
       if (isEdit && id) {
-        await unifiedRequirementService.updateTechRequirement(id, techData)
+        await techRequirementService.updateTechRequirement(id, techData)
       } else {
-        await unifiedRequirementService.createTechRequirement(techData)
+        await techRequirementService.createTechRequirement(techData)
       }
 
       navigate('/departments/tech')

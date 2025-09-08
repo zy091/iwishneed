@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { ENV } from '@/config/env'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = ENV.SUPABASE_URL
+const supabaseAnonKey = ENV.SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
@@ -15,4 +16,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-console.log('✅ Supabase client initialized')
+if (import.meta.env.DEV) {
+  // 仅开发环境打印
+  // eslint-disable-next-line no-console
+  console.log('✅ Supabase client initialized')
+}
