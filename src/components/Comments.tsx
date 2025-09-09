@@ -75,7 +75,7 @@ export function Comments({ requirementId }: CommentsProps) {
         throw error
       }
 
-      // 添加到本地状态（乐观更新�?
+      // 添加到本地状态（乐观更新）
       if (data) {
         setComments(prev => [...prev, data])
         setNewComment('')
@@ -91,7 +91,7 @@ export function Comments({ requirementId }: CommentsProps) {
   // 获取用户显示名称
   const getUserDisplayName = (comment: Comment) => {
     if (comment.user_email === user?.email) {
-      return profile?.name || profile?.full_name || '�?
+      return profile?.name || profile?.full_name || '我'
     }
     return comment.user_email.split('@')[0]
   }
@@ -138,7 +138,7 @@ export function Comments({ requirementId }: CommentsProps) {
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">加载评论�?..</span>
+        <span className="ml-2">加载评论中...</span>
       </div>
     )
   }
@@ -198,7 +198,7 @@ export function Comments({ requirementId }: CommentsProps) {
           />
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-500">
-              �?{profile.name || profile.full_name || '用户'} 身份评论
+              以 {profile.name || profile.full_name || '用户'} 身份评论
             </p>
             <Button 
               type="submit" 
@@ -213,7 +213,7 @@ export function Comments({ requirementId }: CommentsProps) {
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
-                  发送评�?
+                  发送评论
                 </>
               )}
             </Button>
