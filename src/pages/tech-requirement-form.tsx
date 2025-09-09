@@ -32,7 +32,7 @@ const techRequirementSchema = z.object({
   tech_assignee: z.string().optional(),
   client_type: z.enum(['traffic_operation', 'full_service'], { message: '请选择客户类型' }),
   assignee_estimated_time: z.date().optional(),
-  progress: z.enum(['not_started', 'in_progress', 'completed', 'delayed']).optional(),
+  progress: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional(),
 })
 
 type TechRequirementForm = z.infer<typeof techRequirementSchema>
@@ -58,8 +58,8 @@ export default function TechRequirementFormPage() {
     v === '高' ? 'high' : v === '低' ? 'low' : 'medium'
   const toEnClient = (v?: string): 'traffic_operation'|'full_service' =>
     v === '全案深度服务' ? 'full_service' : 'traffic_operation'
-  const toEnProgress = (v?: string): 'not_started'|'in_progress'|'completed'|'delayed' =>
-    v === '已完成' ? 'completed' : v === '处理中' ? 'in_progress' : v === '已沟通延迟' ? 'delayed' : 'not_started'
+  const toEnProgress = (v?: string): 'pending'|'in_progress'|'completed'|'cancelled' =>
+    v === '已完成' ? 'completed' : v === '处理中' ? 'in_progress' : v === '已沟通延迟' ? 'cancelled' : 'pending'
 
   const form = useForm<TechRequirementForm>({
     resolver: zodResolver(techRequirementSchema),
@@ -73,7 +73,7 @@ export default function TechRequirementFormPage() {
       tech_assignee: '__none__',
       client_type: 'traffic_operation',
       assignee_estimated_time: undefined,
-      progress: 'not_started',
+      progress: 'pending',
     }
   })
 
@@ -130,19 +130,19 @@ export default function TechRequirementFormPage() {
         title: data.title,
         month: data.month,
         expected_completion_time: data.expected_completion_time.toISOString(),
-        urgency: toCnUrgency(data.urgency),
+        urgency: data.urgency,
         submitter_name: user.name,
         client_url: data.client_url || undefined,
         description: data.description,
         tech_assignee: (data.tech_assignee && data.tech_assignee !== '__none__') ? data.tech_assignee : undefined,
-        client_type: toCnClient(data.client_type),
+        client_type: data.client_type,
         attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
         assignee_estimated_time: data.assignee_estimated_time?.toISOString(),
-        progress: data.progress ? toCnProgress(data.progress) : '未开始',
+        progress: data.progress || 'pending',
         submitter_id: user.id,
         submitter_avatar: user.avatar,
-        priority: toCnUrgency(data.urgency),
-        status: data.progress ? toCnProgress(data.progress) : '未开始',
+        priority: data.urgency,
+        status: data.progress || 'pending',
       }
 
       if (isEdit && id) {
@@ -371,10 +371,10 @@ export default function TechRequirementFormPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="not_started">未开始</SelectItem>
+                            <SelectItem value="pending">未开始</SelectItem>
                             <SelectItem value="in_progress">处理中</SelectItem>
                             <SelectItem value="completed">已完成</SelectItem>
-                            <SelectItem value="delayed">已沟通延迟</SelectItem>
+                            <SelectItem value="cancelled">已沟通延迟</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

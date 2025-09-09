@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { RequirementPriority } from '@/types/requirement'
 
 export interface CreativeRequirement {
   id?: string
@@ -8,7 +9,7 @@ export interface CreativeRequirement {
   submitter_name: string
   platform: 'GG' | 'FB' | 'CT' | '网站'
   status: '未开始' | '处理中' | '已完成' | '不做处理'
-  urgency: '高' | '中' | '低'
+  urgency: RequirementPriority
   designer?: string
   site_name?: string
   url_or_product_page?: string

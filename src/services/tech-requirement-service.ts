@@ -1,22 +1,22 @@
 import { supabase } from '@/lib/supabaseClient'
-import { TechRequirement as BaseTechRequirement, RequirementPriority, RequirementStatus } from '@/types/requirement'
+import { TechRequirement as BaseTechRequirement, RequirementPriority, RequirementStatus, ClientType } from '@/types/requirement'
 
 export interface TechRequirement extends BaseTechRequirement {
   // 提交人填写字段（严格按照飞书表格）
   month: string // 月份
   submit_time?: string // 需求提交时间
   expected_completion_time: string // 期望完成的时间
-  urgency: '高' | '中' | '低' // 紧急程度
+  urgency: RequirementPriority // 紧急程度
   submitter_name: string // 提交人（直接使用用户名）
   client_url?: string // 需支持的客户网址
   description: string // 具体需求描述
   tech_assignee?: string // 技术负责人
-  client_type: '流量运营服务' | '全案深度服务' // 客户类型
+  client_type: ClientType // 客户类型
   attachments?: any[] // 支持上传附件
   
   // 技术负责人填写字段
   assignee_estimated_time?: string // 技术负责人预计可完成时间
-  progress?: '未开始' | '处理中' | '已完成' | '已沟通延迟' // 技术完成进度
+  progress?: RequirementStatus // 技术完成进度
   start_time?: string // 开始时间
   end_time?: string // 结束时间
   
