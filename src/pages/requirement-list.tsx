@@ -40,7 +40,7 @@ import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
 import type { CreativeRequirement } from '@/services/creative-requirement-service'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { logger } from '@/lib/logger'
 import { PlusCircle, Search, Trash2, Edit, Eye, Upload, BarChart3, Settings, Clock } from 'lucide-react'
@@ -54,15 +54,15 @@ type CombinedRequirement = {
   submitter?: { id?: string; name?: string; avatar?: string }
   created_at?: string
   type: 'tech' | 'creative'
-  department: '技术部' | '创意部'
+  department: '技术部' | '创意�?
   status?: 'completed' | 'inProgress' | 'pending' | 'overdue'
   priority?: 'high' | 'medium' | 'low'
   due_date?: string
   tech_month?: string
-  tech_urgency?: '高' | '中' | '低'
+  tech_urgency?: '�? | '�? | '�?
   tech_client_type?: '流量运营服务' | '全案深度服务'
   tech_assignee?: string
-  tech_progress?: '未开始' | '处理中' | '已完成' | '已沟通延迟'
+  tech_progress?: '未开�? | '处理�? | '已完�? | '已沟通延�?
   tech_expected_completion_time?: string
   tech_start_time?: string
   tech_end_time?: string
@@ -98,11 +98,11 @@ export default function RequirementList() {
   const isDepartmentView = location.pathname.startsWith('/departments/')
   const currentDepartment = isDepartmentView 
     ? location.pathname.includes('/tech') ? '技术部' 
-    : location.pathname.includes('/creative') ? '创意部' 
+    : location.pathname.includes('/creative') ? '创意�? 
     : ''
     : ''
 
-  // 权限检查函数
+  // 权限检查函�?
   const canEditOrDelete = (requirement: Requirement) => {
     if (!user) return false
 
@@ -110,7 +110,7 @@ export default function RequirementList() {
     const isAdmin = isAdminUser
     if (isAdmin) return true
 
-    // 优先使用 submitter_id 作为所有权校验，兼容历史数据回退到 submitter 对象
+    // 优先使用 submitter_id 作为所有权校验，兼容历史数据回退�?submitter 对象
     const uid = user.id
     const subId = (requirement as any)?.submitter_id as string | undefined
     if (uid && subId) {
@@ -138,12 +138,12 @@ export default function RequirementList() {
       created_at: (t as any).created_at,
       type: 'tech',
       department: '技术部',
-      status: (t as any).progress === '已完成' ? 'completed'
-            : (t as any).progress === '处理中' ? 'inProgress'
-            : (t as any).progress === '未开始' ? 'pending'
-            : (t as any).progress === '已沟通延迟' ? 'overdue'
+      status: (t as any).progress === '已完�? ? 'completed'
+            : (t as any).progress === '处理�? ? 'inProgress'
+            : (t as any).progress === '未开�? ? 'pending'
+            : (t as any).progress === '已沟通延�? ? 'overdue'
             : undefined,
-      priority: (t as any).urgency === '高' ? 'high' : (t as any).urgency === '低' ? 'low' : 'medium',
+      priority: (t as any).urgency === '�? ? 'high' : (t as any).urgency === '�? ? 'low' : 'medium',
       due_date: (t as any).expected_completion_time,
       tech_month: (t as any).month,
       tech_urgency: (t as any).urgency,
@@ -157,38 +157,38 @@ export default function RequirementList() {
 
     const creativeMapped: CombinedRequirement[] = (creative || []).map(c => ({
       id: (c as any).id,
-      title: (c as any).site_name || (c as any).asset_type || '创意需求',
+      title: (c as any).site_name || (c as any).asset_type || '创意需�?,
       description: undefined,
       submitter: { id: (c as any).submitter_id, name: (c as any).submitter_name },
       created_at: (c as any).created_at,
       type: 'creative',
-      department: '创意部',
-      status: (c as any).status === '已完成' ? 'completed'
-            : (c as any).status === '处理中' ? 'inProgress'
-            : (c as any).status === '未开始' ? 'pending'
+      department: '创意�?,
+      status: (c as any).status === '已完�? ? 'completed'
+            : (c as any).status === '处理�? ? 'inProgress'
+            : (c as any).status === '未开�? ? 'pending'
             : undefined,
-      priority: (c as any).urgency === '高' ? 'high' : (c as any).urgency === '低' ? 'low' : 'medium',
+      priority: (c as any).urgency === '�? ? 'high' : (c as any).urgency === '�? ? 'low' : 'medium',
       due_date: (c as any).expected_delivery_time
     }))
 
     let merged = [...techMapped, ...creativeMapped]
     if (filters?.department === '技术部') merged = merged.filter(x => x.department === '技术部')
-    else if (filters?.department === '创意部') merged = merged.filter(x => x.department === '创意部')
+    else if (filters?.department === '创意�?) merged = merged.filter(x => x.department === '创意�?)
     return merged
   }
 
   const computeStats = (data: CombinedRequirement[]) => {
     const t = data.filter(x => x.type === 'tech')
-    const completed = t.filter(r => r.tech_progress === '已完成').length
-    const inProgress = t.filter(r => r.tech_progress === '处理中').length
-    const pending = t.filter(r => r.tech_progress === '未开始').length
-    const overdue = t.filter(r => r.tech_progress === '已沟通延迟').length
+    const completed = t.filter(r => r.tech_progress === '已完�?).length
+    const inProgress = t.filter(r => r.tech_progress === '处理�?).length
+    const pending = t.filter(r => r.tech_progress === '未开�?).length
+    const overdue = t.filter(r => r.tech_progress === '已沟通延�?).length
     const total = t.length
     const completionRate = total > 0 ? (completed / total) * 100 : 0
     return { total, completed, inProgress, pending, overdue, completionRate, techDept: t.length, creativeDept: data.filter(x => x.type === 'creative').length }
   }
 
-  // 处理行点击事件
+  // 处理行点击事�?
   const handleRowClick = (requirementId: string, event: React.MouseEvent) => {
     // 如果点击的是按钮或链接，不触发行点击
     if ((event.target as HTMLElement).closest('button, a')) {
@@ -242,12 +242,12 @@ export default function RequirementList() {
       )
     }
 
-    // 状态过滤
+    // 状态过�?
     if (statusFilter && statusFilter !== 'all-status') {
       result = result.filter(req => req.status === statusFilter)
     }
 
-    // 优先级过滤
+    // 优先级过�?
     if (priorityFilter && priorityFilter !== 'all-priority') {
       result = result.filter(req => req.priority === priorityFilter)
     }
@@ -264,7 +264,7 @@ export default function RequirementList() {
       )
     }
 
-    // 技术进度过滤
+    // 技术进度过�?
     if (progressFilter && progressFilter !== 'all-progress') {
       result = result.filter(req => 
         req.type === 'tech' && (req as TechRequirement).tech_progress === progressFilter
@@ -291,11 +291,11 @@ export default function RequirementList() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500 hover:bg-green-600">已完成</Badge>
+        return <Badge className="bg-green-500 hover:bg-green-600">已完�?/Badge>
       case 'inProgress':
-        return <Badge className="bg-blue-500 hover:bg-blue-600">进行中</Badge>
+        return <Badge className="bg-blue-500 hover:bg-blue-600">进行�?/Badge>
       case 'pending':
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">待处理</Badge>
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">待处�?/Badge>
       case 'overdue':
         return <Badge className="bg-red-500 hover:bg-red-600">已逾期</Badge>
       default:
@@ -306,11 +306,11 @@ export default function RequirementList() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'high':
-        return <Badge variant="outline" className="border-red-500 text-red-500">高</Badge>
+        return <Badge variant="outline" className="border-red-500 text-red-500">�?/Badge>
       case 'medium':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">中</Badge>
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">�?/Badge>
       case 'low':
-        return <Badge variant="outline" className="border-green-500 text-green-500">低</Badge>
+        return <Badge variant="outline" className="border-green-500 text-green-500">�?/Badge>
       default:
         return <Badge variant="outline">未知</Badge>
     }
@@ -319,12 +319,12 @@ export default function RequirementList() {
   const getTechUrgencyBadge = (urgency?: string) => {
     if (!urgency) return null
     switch (urgency) {
-      case '高':
-        return <Badge variant="destructive">高</Badge>
-      case '中':
-        return <Badge variant="secondary">中</Badge>
-      case '低':
-        return <Badge variant="outline">低</Badge>
+      case '�?:
+        return <Badge variant="destructive">�?/Badge>
+      case '�?:
+        return <Badge variant="secondary">�?/Badge>
+      case '�?:
+        return <Badge variant="outline">�?/Badge>
       default:
         return <Badge variant="outline">{urgency}</Badge>
     }
@@ -333,14 +333,14 @@ export default function RequirementList() {
   const getTechProgressBadge = (progress?: string) => {
     if (!progress) return null
     switch (progress) {
-      case '已完成':
-        return <Badge className="bg-green-500">已完成</Badge>
-      case '处理中':
-        return <Badge className="bg-blue-500">处理中</Badge>
-      case '未开始':
-        return <Badge className="bg-gray-500">未开始</Badge>
-      case '已沟通延迟':
-        return <Badge className="bg-orange-500">已沟通延迟</Badge>
+      case '已完�?:
+        return <Badge className="bg-green-500">已完�?/Badge>
+      case '处理�?:
+        return <Badge className="bg-blue-500">处理�?/Badge>
+      case '未开�?:
+        return <Badge className="bg-gray-500">未开�?/Badge>
+      case '已沟通延�?:
+        return <Badge className="bg-orange-500">已沟通延�?/Badge>
       default:
         return <Badge variant="outline">{progress}</Badge>
     }
@@ -358,13 +358,13 @@ export default function RequirementList() {
     if (currentDepartment) {
       return `${currentDepartment} - 需求列表`
     }
-    return '所有需求'
+    return '所有需�?
   }
 
   const getCreatePath = () => {
     if (currentDepartment === '技术部') {
       return '/requirements/new?department=tech'
-    } else if (currentDepartment === '创意部') {
+    } else if (currentDepartment === '创意�?) {
       return '/requirements/new?department=creative'
     }
     return '/requirements/new'
@@ -373,7 +373,7 @@ export default function RequirementList() {
   const getImportPath = () => {
     if (currentDepartment === '技术部') {
       return '/requirements/import?department=tech'
-    } else if (currentDepartment === '创意部') {
+    } else if (currentDepartment === '创意�?) {
       return '/requirements/import?department=creative'
     }
     return '/requirements/import'
@@ -394,7 +394,7 @@ export default function RequirementList() {
             </Button>
           )}
           <Button onClick={() => navigate(getCreatePath())}>
-            <PlusCircle className="mr-2 h-4 w-4" /> 新建需求
+            <PlusCircle className="mr-2 h-4 w-4" /> 新建需�?
           </Button>
         </div>
       </div>
@@ -416,7 +416,7 @@ export default function RequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">待处理</p>
+                <p className="text-sm text-gray-600">待处�?/p>
                 <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -429,7 +429,7 @@ export default function RequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">进行中</p>
+                <p className="text-sm text-gray-600">进行�?/p>
                 <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -442,7 +442,7 @@ export default function RequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">已完成</p>
+                <p className="text-sm text-gray-600">已完�?/p>
                 <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -468,8 +468,8 @@ export default function RequirementList() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>筛选条件</CardTitle>
-          <CardDescription>使用以下选项筛选需求列表</CardDescription>
+          <CardTitle>筛选条�?/CardTitle>
+          <CardDescription>使用以下选项筛选需求列�?/CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
@@ -488,13 +488,13 @@ export default function RequirementList() {
             <div className="w-full md:w-48">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="状态" />
+                  <SelectValue placeholder="状�? />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-status">全部状态</SelectItem>
-                  <SelectItem value="pending">待处理</SelectItem>
-                  <SelectItem value="inProgress">进行中</SelectItem>
-                  <SelectItem value="completed">已完成</SelectItem>
+                  <SelectItem value="all-status">全部状�?/SelectItem>
+                  <SelectItem value="pending">待处�?/SelectItem>
+                  <SelectItem value="inProgress">进行�?/SelectItem>
+                  <SelectItem value="completed">已完�?/SelectItem>
                   <SelectItem value="overdue">已逾期</SelectItem>
                 </SelectContent>
               </Select>
@@ -502,13 +502,13 @@ export default function RequirementList() {
             <div className="w-full md:w-48">
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="优先级" />
+                  <SelectValue placeholder="优先�? />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-priority">全部优先级</SelectItem>
-                  <SelectItem value="high">高</SelectItem>
-                  <SelectItem value="medium">中</SelectItem>
-                  <SelectItem value="low">低</SelectItem>
+                  <SelectItem value="all-priority">全部优先�?/SelectItem>
+                  <SelectItem value="high">�?/SelectItem>
+                  <SelectItem value="medium">�?/SelectItem>
+                  <SelectItem value="low">�?/SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -521,7 +521,7 @@ export default function RequirementList() {
                   <SelectContent>
                     <SelectItem value="all-department">全部部门</SelectItem>
                     <SelectItem value="技术部">技术部</SelectItem>
-                    <SelectItem value="创意部">创意部</SelectItem>
+                    <SelectItem value="创意�?>创意�?/SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -534,7 +534,7 @@ export default function RequirementList() {
                       <SelectValue placeholder="技术负责人" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all-assignee">全部负责人</SelectItem>
+                      <SelectItem value="all-assignee">全部负责�?/SelectItem>
                       {techAssignees.map(assignee => (
                         <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
                       ))}
@@ -544,14 +544,14 @@ export default function RequirementList() {
                 <div className="w-full md:w-48">
                   <Select value={progressFilter} onValueChange={setProgressFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="技术进度" />
+                      <SelectValue placeholder="技术进�? />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all-progress">全部进度</SelectItem>
-                      <SelectItem value="未开始">未开始</SelectItem>
-                      <SelectItem value="处理中">处理中</SelectItem>
-                      <SelectItem value="已完成">已完成</SelectItem>
-                      <SelectItem value="已沟通延迟">已沟通延迟</SelectItem>
+                      <SelectItem value="未开�?>未开�?/SelectItem>
+                      <SelectItem value="处理�?>处理�?/SelectItem>
+                      <SelectItem value="已完�?>已完�?/SelectItem>
+                      <SelectItem value="已沟通延�?>已沟通延�?/SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -575,15 +575,15 @@ export default function RequirementList() {
                   {currentDepartment === '技术部' && (
                     <>
                       <TableHead className="w-20">月份</TableHead>
-                      <TableHead className="w-24">紧急程度</TableHead>
+                      <TableHead className="w-24">紧急程�?/TableHead>
                       <TableHead className="w-24">客户类型</TableHead>
                       <TableHead className="w-28">技术负责人</TableHead>
-                      <TableHead className="w-24">技术进度</TableHead>
+                      <TableHead className="w-24">技术进�?/TableHead>
                       <TableHead className="w-24">耗时(小时)</TableHead>
                     </>
                   )}
                   {!currentDepartment && <TableHead className="w-20">部门</TableHead>}
-                  <TableHead className="w-28">提交人</TableHead>
+                  <TableHead className="w-28">提交�?/TableHead>
                   <TableHead className="w-32">期望完成时间</TableHead>
                   <TableHead className="w-28">创建日期</TableHead>
                   <TableHead className="w-24 text-right">操作</TableHead>
@@ -618,10 +618,10 @@ export default function RequirementList() {
                             <TableCell>
                               <Badge variant="outline">{techReq.tech_client_type || '-'}</Badge>
                             </TableCell>
-                            <TableCell>{techReq.tech_assignee || '未分配'}</TableCell>
+                            <TableCell>{techReq.tech_assignee || '未分�?}</TableCell>
                             <TableCell>{getTechProgressBadge(techReq.tech_progress)}</TableCell>
                             <TableCell>
-                              {techReq.tech_progress === '已完成' ? (
+                              {techReq.tech_progress === '已完�? ? (
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-4 w-4" />
                                   {calculateTechDuration(techReq)}h
@@ -706,7 +706,7 @@ export default function RequirementList() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>确认删除</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      您确定要删除这个需求吗？此操作无法撤销。
+                                      您确定要删除这个需求吗？此操作无法撤销�?
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -726,7 +726,7 @@ export default function RequirementList() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={currentDepartment === '技术部' ? 11 : (!currentDepartment ? 6 : 5)} className="text-center py-8">
-                      没有找到符合条件的需求
+                      没有找到符合条件的需�?
                     </TableCell>
                   </TableRow>
                 )}

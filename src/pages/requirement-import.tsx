@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { supabase } from '@/lib/supabaseClient'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
 import { logger } from '@/lib/logger'
 
@@ -77,22 +77,22 @@ export default function RequirementImport() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
 
-  // 从 URL 参数或路径获取部门信息
+  // �?URL 参数或路径获取部门信�?
   const departmentParam = searchParams.get('department')
   const isDepartmentView = location.pathname.startsWith('/departments/')
   
   const department = departmentParam === 'tech' ? '技术部'
-    : departmentParam === 'creative' ? '创意部'
+    : departmentParam === 'creative' ? '创意�?
     : isDepartmentView && location.pathname.includes('/tech') ? '技术部'
-    : isDepartmentView && location.pathname.includes('/creative') ? '创意部'
-    : '未分配'
+    : isDepartmentView && location.pathname.includes('/creative') ? '创意�?
+    : '未分�?
     
   const type: 'tech' | 'creative' | undefined = department === '技术部' ? 'tech' 
-    : department === '创意部' ? 'creative' 
+    : department === '创意�? ? 'creative' 
     : undefined
     
   const departmentLabel = department === '技术部' ? '技术部' 
-    : department === '创意部' ? '创意部' 
+    : department === '创意�? ? '创意�? 
     : '通用'
 
   const handleFile = (file: File) => {
@@ -122,9 +122,9 @@ export default function RequirementImport() {
       return isNaN(d.getTime()) ? null : d.toISOString()
     }
 
-    const validateUrgency = (urgency: string): '高' | '中' | '低' => {
-      if (urgency === '高' || urgency === '中' || urgency === '低') return urgency
-      return '中'
+    const validateUrgency = (urgency: string): '�? | '�? | '�? => {
+      if (urgency === '�? || urgency === '�? || urgency === '�?) return urgency
+      return '�?
     }
 
     const validateClientType = (clientType: string): '流量运营服务' | '全案深度服务' => {
@@ -132,9 +132,9 @@ export default function RequirementImport() {
       return '流量运营服务'
     }
 
-    const validateProgress = (progress: string): '未开始' | '处理中' | '已完成' | '已沟通延迟' => {
-      if (progress === '未开始' || progress === '处理中' || progress === '已完成' || progress === '已沟通延迟') return progress
-      return '未开始'
+    const validateProgress = (progress: string): '未开�? | '处理�? | '已完�? | '已沟通延�? => {
+      if (progress === '未开�? || progress === '处理�? || progress === '已完�? || progress === '已沟通延�?) return progress
+      return '未开�?
     }
 
     try {
@@ -142,31 +142,31 @@ export default function RequirementImport() {
         const payload: Omit<TechRequirement, 'id' | 'created_at' | 'updated_at'>[] = rows.map((row, i) => {
           const raw: Record<string, string> = {}
           headers.forEach((h, idx) => {
-            const key = h || `第${idx + 1}列`
+            const key = h || `�?{idx + 1}列`
             raw[key] = row[idx] || ''
           })
 
           return {
-            title: raw['需求标题'] || raw['标题'] || `未命名需求-${i + 1}`,
-            month: raw['月份'] || new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
-            submit_time: parseDate(raw['提交时间'] || raw['需求提交时间']) || new Date().toISOString(),
-            expected_completion_time: parseDate(raw['期望完成的时间'] || raw['期望完成时间']) || new Date().toISOString(),
-            urgency: validateUrgency(raw['紧急程度']),
-            submitter_name: raw['提交人（直接使用用户名）'] || raw['提交人'] || user.name || '未知提交人',
+            title: raw['需求标�?] || raw['标题'] || `未命名需�?${i + 1}`,
+            month: raw['月份'] || new Date().getFullYear() + '�? + (new Date().getMonth() + 1) + '�?,
+            submit_time: parseDate(raw['提交时间'] || raw['需求提交时�?]) || new Date().toISOString(),
+            expected_completion_time: parseDate(raw['期望完成的时�?] || raw['期望完成时间']) || new Date().toISOString(),
+            urgency: validateUrgency(raw['紧急程�?]),
+            submitter_name: raw['提交人（直接使用用户名）'] || raw['提交�?] || user.name || '未知提交�?,
             client_url: raw['需支持的客户网址'] || raw['客户网址'] || undefined,
-            description: raw['具体需求描述'] || raw['需求描述'] || `来源文件：${fileName}\n导入时间：${new Date().toLocaleString()}`,
+            description: raw['具体需求描�?] || raw['需求描�?] || `来源文件�?{fileName}\n导入时间�?{new Date().toLocaleString()}`,
             tech_assignee: raw['技术负责人'] || undefined,
-            client_type: validateClientType(raw['客户类型（流量运营服务/全案深度服务）'] || raw['客户类型']),
+            client_type: validateClientType(raw['客户类型（流量运营服�?全案深度服务�?] || raw['客户类型']),
             attachments: undefined,
-            assignee_estimated_time: parseDate(raw['技术负责人预计可完成时间']) || undefined,
-            progress: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度']),
+            assignee_estimated_time: parseDate(raw['技术负责人预计可完成时�?]) || undefined,
+            progress: validateProgress(raw['技术完成进度（未开�?处理�?已完�?已沟通延迟）'] || raw['技术完成进�?]),
             submitter_id: user.id,
             submitter_avatar: user.avatar,
           }
         })
 
         const result = await techRequirementService.importTechRequirements(payload)
-        setLog([`导入完成：新增 ${result.length} 条技术需求（部门：${departmentLabel}）`])
+        setLog([`导入完成：新�?${result.length} 条技术需求（部门�?{departmentLabel}）`])
         return
       }
 
@@ -174,7 +174,7 @@ export default function RequirementImport() {
         const payload = rows.map((row, i) => {
           const raw: Record<string, string> = {}
           headers.forEach((h, idx) => {
-            const key = h || `第${idx + 1}列`
+            const key = h || `�?{idx + 1}列`
             raw[key] = row[idx] || ''
           })
 
@@ -187,36 +187,36 @@ export default function RequirementImport() {
             submit_time: parseDate(raw['提交时间']) || new Date().toISOString(),
             expected_delivery_time: parseDate(raw['期望交付时间']),
             actual_delivery_time: parseDate(raw['实际交付时间']),
-            submitter_name: raw['需求提交人'] || user.name || '未知提交人',
+            submitter_name: raw['需求提交人'] || user.name || '未知提交�?,
             platform: (raw['平台(GG/FB/CT/网站)'] as any) || null,
-            status: (raw['状态（未开始/处理中/已完成/不做处理）'] as any) || '未开始',
-            urgency: (raw['紧急程度'] as any) || '中',
-            designer: raw['设计师'] || undefined,
+            status: (raw['状态（未开�?处理�?已完�?不做处理�?] as any) || '未开�?,
+            urgency: (raw['紧急程�?] as any) || '�?,
+            designer: raw['设计�?] || undefined,
             site_name: raw['网站名称'] || undefined,
-            url_or_product_page: raw['网址/产品详情页'] || undefined,
-            asset_type: raw['素材类型（Google广告图/Meta广告图/网站Banner图/网站产品图/网站横幅图/联盟营销/EDM营销/Criteo广告图）'] || undefined,
+            url_or_product_page: raw['网址/产品详情�?] || undefined,
+            asset_type: raw['素材类型（Google广告�?Meta广告�?网站Banner�?网站产品�?网站横幅�?联盟营销/EDM营销/Criteo广告图）'] || undefined,
             asset_size: raw['素材尺寸'] || undefined,
             layout_style: raw['设计版式'] || undefined,
             asset_count: toInt(raw['素材数量'] || ''),
             copy: raw['具体文案'] || undefined,
             style_requirements: raw['风格要求'] || undefined,
-            original_assets: raw['原素材'] || undefined,
-            asset_package: raw['素材包'] || undefined,
+            original_assets: raw['原素�?] || undefined,
+            asset_package: raw['素材�?] || undefined,
             remark: raw['备注'] || undefined,
-            reference_examples: raw['参考案例'] || undefined,
+            reference_examples: raw['参考案�?] || undefined,
           }
         })
 
         const { error } = await supabase.from('creative_requirements').insert(payload)
         if (error) throw error
-        setLog([`导入完成：新增 ${payload.length} 条创意部需求（部门：${departmentLabel}）`])
+        setLog([`导入完成：新�?${payload.length} 条创意部需求（部门�?{departmentLabel}）`])
         return
       }
 
-      setLog(['未识别的部门，暂不导入。请在地址中指定 ?department=tech 或 ?department=creative'])
+      setLog(['未识别的部门，暂不导入。请在地址中指�??department=tech �??department=creative'])
     } catch (e: any) {
       logger.error('Requirement import failed', e)
-      setLog([`导入失败：${e?.message || '未知错误'}`])
+      setLog([`导入失败�?{e?.message || '未知错误'}`])
     }
   }
 
@@ -225,7 +225,7 @@ export default function RequirementImport() {
   const getReturnPath = () => {
     if (department === '技术部') {
       return '/departments/tech'
-    } else if (department === '创意部') {
+    } else if (department === '创意�?) {
       return '/departments/creative'
     }
     return '/requirements'
@@ -234,13 +234,13 @@ export default function RequirementImport() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">导入需求（CSV） - {departmentLabel}</h1>
+        <h1 className="text-2xl font-bold">导入需求（CSV�?- {departmentLabel}</h1>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate(getReturnPath())}>
             返回列表
           </Button>
           <Button onClick={handleImport} disabled={disableImport}>
-            开始导入
+            开始导�?
           </Button>
         </div>
       </div>
@@ -248,7 +248,7 @@ export default function RequirementImport() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>上传文件</CardTitle>
-          <CardDescription>支持 CSV（UTF-8）。系统将按原始列展示与导入到 {departmentLabel}。</CardDescription>
+          <CardDescription>支持 CSV（UTF-8）。系统将按原始列展示与导入到 {departmentLabel}�?/CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -269,7 +269,7 @@ export default function RequirementImport() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>数据预览（前 10 行）</CardTitle>
-            <CardDescription>以原始 CSV 列展示，用于核对解析是否正确。</CardDescription>
+            <CardDescription>以原�?CSV 列展示，用于核对解析是否正确�?/CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-auto">
@@ -277,7 +277,7 @@ export default function RequirementImport() {
                 <TableHeader>
                   <TableRow>
                     {headers.map((h, idx) => (
-                      <TableHead key={idx}>{h || `第${idx + 1}列`}</TableHead>
+                      <TableHead key={idx}>{h || `�?{idx + 1}列`}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -308,7 +308,7 @@ export default function RequirementImport() {
               ))}
             </ul>
             <div className="mt-4">
-              <Button onClick={() => navigate(getReturnPath())}>查看需求列表</Button>
+              <Button onClick={() => navigate(getReturnPath())}>查看需求列�?/Button>
             </div>
           </CardContent>
         </Card>

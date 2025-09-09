@@ -22,7 +22,7 @@ import {
   uploadToSignedUrls,
   getAttachmentSignedUrl,
 } from '@/services/comments-service'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabaseClient'
 import { usePermissions } from '@/hooks/use-permissions'
@@ -145,7 +145,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }
   }, [requirementId])
 
-  // Realtime: 附件增量同步（他人新增附件时）
+  // Realtime: 附件增量同步（他人新增附件时�?
   useEffect(() => {
     if (!requirementId) return
     const channel = supabase
@@ -214,7 +214,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     }
     setAttachments(next)
     if (errors.length) {
-      toast({ title: '附件校验', description: errors.join('；'), variant: 'destructive' })
+      toast({ title: '附件校验', description: errors.join('�?), variant: 'destructive' })
     }
   }
 
@@ -226,7 +226,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
     if (attachments.length === 0) return []
     const filesMeta = attachments.map(f => ({ name: f.name, type: f.type, size: f.size }))
     const presigned = await presignUploads(requirementId, filesMeta)
-    // uploadToSignedUrls 需要 [{ path, token }] 与 files 顺序一一对应
+    // uploadToSignedUrls 需�?[{ path, token }] �?files 顺序一一对应
     const items = presigned.map(u => ({ path: u.path, token: u.token }))
     const uploaded = await uploadToSignedUrls(BUCKET, items, attachments)
     return uploaded
@@ -268,16 +268,16 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
         requirement_id: requirementId,
         content,
         parent_id: parentId,
-        attachments: [], // 目前回复不带附件，如需支持可扩展
+        attachments: [], // 目前回复不带附件，如需支持可扩�?
       })
       const merged: Comment = { ...added, attachments: [] }
-      // 将回复插入到父评论之后（按时间降序，此处直接靠 parent_id 构造结构由渲染负责）
+      // 将回复插入到父评论之后（按时间降序，此处直接�?parent_id 构造结构由渲染负责�?
       setComments(prev => [merged, ...prev])
       setReplyOpen(prev => ({ ...prev, [parentId]: false }))
       setReplyText(prev => ({ ...prev, [parentId]: '' }))
     } catch (err: any) {
       console.error('提交回复失败:', err)
-      toast({ title: '提交回复失败', description: err.message || '请稍后再试', variant: 'destructive' })
+      toast({ title: '提交回复失败', description: err.message || '请稍后再�?, variant: 'destructive' })
     } finally {
       setReplySubmitting(prev => ({ ...prev, [parentId]: false }))
     }
@@ -335,7 +335,7 @@ export default function CommentsSection({ requirementId }: CommentsSectionProps)
       const url = await getAttachmentSignedUrl(path)
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch (e: any) {
-      toast({ title: '无法打开附件', description: e.message || '请稍后再试', variant: 'destructive' })
+      toast({ title: '无法打开附件', description: e.message || '请稍后再�?, variant: 'destructive' })
     }
   }
 
@@ -415,14 +415,14 @@ return (
                     attachment={att}
                     onError={() => console.log('图片加载失败:', att.file_name)}
                   />
-                  {/* 图片信息覆盖层 */}
+                  {/* 图片信息覆盖�?*/}
                   <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <p className="text-sm truncate">{att.file_name}</p>
-                    <p className="text-xs text-gray-300">点击查看大图 • {formatBytes(att.size)}</p>
+                    <p className="text-xs text-gray-300">点击查看大图 �?{formatBytes(att.size)}</p>
                   </div>
                 </div>
               ) : (
-                // 非图片文件显示
+                // 非图片文件显�?
                 <div className="p-3 flex items-center space-x-3">
                   <div className="flex-shrink-0">
                     {att.mime_type?.includes('pdf') ? (
@@ -441,7 +441,7 @@ return (
                     <p className="text-sm font-medium text-gray-900 truncate">{att.file_name}</p>
                     <p className="text-xs text-gray-500">
                       {formatBytes(att.size)}
-                      {att.mime_type && ` • ${att.mime_type}`}
+                      {att.mime_type && ` �?${att.mime_type}`}
                     </p>
                   </div>
                   <Button
@@ -473,7 +473,7 @@ return (
       {canComment ? (
         <div className="space-y-2">
           <Textarea
-            placeholder="添加评论（最多1000字，默认匿名对所有人可见）"
+            placeholder="添加评论（最�?000字，默认匿名对所有人可见�?
             value={newComment}
             onChange={(e) => {
               const v = e.target.value
@@ -507,7 +507,7 @@ return (
               disabled={!newComment.trim() || isSubmitting}
             >
               <Send className="mr-2 h-4 w-4" />
-              {isSubmitting ? '提交中...' : '提交评论'}
+              {isSubmitting ? '提交�?..' : '提交评论'}
             </Button>
           </div>
 
@@ -567,7 +567,7 @@ return (
                           <AlertDialogHeader>
                             <AlertDialogTitle>确认删除</AlertDialogTitle>
                             <AlertDialogDescription>
-                              删除该评论将同时删除其一级回复与附件，此操作无法撤销。
+                              删除该评论将同时删除其一级回复与附件，此操作无法撤销�?
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -599,7 +599,7 @@ return (
                   {replyOpen[comment.id] && (
                     <div className="mt-3 space-y-2">
                       <Textarea
-                        placeholder="回复（一级楼中楼，最多1000字，默认匿名）"
+                        placeholder="回复（一级楼中楼，最�?000字，默认匿名�?
                         value={replyText[comment.id] || ''}
                         onChange={(e) => {
                           const v = e.target.value
@@ -616,13 +616,13 @@ return (
                           disabled={replySubmitting[comment.id] || !(replyText[comment.id] || '').trim()}
                         >
                           <Send className="h-4 w-4 mr-1" />
-                          {replySubmitting[comment.id] ? '提交中...' : '提交回复'}
+                          {replySubmitting[comment.id] ? '提交�?..' : '提交回复'}
                         </Button>
                       </div>
                     </div>
                   )}
 
-                  {/* 子回复列表 */}
+                  {/* 子回复列�?*/}
                   {child.length > 0 && (
                     <div className="mt-4 space-y-3">
                       {child.map(rep => {

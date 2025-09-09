@@ -29,19 +29,19 @@ export const BasicUserManagement: React.FC = () => {
     }
   }
 
-  // 获取所有用户
+  // 获取所有用�?
   const fetchUsers = async () => {
     setLoading(true)
     setError(null)
     
     try {
-      // 先获取当前用户
+      // 先获取当前用�?
       const user = await getCurrentUser()
       if (!user) {
-        throw new Error('用户未登录')
+        throw new Error('用户未登�?)
       }
 
-      // 查询 profiles 表
+      // 查询 profiles �?
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, name, role_id, created_at')
@@ -49,7 +49,7 @@ export const BasicUserManagement: React.FC = () => {
 
       if (profilesError) throw profilesError
 
-      // 查询 auth.users 表获取邮箱信息
+      // 查询 auth.users 表获取邮箱信�?
       const { data: authUsers, error: authError } = await supabase
         .from('auth.users')
         .select('id, email')
@@ -86,7 +86,7 @@ export const BasicUserManagement: React.FC = () => {
 
       // 刷新用户列表
       await fetchUsers()
-      alert('用户角色更新成功！')
+      alert('用户角色更新成功�?)
       
     } catch (err: any) {
       console.error('更新用户角色失败:', err)
@@ -97,9 +97,9 @@ export const BasicUserManagement: React.FC = () => {
   // 角色名称映射
   const getRoleName = (roleId: number) => {
     switch (roleId) {
-      case 0: return '超级管理员'
-      case 1: return '管理员'
-      case 2: return '普通用户'
+      case 0: return '超级管理�?
+      case 1: return '管理�?
+      case 2: return '普通用�?
       default: return '未知角色'
     }
   }
@@ -122,7 +122,7 @@ export const BasicUserManagement: React.FC = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">用户管理</h1>
-        <p className="text-gray-600">管理系统用户和权限</p>
+        <p className="text-gray-600">管理系统用户和权�?/p>
       </div>
 
       {/* 当前用户信息 */}
@@ -142,7 +142,7 @@ export const BasicUserManagement: React.FC = () => {
           disabled={loading}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
         >
-          {loading ? '加载中...' : '🔄 刷新用户列表'}
+          {loading ? '加载�?..' : '🔄 刷新用户列表'}
         </button>
       </div>
 
@@ -202,9 +202,9 @@ export const BasicUserManagement: React.FC = () => {
                     onChange={(e) => updateUserRole(user.id, parseInt(e.target.value))}
                     className="border border-gray-300 rounded px-2 py-1 text-sm"
                   >
-                    <option value={0}>超级管理员</option>
-                    <option value={1}>管理员</option>
-                    <option value={2}>普通用户</option>
+                    <option value={0}>超级管理�?/option>
+                    <option value={1}>管理�?/option>
+                    <option value={2}>普通用�?/option>
                   </select>
                 </td>
               </tr>
@@ -232,13 +232,13 @@ export const BasicUserManagement: React.FC = () => {
             <div className="text-2xl font-bold text-red-600">
               {users.filter(u => u.role_id === 0).length}
             </div>
-            <div className="text-sm text-gray-500">超级管理员</div>
+            <div className="text-sm text-gray-500">超级管理�?/div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-blue-600">
               {users.filter(u => u.role_id === 1).length}
             </div>
-            <div className="text-sm text-gray-500">管理员</div>
+            <div className="text-sm text-gray-500">管理�?/div>
           </div>
         </div>
       )}

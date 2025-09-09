@@ -16,14 +16,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { RequirementService, Requirement } from '@/services/requirement-service'
 
-// 创意部表单验证
+// 创意部表单验�?
 const creativeSchema = z.object({
-  title: z.string().min(1, '需求标题不能为空'),
-  description: z.string().min(1, '需求描述不能为空'),
-  priority: z.enum(['low', 'medium', 'high'], { required_error: '请选择优先级' }),
+  title: z.string().min(1, '需求标题不能为�?),
+  description: z.string().min(1, '需求描述不能为�?),
+  priority: z.enum(['low', 'medium', 'high'], { required_error: '请选择优先�? }),
   category: z.string().min(1, '请选择分类'),
   expected_completion_date: z.date().optional(),
 })
@@ -70,7 +70,7 @@ export default function RequirementForm() {
             })
           }
         } catch (error) {
-          console.error('加载需求失败:', error)
+          console.error('加载需求失�?', error)
         }
       }
     }
@@ -110,7 +110,7 @@ export default function RequirementForm() {
   }
 
   const getTitle = () => {
-    return isEdit ? '编辑创意需求' : '提交创意需求'
+    return isEdit ? '编辑创意需�? : '提交创意需�?
   }
 
   return (
@@ -124,8 +124,8 @@ export default function RequirementForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>创意需求信息</CardTitle>
-          <CardDescription>请填写完整的创意需求信息</CardDescription>
+          <CardTitle>创意需求信�?/CardTitle>
+          <CardDescription>请填写完整的创意需求信�?/CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -135,9 +135,9 @@ export default function RequirementForm() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>需求标题 *</FormLabel>
+                    <FormLabel>需求标�?*</FormLabel>
                     <FormControl>
-                      <Input placeholder="请输入需求标题" {...field} />
+                      <Input placeholder="请输入需求标�? {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -149,10 +149,10 @@ export default function RequirementForm() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>需求描述 *</FormLabel>
+                    <FormLabel>需求描�?*</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="请详细描述创意需求"
+                        placeholder="请详细描述创意需�?
                         className="min-h-[120px]"
                         {...field} 
                       />
@@ -168,17 +168,17 @@ export default function RequirementForm() {
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>优先级 *</FormLabel>
+                      <FormLabel>优先�?*</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="选择优先级" />
+                            <SelectValue placeholder="选择优先�? />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="high">高</SelectItem>
-                          <SelectItem value="medium">中</SelectItem>
-                          <SelectItem value="low">低</SelectItem>
+                          <SelectItem value="high">�?/SelectItem>
+                          <SelectItem value="medium">�?/SelectItem>
+                          <SelectItem value="low">�?/SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -257,7 +257,7 @@ export default function RequirementForm() {
                   取消
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? '保存中...' : (isEdit ? '更新需求' : '提交需求')}
+                  {loading ? '保存�?..' : (isEdit ? '更新需�? : '提交需�?)}
                 </Button>
               </div>
             </form>

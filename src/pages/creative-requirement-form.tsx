@@ -9,13 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { creativeRequirementService } from '@/services/creative-requirement-service'
 import type { CreativeRequirement } from '@/services/creative-requirement-service'
 
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 
 const PLATFORMS = ['GG', 'FB', 'CT', '网站'] as const
-const STATUSES = ['未开始', '处理中', '已完成', '不做处理'] as const
-const URGENCIES = ['高', '中', '低'] as const
+const STATUSES = ['未开�?, '处理�?, '已完�?, '不做处理'] as const
+const URGENCIES = ['�?, '�?, '�?] as const
 const ASSET_TYPES = [
-  'Google广告图','Meta广告图','网站Banner图','网站产品图','网站横幅图','联盟营销','EDM营销','Criteo广告图'
+  'Google广告�?,'Meta广告�?,'网站Banner�?,'网站产品�?,'网站横幅�?,'联盟营销','EDM营销','Criteo广告�?
 ] as const
 
 export default function CreativeRequirementForm() {
@@ -33,8 +33,8 @@ export default function CreativeRequirementForm() {
     actual_delivery_time: undefined,
     submitter_name: user?.name || '',
     platform: 'GG',
-    status: '未开始',
-    urgency: '中',
+    status: '未开�?,
+    urgency: '�?,
     designer: undefined,
     site_name: '',
     url_or_product_page: '',
@@ -56,7 +56,7 @@ export default function CreativeRequirementForm() {
         const ds = await creativeRequirementService.getDesigners()
         setDesigners(ds)
       } catch (e) {
-        console.error('获取设计师失败:', e)
+        console.error('获取设计师失�?', e)
       }
     }
     run()
@@ -74,7 +74,7 @@ export default function CreativeRequirementForm() {
           })
         }
       } catch (e) {
-        console.error('获取创意需求失败:', e)
+        console.error('获取创意需求失�?', e)
       }
     }
     load()
@@ -103,10 +103,10 @@ export default function CreativeRequirementForm() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{isEdit ? '编辑创意需求' : '新建创意需求'}</h1>
+        <h1 className="text-2xl font-bold">{isEdit ? '编辑创意需�? : '新建创意需�?}</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/departments/creative')}>返回列表</Button>
-          <Button onClick={handleSubmit} disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
+          <Button onClick={handleSubmit} disabled={saving}>{saving ? '保存�?..' : '保存'}</Button>
         </div>
       </div>
 
@@ -145,11 +145,11 @@ export default function CreativeRequirementForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label>提交人</Label>
+              <Label>提交�?/Label>
               <Input
                 value={form.submitter_name || ''}
                 onChange={(e) => handleChange('submitter_name', e.target.value)}
-                placeholder="提交人姓名"
+                placeholder="提交人姓�?
               />
             </div>
             <div>
@@ -162,9 +162,9 @@ export default function CreativeRequirementForm() {
               </Select>
             </div>
             <div>
-              <Label>状态</Label>
+              <Label>状�?/Label>
               <Select value={(form.status as any) || ''} onValueChange={(v) => handleChange('status', v as any)}>
-                <SelectTrigger><SelectValue placeholder="选择状态" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="选择状�? /></SelectTrigger>
                 <SelectContent>
                   {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
@@ -174,18 +174,18 @@ export default function CreativeRequirementForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label>紧急程度</Label>
+              <Label>紧急程�?/Label>
               <Select value={(form.urgency as any) || ''} onValueChange={(v) => handleChange('urgency', v as any)}>
-                <SelectTrigger><SelectValue placeholder="选择紧急程度" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="选择紧急程�? /></SelectTrigger>
                 <SelectContent>
                   {URGENCIES.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>设计师</Label>
+              <Label>设计�?/Label>
               <Select value={form.designer || ''} onValueChange={(v) => handleChange('designer', v)}>
-                <SelectTrigger><SelectValue placeholder="选择设计师" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="选择设计�? /></SelectTrigger>
                 <SelectContent>
                   {designers.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
@@ -199,7 +199,7 @@ export default function CreativeRequirementForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label>网址/产品详情页</Label>
+              <Label>网址/产品详情�?/Label>
               <Input value={form.url_or_product_page || ''} onChange={(e) => handleChange('url_or_product_page', e.target.value)} />
             </div>
             <div>

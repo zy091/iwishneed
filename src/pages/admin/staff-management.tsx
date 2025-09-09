@@ -70,8 +70,8 @@ export default function StaffManagementPage() {
     <div className="container mx-auto py-6">
       <Card>
         <CardHeader>
-          <CardTitle>用户管理（人员与角色）</CardTitle>
-          <CardDescription>管理技术/创意人员名单（用于负责人/设计师选择）</CardDescription>
+          <CardTitle>用户管理（人员与角色�?/CardTitle>
+          <CardDescription>管理技�?创意人员名单（用于负责人/设计师选择�?/CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2 flex-wrap">
@@ -80,7 +80,7 @@ export default function StaffManagementPage() {
               <SelectTrigger className="w-40"><SelectValue placeholder="部门" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="技术部">技术部</SelectItem>
-                <SelectItem value="创意部">创意部</SelectItem>
+                <SelectItem value="创意�?>创意�?/SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={addStaff}>新增人员</Button>
@@ -92,13 +92,13 @@ export default function StaffManagementPage() {
                 <TableRow>
                   <TableHead>姓名</TableHead>
                   <TableHead>部门</TableHead>
-                  <TableHead>状态</TableHead>
+                  <TableHead>状�?/TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={4}>加载中...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4}>加载�?..</TableCell></TableRow>
                 ) : list.length ? list.map(s => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.name}</TableCell>
@@ -107,7 +107,7 @@ export default function StaffManagementPage() {
                         <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="技术部">技术部</SelectItem>
-                          <SelectItem value="创意部">创意部</SelectItem>
+                          <SelectItem value="创意�?>创意�?/SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

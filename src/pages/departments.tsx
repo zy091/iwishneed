@@ -30,14 +30,14 @@ export default function Departments() {
         completed: 0
       },
       actions: [
-        { label: '查看需求', action: () => navigate('/departments/tech'), icon: Eye },
-        { label: '新建需求', action: () => navigate('/tech-requirements/new'), icon: Plus },
+        { label: '查看需�?, action: () => navigate('/departments/tech'), icon: Eye },
+        { label: '新建需�?, action: () => navigate('/tech-requirements/new'), icon: Plus },
         { label: '批量导入', action: () => navigate('/tech-requirements/import'), icon: Upload }
       ]
     },
     {
       id: 'creative',
-      name: '创意部',
+      name: '创意�?,
       description: '负责创意设计、品牌策划和视觉传达',
       icon: Palette,
       color: 'bg-purple-500',
@@ -48,8 +48,8 @@ export default function Departments() {
         completed: 0
       },
       actions: [
-        { label: '查看需求', action: () => navigate('/requirements'), icon: Eye },
-        { label: '新建需求', action: () => navigate('/requirements/new'), icon: Plus },
+        { label: '查看需�?, action: () => navigate('/requirements'), icon: Eye },
+        { label: '新建需�?, action: () => navigate('/requirements/new'), icon: Plus },
         { label: '批量导入', action: () => navigate('/requirements/import'), icon: Upload }
       ]
     }
@@ -59,12 +59,12 @@ export default function Departments() {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">部门需求管理</h1>
-          <p className="text-gray-600 mt-2">选择部门查看和管理相应的需求</p>
+          <h1 className="text-3xl font-bold">部门需求管�?/h1>
+          <p className="text-gray-600 mt-2">选择部门查看和管理相应的需�?/p>
         </div>
         <Button variant="outline" onClick={() => navigate('/dashboard')}>
           <BarChart3 className="mr-2 h-4 w-4" />
-          返回仪表盘
+          返回仪表�?
         </Button>
       </div>
 
@@ -97,15 +97,15 @@ export default function Departments() {
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-600">{dept.stats.pending}</div>
-                    <div className="text-sm text-gray-500">待处理</div>
+                    <div className="text-sm text-gray-500">待处�?/div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">{dept.stats.inProgress}</div>
-                    <div className="text-sm text-gray-500">进行中</div>
+                    <div className="text-sm text-gray-500">进行�?/div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">{dept.stats.completed}</div>
-                    <div className="text-sm text-gray-500">已完成</div>
+                    <div className="text-sm text-gray-500">已完�?/div>
                   </div>
                 </div>
 
@@ -132,7 +132,7 @@ export default function Departments() {
         })}
       </div>
 
-      {/* 快速统计 */}
+      {/* 快速统�?*/}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -140,7 +140,7 @@ export default function Departments() {
             整体概览
           </CardTitle>
           <CardDescription>
-            所有部门的需求统计汇总
+            所有部门的需求统计汇�?
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -151,11 +151,11 @@ export default function Departments() {
             </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-3xl font-bold text-blue-600">0</div>
-              <div className="text-sm text-gray-600 mt-1">进行中</div>
+              <div className="text-sm text-gray-600 mt-1">进行�?/div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-3xl font-bold text-green-600">0</div>
-              <div className="text-sm text-gray-600 mt-1">已完成</div>
+              <div className="text-sm text-gray-600 mt-1">已完�?/div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
               <div className="text-3xl font-bold text-orange-600">0</div>

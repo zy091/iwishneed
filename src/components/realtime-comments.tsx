@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/use-permissions'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -34,7 +34,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
   const [canComment, setCanComment] = useState(false)
   const commentsEndRef = useRef<HTMLDivElement>(null)
 
-  // 滚动到最新评论
+  // 滚动到最新评�?
   const scrollToBottom = () => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -48,7 +48,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
       console.error('加载评论失败:', error)
       toast({
         title: '加载评论失败',
-        description: '请刷新页面重试',
+        description: '请刷新页面重�?,
         variant: 'destructive'
       })
     } finally {
@@ -56,13 +56,13 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
     }
   }
 
-  // 检查评论权限
+  // 检查评论权�?
   const checkCommentPermission = async () => {
     try {
       const canAdd = await canAddComment()
       setCanComment(canAdd)
     } catch (error) {
-      console.error('检查评论权限失败:', error)
+      console.error('检查评论权限失�?', error)
       setCanComment(false)
     }
   }
@@ -84,17 +84,17 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
       setNewComment('')
       
       toast({
-        title: '评论已发布',
-        description: '您的评论已成功添加'
+        title: '评论已发�?,
+        description: '您的评论已成功添�?
       })
       
-      // 滚动到最新评论
+      // 滚动到最新评�?
       setTimeout(scrollToBottom, 100)
     } catch (error) {
       console.error('发布评论失败:', error)
       toast({
         title: '发布评论失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
+        description: error instanceof Error ? error.message : '请稍后重�?,
         variant: 'destructive'
       })
     } finally {
@@ -104,7 +104,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
 
   // 删除评论
   const handleDelete = async (commentId: string) => {
-    if (!confirm('确定要删除这条评论吗？')) return
+    if (!confirm('确定要删除这条评论吗�?)) return
 
     try {
       await deleteComment(commentId)
@@ -113,20 +113,20 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
       setComments(prev => prev.filter(c => c.id !== commentId))
       
       toast({
-        title: '评论已删除',
+        title: '评论已删�?,
         description: '评论删除成功'
       })
     } catch (error) {
       console.error('删除评论失败:', error)
       toast({
         title: '删除评论失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
+        description: error instanceof Error ? error.message : '请稍后重�?,
         variant: 'destructive'
       })
     }
   }
 
-  // 初始化
+  // 初始�?
   useEffect(() => {
     loadComments()
     checkCommentPermission()
@@ -146,7 +146,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
         },
         (payload) => {
           const newComment = payload.new as Comment
-          // 避免重复添加自己的评论
+          // 避免重复添加自己的评�?
           setComments(prev => {
             const exists = prev.some(c => c.id === newComment.id)
             if (exists) return prev
@@ -156,7 +156,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
           // 如果不是当前用户的评论，显示通知
           if (newComment.user_external_id !== user?.id) {
             toast({
-              title: '新评论',
+              title: '新评�?,
               description: `${newComment.user_email_masked} 发表了新评论`
             })
           }
@@ -186,14 +186,14 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
     return (
       <div className={`flex items-center justify-center p-8 ${className}`}>
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">加载评论中...</span>
+        <span className="ml-2">加载评论�?..</span>
       </div>
     )
   }
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* 评论输入框 */}
+      {/* 评论输入�?*/}
       {canComment && (
         <Card>
           <CardContent className="pt-6">
@@ -217,7 +217,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      发布中...
+                      发布�?..
                     </>
                   ) : (
                     <>
@@ -239,7 +239,7 @@ export default function RealtimeComments({ requirementId, className }: RealtimeC
             <CardContent className="pt-6">
               <div className="text-center text-muted-foreground">
                 <p>暂无评论</p>
-                {canComment && <p className="text-sm mt-1">成为第一个评论的人吧！</p>}
+                {canComment && <p className="text-sm mt-1">成为第一个评论的人吧�?/p>}
               </div>
             </CardContent>
           </Card>

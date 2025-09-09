@@ -48,7 +48,7 @@ export default function EnterpriseCommentsV2({
 }: EnterpriseCommentsV2Props) {
   const { toast } = useToast()
   
-  // 状态管理
+  // 状态管�?
   const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -62,13 +62,13 @@ export default function EnterpriseCommentsV2({
   // 引用
   const commentsEndRef = useRef<HTMLDivElement>(null)
 
-  // 初始化组件 - 并行获取权限和评论
+  // 初始化组�?- 并行获取权限和评�?
   const initializeComponent = async () => {
     try {
       setLoading(true)
       setAuthLoading(true)
       
-      // 并行获取用户权限和评论数据
+      // 并行获取用户权限和评论数�?
       const [permissions, commentsData] = await Promise.all([
         EnterpriseAuthService.getCurrentUserPermissions(),
         fetchComments()
@@ -77,17 +77,17 @@ export default function EnterpriseCommentsV2({
       setUserPermissions(permissions)
       setComments(commentsData)
       
-      console.log('组件初始化完成:', {
+      console.log('组件初始化完�?', {
         hasPermissions: !!permissions,
         userRole: permissions?.roleName,
         commentsCount: commentsData.length
       })
       
     } catch (error) {
-      console.error('组件初始化失败:', error)
+      console.error('组件初始化失�?', error)
       toast({
-        title: '初始化失败',
-        description: '请刷新页面重试',
+        title: '初始化失�?,
+        description: '请刷新页面重�?,
         variant: 'destructive'
       })
     } finally {
@@ -120,7 +120,7 @@ export default function EnterpriseCommentsV2({
         user_role: getRoleName(comment.profiles?.role_id)
       }))
 
-      // 构建评论树结构
+      // 构建评论树结�?
       return buildCommentTree(processedComments)
       
     } catch (error) {
@@ -129,7 +129,7 @@ export default function EnterpriseCommentsV2({
     }
   }
 
-  // 构建评论树
+  // 构建评论�?
   const buildCommentTree = (comments: Comment[]): Comment[] => {
     const commentMap = new Map<string, Comment>()
     const rootComments: Comment[] = []
@@ -139,7 +139,7 @@ export default function EnterpriseCommentsV2({
       commentMap.set(comment.id, { ...comment, replies: [] })
     })
 
-    // 构建树结构
+    // 构建树结�?
     comments.forEach(comment => {
       const commentNode = commentMap.get(comment.id)!
       
@@ -160,15 +160,15 @@ export default function EnterpriseCommentsV2({
   // 获取角色名称
   const getRoleName = (roleId?: number): string => {
     switch (roleId) {
-      case 0: return '超级管理员'
-      case 1: return '管理员'
+      case 0: return '超级管理�?
+      case 1: return '管理�?
       case 2: return '经理'
-      case 3: return '开发者'
-      default: return '提交者'
+      case 3: return '开发�?
+      default: return '提交�?
     }
   }
 
-  // 提交评论 - 基于数据库验证
+  // 提交评论 - 基于数据库验�?
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return
 
@@ -178,10 +178,10 @@ export default function EnterpriseCommentsV2({
       // 实时权限验证
       const canComment = await EnterpriseAuthService.canPerformAction('comment_create')
       if (!canComment) {
-        throw new Error('您没有评论权限，请刷新页面重试')
+        throw new Error('您没有评论权限，请刷新页面重�?)
       }
 
-      // 提交评论 - 用户信息由数据库触发器自动设置
+      // 提交评论 - 用户信息由数据库触发器自动设�?
       const { data, error } = await supabase
         .from('comments')
         .insert({
@@ -200,7 +200,7 @@ export default function EnterpriseCommentsV2({
 
       if (error) throw error
 
-      // 处理新评论数据
+      // 处理新评论数�?
       const newCommentWithProfile = {
         ...data,
         user_name: data.profiles?.name || userPermissions?.name || '当前用户',
@@ -220,10 +220,10 @@ export default function EnterpriseCommentsV2({
       
       toast({
         title: '评论发布成功',
-        description: '您的评论已成功发布',
+        description: '您的评论已成功发�?,
       })
 
-      // 滚动到底部
+      // 滚动到底�?
       setTimeout(() => {
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 100)
@@ -259,15 +259,15 @@ export default function EnterpriseCommentsV2({
     })
   }
 
-  // 删除评论 - 基于数据库验证
+  // 删除评论 - 基于数据库验�?
   const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm('确定要删除这条评论吗？')) return
+    if (!window.confirm('确定要删除这条评论吗�?)) return
 
     try {
       // 实时权限验证
       const canDelete = await EnterpriseAuthService.canPerformAction('comment_delete', commentId)
       if (!canDelete) {
-        throw new Error('您没有删除权限')
+        throw new Error('您没有删除权�?)
       }
 
       const { error } = await supabase
@@ -281,7 +281,7 @@ export default function EnterpriseCommentsV2({
       setComments(prev => removeCommentFromTree(prev, commentId))
       
       toast({
-        title: '评论已删除',
+        title: '评论已删�?,
         description: '评论删除成功',
       })
 
@@ -289,13 +289,13 @@ export default function EnterpriseCommentsV2({
       console.error('删除评论失败:', error)
       toast({
         title: '删除失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
+        description: error instanceof Error ? error.message : '请稍后重�?,
         variant: 'destructive'
       })
     }
   }
 
-  // 从评论树中移除评论
+  // 从评论树中移除评�?
   const removeCommentFromTree = (comments: Comment[], commentId: string): Comment[] => {
     return comments
       .filter(comment => comment.id !== commentId)
@@ -305,7 +305,7 @@ export default function EnterpriseCommentsV2({
       }))
   }
 
-  // 编辑评论 - 基于数据库验证
+  // 编辑评论 - 基于数据库验�?
   const handleEditComment = async (commentId: string) => {
     if (!editContent.trim()) return
 
@@ -313,7 +313,7 @@ export default function EnterpriseCommentsV2({
       // 实时权限验证
       const canEdit = await EnterpriseAuthService.canPerformAction('comment_edit', commentId)
       if (!canEdit) {
-        throw new Error('您没有编辑权限')
+        throw new Error('您没有编辑权�?)
       }
 
       const { error } = await supabase
@@ -326,13 +326,13 @@ export default function EnterpriseCommentsV2({
 
       if (error) throw error
 
-      // 更新状态
+      // 更新状�?
       setComments(prev => updateCommentInTree(prev, commentId, editContent.trim()))
       setEditingComment(null)
       setEditContent('')
       
       toast({
-        title: '评论已更新',
+        title: '评论已更�?,
         description: '评论修改成功',
       })
 
@@ -340,13 +340,13 @@ export default function EnterpriseCommentsV2({
       console.error('编辑评论失败:', error)
       toast({
         title: '编辑失败',
-        description: error instanceof Error ? error.message : '请稍后重试',
+        description: error instanceof Error ? error.message : '请稍后重�?,
         variant: 'destructive'
       })
     }
   }
 
-  // 在评论树中更新评论
+  // 在评论树中更新评�?
   const updateCommentInTree = (comments: Comment[], commentId: string, newContent: string): Comment[] => {
     return comments.map(comment => {
       if (comment.id === commentId) {
@@ -362,7 +362,7 @@ export default function EnterpriseCommentsV2({
     })
   }
 
-  // 权限检查函数
+  // 权限检查函�?
   const canEditComment = (comment: Comment): boolean => {
     return userPermissions?.userId === comment.user_id
   }
@@ -371,7 +371,7 @@ export default function EnterpriseCommentsV2({
     return userPermissions?.isAdmin || userPermissions?.userId === comment.user_id
   }
 
-  // 刷新权限和评论
+  // 刷新权限和评�?
   const handleRefresh = async () => {
     await initializeComponent()
   }
@@ -409,7 +409,7 @@ export default function EnterpriseCommentsV2({
                   </span>
                   {comment.updated_at !== comment.created_at && (
                     <Badge variant="outline" className="text-xs">
-                      已编辑
+                      已编�?
                     </Badge>
                   )}
                 </div>
@@ -550,7 +550,7 @@ export default function EnterpriseCommentsV2({
     )
   }
 
-  // 组件初始化
+  // 组件初始�?
   useEffect(() => {
     initializeComponent()
 
@@ -567,7 +567,7 @@ export default function EnterpriseCommentsV2({
         },
         (payload) => {
           console.log('评论实时更新:', payload)
-          // 重新获取评论以保持数据一致性
+          // 重新获取评论以保持数据一致�?
           fetchComments().then(setComments).catch(console.error)
         }
       )
@@ -590,7 +590,7 @@ export default function EnterpriseCommentsV2({
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Clock className="w-6 h-6 animate-spin mr-2" />
-            <span>加载评论中...</span>
+            <span>加载评论�?..</span>
           </div>
         </CardContent>
       </Card>
@@ -605,7 +605,7 @@ export default function EnterpriseCommentsV2({
             <MessageCircle className="w-5 h-5 mr-2" />
             评论讨论
             <Badge variant="secondary" className="ml-2">
-              {comments.length} 条评论
+              {comments.length} 条评�?
             </Badge>
           </div>
           <Button size="sm" variant="outline" onClick={handleRefresh}>
@@ -616,7 +616,7 @@ export default function EnterpriseCommentsV2({
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* 认证状态显示 */}
+        {/* 认证状态显�?*/}
         {authLoading ? (
           <Card className="border-blue-200">
             <CardContent className="p-4">
@@ -651,7 +651,7 @@ export default function EnterpriseCommentsV2({
           </Card>
         )}
 
-        {/* 新评论表单 */}
+        {/* 新评论表�?*/}
         {userPermissions && (
           <Card className="border-green-200">
             <CardContent className="p-4">
@@ -665,7 +665,7 @@ export default function EnterpriseCommentsV2({
                 
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">
-                    以 {userPermissions.name} ({userPermissions.roleName}) 身份发布
+                    �?{userPermissions.name} ({userPermissions.roleName}) 身份发布
                   </div>
                   
                   <Button 
@@ -691,7 +691,7 @@ export default function EnterpriseCommentsV2({
             <Card className="border-gray-200">
               <CardContent className="p-8 text-center">
                 <MessageCircle className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500">暂无评论，来发表第一条评论吧！</p>
+                <p className="text-gray-500">暂无评论，来发表第一条评论吧�?/p>
               </CardContent>
             </Card>
           ) : (

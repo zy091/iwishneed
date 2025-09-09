@@ -11,9 +11,9 @@ export function ResponsiveContainer({ children, className }: ResponsiveContainer
     <div className={cn(
       "w-full min-h-screen",
       "px-4 py-6", // 移动端内边距
-      "sm:px-6 sm:py-8", // 小屏幕
+      "sm:px-6 sm:py-8", // 小屏�?
       "md:px-8 md:py-10", // 中等屏幕
-      "lg:px-12 lg:py-12", // 大屏幕
+      "lg:px-12 lg:py-12", // 大屏�?
       "xl:px-16 xl:py-16", // 超大屏幕
       className
     )}>
@@ -74,7 +74,7 @@ export function ResponsiveCard({ children, className, title, description }: Resp
     <div className={cn(
       "bg-white rounded-lg shadow-sm border",
       "p-4", // 移动端内边距
-      "sm:p-6", // 小屏幕
+      "sm:p-6", // 小屏�?
       "md:p-8", // 中等屏幕
       "hover:shadow-md transition-shadow duration-200",
       className
@@ -134,7 +134,7 @@ export function ResponsiveButtonGroup({
     <div className={cn(
       "flex gap-2",
       orientation === 'horizontal' ? [
-        "flex-col", // 移动端垂直排列
+        "flex-col", // 移动端垂直排�?
         "sm:flex-row" // 小屏幕及以上水平排列
       ] : "flex-col",
       className

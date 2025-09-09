@@ -21,11 +21,11 @@ interface AuthContextType {
 }
 
 const ROLE_NAME_MAP: Record<number, string> = {
-  0: '超级管理员',
-  1: '管理员',
+  0: '超级管理�?,
+  1: '管理�?,
   2: '经理',
-  3: '开发者',
-  4: '提交者',
+  3: '开发�?,
+  4: '提交�?,
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -45,7 +45,7 @@ function mapSupabaseUser(su: SupaUser): User {
     email: su.email ?? '',
     role: 'submitter',
     role_id: 4,
-    rolename: '提交者',
+    rolename: '提交�?,
     avatar
   }
 }
@@ -71,7 +71,7 @@ async function updateUserProfile(userId: string, setUser: (user: User | null) =>
     if (profileData) {
       const role_id = profileData.role_id ?? 4
       const profileName = profileData.name || currentUser.name
-      const rolename = profileData.rolename || ROLE_NAME_MAP[role_id] || '提交者'
+      const rolename = profileData.rolename || ROLE_NAME_MAP[role_id] || '提交�?
       
       const roleMap: Record<number, 'admin' | 'manager' | 'developer' | 'submitter'> = {
         0: 'admin',
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
 
   useEffect(() => {
-    // 初始化会话
+    // 初始化会�?
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     init()
 
-    // 监听认证状态变化
+    // 监听认证状态变�?
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         const u = mapSupabaseUser(session.user)

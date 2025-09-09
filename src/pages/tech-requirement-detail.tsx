@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
-import { SimpleComments } from '@/components/simple-comments'
+import Comments from '@/components/Comments'
 import { Edit, ExternalLink } from 'lucide-react'
 
 export default function TechRequirementDetail() {
@@ -41,11 +41,11 @@ export default function TechRequirementDetail() {
       <div className="container mx-auto py-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">未找到该技术需求</CardTitle>
-            <CardDescription className="text-center">请返回列表重试</CardDescription>
+            <CardTitle className="text-center">未找到该技术需�?/CardTitle>
+            <CardDescription className="text-center">请返回列表重�?/CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button variant="outline" onClick={() => navigate('/departments/tech')}>返回技术需求列表</Button>
+            <Button variant="outline" onClick={() => navigate('/departments/tech')}>返回技术需求列�?/Button>
           </CardContent>
         </Card>
       </div>
@@ -67,9 +67,9 @@ export default function TechRequirementDetail() {
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>需求详情</CardTitle>
+              <CardTitle>需求详�?/CardTitle>
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="outline">{data.urgency}·紧急程度</Badge>
+                <Badge variant="outline">{data.urgency}·紧急程�?/Badge>
                 <Badge variant="outline">{data.client_type}</Badge>
                 {data.progress && <Badge className="bg-blue-500">{data.progress}</Badge>}
               </div>
@@ -80,7 +80,7 @@ export default function TechRequirementDetail() {
                 <div className="text-sm text-gray-600">提交人：{data.submitter_name}</div>
                 {data.client_url && (
                   <div className="text-sm text-gray-600">
-                    客户网址：
+                    客户网址�?
                     <a href={data.client_url} target="_blank" rel="noreferrer" className="text-blue-600 inline-flex items-center gap-1">
                       链接 <ExternalLink className="h-3.5 w-3.5" />
                     </a>
@@ -92,7 +92,7 @@ export default function TechRequirementDetail() {
             </CardContent>
           </Card>
 
-          <SimpleComments requirementId={id} />
+          <Comments requirementId={id} />
         </div>
 
         <div className="space-y-6">
@@ -103,7 +103,7 @@ export default function TechRequirementDetail() {
             <CardContent>
               <div className="space-y-2 text-sm text-gray-700">
                 <div>期望完成时间：{data.expected_completion_time || '-'}</div>
-                <div>技术负责人：{data.tech_assignee || '未分配'}</div>
+                <div>技术负责人：{data.tech_assignee || '未分�?}</div>
                 <div>负责人预计完成：{data.assignee_estimated_time || '-'}</div>
                 <div>开始时间：{data.start_time || '-'}</div>
                 <div>结束时间：{data.end_time || '-'}</div>

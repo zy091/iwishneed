@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { logger } from '@/lib/logger'
 import { techRequirementService, type TechRequirementStats } from '@/services/tech-requirement-service'
 import type { TechRequirement } from '@/services/tech-requirement-service'
@@ -71,7 +71,7 @@ export default function TechRequirementList() {
         setTechAssignees(assignees)
         setIsLoading(false)
       } catch (error) {
-        logger.error('获取技术需求列表失败', { error })
+        logger.error('获取技术需求列表失�?, { error })
         setIsLoading(false)
       }
     }
@@ -92,7 +92,7 @@ export default function TechRequirementList() {
       )
     }
 
-    // 紧急程度过滤
+    // 紧急程度过�?
     if (urgencyFilter && urgencyFilter !== 'all-urgency') {
       result = result.filter(req => req.urgency === urgencyFilter)
     }
@@ -120,18 +120,18 @@ export default function TechRequirementList() {
       await techRequirementService.deleteTechRequirement(id)
       setRequirements(prevReqs => prevReqs.filter(req => req.id !== id))
     } catch (error) {
-      logger.error('删除需求失败', { error, id })
+      logger.error('删除需求失�?, { error, id })
     }
   }
 
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
-      case '高':
-        return <Badge variant="destructive">高</Badge>
-      case '中':
-        return <Badge variant="secondary">中</Badge>
-      case '低':
-        return <Badge variant="outline">低</Badge>
+      case '�?:
+        return <Badge variant="destructive">�?/Badge>
+      case '�?:
+        return <Badge variant="secondary">�?/Badge>
+      case '�?:
+        return <Badge variant="outline">�?/Badge>
       default:
         return <Badge variant="outline">{urgency}</Badge>
     }
@@ -139,16 +139,16 @@ export default function TechRequirementList() {
 
   const getProgressBadge = (progress?: string) => {
     switch (progress) {
-      case '已完成':
-        return <Badge className="bg-green-500">已完成</Badge>
-      case '处理中':
-        return <Badge className="bg-blue-500">处理中</Badge>
-      case '未开始':
-        return <Badge className="bg-gray-500">未开始</Badge>
-      case '已沟通延迟':
-        return <Badge className="bg-orange-500">已沟通延迟</Badge>
+      case '已完�?:
+        return <Badge className="bg-green-500">已完�?/Badge>
+      case '处理�?:
+        return <Badge className="bg-blue-500">处理�?/Badge>
+      case '未开�?:
+        return <Badge className="bg-gray-500">未开�?/Badge>
+      case '已沟通延�?:
+        return <Badge className="bg-orange-500">已沟通延�?/Badge>
       default:
-        return <Badge variant="outline">{progress || '未开始'}</Badge>
+        return <Badge variant="outline">{progress || '未开�?}</Badge>
     }
   }
 
@@ -166,13 +166,13 @@ export default function TechRequirementList() {
   return (
     <div className="container mx-auto py-6 px-3 overflow-x-hidden">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold min-w-0">技术部 - 需求列表</h1>
+        <h1 className="text-2xl font-bold min-w-0">技术部 - 需求列�?/h1>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => navigate('/tech-requirements/import')}>
             <Upload className="mr-2 h-4 w-4" /> 批量导入
           </Button>
           <Button onClick={() => navigate('/tech-requirements/new')}>
-            <Plus className="mr-2 h-4 w-4" /> 新建需求
+            <Plus className="mr-2 h-4 w-4" /> 新建需�?
           </Button>
         </div>
       </div>
@@ -194,7 +194,7 @@ export default function TechRequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">未开始</p>
+                <p className="text-sm text-gray-600">未开�?/p>
                 <p className="text-2xl font-bold text-gray-600">{stats.pending}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -207,7 +207,7 @@ export default function TechRequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">处理中</p>
+                <p className="text-sm text-gray-600">处理�?/p>
                 <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -220,7 +220,7 @@ export default function TechRequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">已完成</p>
+                <p className="text-sm text-gray-600">已完�?/p>
                 <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
@@ -233,7 +233,7 @@ export default function TechRequirementList() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">已沟通延迟</p>
+                <p className="text-sm text-gray-600">已沟通延�?/p>
                 <p className="text-2xl font-bold text-orange-600">{stats.delayed}</p>
               </div>
               <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
@@ -246,8 +246,8 @@ export default function TechRequirementList() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>筛选条件</CardTitle>
-          <CardDescription>使用以下选项筛选技术需求列表</CardDescription>
+          <CardTitle>筛选条�?/CardTitle>
+          <CardDescription>使用以下选项筛选技术需求列�?/CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
@@ -266,27 +266,27 @@ export default function TechRequirementList() {
             <div className="w-full md:w-48">
               <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="紧急程度" />
+                  <SelectValue placeholder="紧急程�? />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-urgency">全部紧急程度</SelectItem>
-                  <SelectItem value="高">高</SelectItem>
-                  <SelectItem value="中">中</SelectItem>
-                  <SelectItem value="低">低</SelectItem>
+                  <SelectItem value="all-urgency">全部紧急程�?/SelectItem>
+                  <SelectItem value="�?>�?/SelectItem>
+                  <SelectItem value="�?>�?/SelectItem>
+                  <SelectItem value="�?>�?/SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="w-full md:w-48">
               <Select value={progressFilter} onValueChange={setProgressFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="技术进度" />
+                  <SelectValue placeholder="技术进�? />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all-progress">全部进度</SelectItem>
-                  <SelectItem value="未开始">未开始</SelectItem>
-                  <SelectItem value="处理中">处理中</SelectItem>
-                  <SelectItem value="已完成">已完成</SelectItem>
-                  <SelectItem value="已沟通延迟">已沟通延迟</SelectItem>
+                  <SelectItem value="未开�?>未开�?/SelectItem>
+                  <SelectItem value="处理�?>处理�?/SelectItem>
+                  <SelectItem value="已完�?>已完�?/SelectItem>
+                  <SelectItem value="已沟通延�?>已沟通延�?/SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -296,7 +296,7 @@ export default function TechRequirementList() {
                   <SelectValue placeholder="技术负责人" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-assignee">全部负责人</SelectItem>
+                  <SelectItem value="all-assignee">全部负责�?/SelectItem>
                   {techAssignees.map(assignee => (
                     <SelectItem key={assignee} value={assignee}>{assignee}</SelectItem>
                   ))}
@@ -325,7 +325,7 @@ export default function TechRequirementList() {
         </div>
       ) : (
         <>
-        {/* 移动端卡片视图 */}
+        {/* 移动端卡片视�?*/}
         <div className="md:hidden space-y-3">
           {filteredRequirements.length > 0 ? (
             filteredRequirements.map((req) => (
@@ -348,7 +348,7 @@ export default function TechRequirementList() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
-                    <div>负责人：{req.tech_assignee || '未分配'}</div>
+                    <div>负责人：{req.tech_assignee || '未分�?}</div>
                     <div>
                       期望：{req.expected_completion_time ? format(new Date(req.expected_completion_time), "P", { locale: zhCN }) : '-'}
                     </div>
@@ -359,7 +359,7 @@ export default function TechRequirementList() {
                     <div className="col-span-2">
                       {req.client_url ? (
                         <a href={req.client_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">客户链接</a>
-                      ) : '无客户链接'}
+                      ) : '无客户链�?}
                     </div>
                   </div>
                   <div className="mt-3 flex justify-end gap-2">
@@ -375,28 +375,28 @@ export default function TechRequirementList() {
             ))
           ) : (
             <Card>
-              <CardContent className="py-8 text-center text-sm text-gray-500">没有找到符合条件的技术需求</CardContent>
+              <CardContent className="py-8 text-center text-sm text-gray-500">没有找到符合条件的技术需�?/CardContent>
             </Card>
           )}
         </div>
 
-        {/* 桌面端表格视图 */}
+        {/* 桌面端表格视�?*/}
         <div className="hidden md:block bg-white rounded-lg shadow">
           <div className="overflow-x-auto w-full">
             <Table className="min-w-[1200px] whitespace-nowrap">
               <TableHeader>
                 <TableRow>
                   <TableHead className="min-w-[100px]">月份</TableHead>
-                  <TableHead className="min-w-[240px]">需求标题</TableHead>
+                  <TableHead className="min-w-[240px]">需求标�?/TableHead>
                   <TableHead className="min-w-[160px]">期望完成时间</TableHead>
-                  <TableHead className="min-w-[100px]">紧急程度</TableHead>
+                  <TableHead className="min-w-[100px]">紧急程�?/TableHead>
                   <TableHead className="min-w-[120px]">客户类型</TableHead>
                   <TableHead className="min-w-[120px]">客户网址</TableHead>
-                  <TableHead className="min-w-[120px]">提交人</TableHead>
+                  <TableHead className="min-w-[120px]">提交�?/TableHead>
                   <TableHead className="min-w-[120px]">技术负责人</TableHead>
-                  <TableHead className="min-w-[120px]">技术进度</TableHead>
-                  <TableHead className="min-w-[180px]">负责人预计完成时间</TableHead>
-                  <TableHead className="min-w-[140px]">技术所耗时间</TableHead>
+                  <TableHead className="min-w-[120px]">技术进�?/TableHead>
+                  <TableHead className="min-w-[180px]">负责人预计完成时�?/TableHead>
+                  <TableHead className="min-w-[140px]">技术所耗时�?/TableHead>
                   <TableHead className="min-w-[160px]">提交时间</TableHead>
                   <TableHead className="text-right min-w-[120px]">操作</TableHead>
                 </TableRow>
@@ -425,7 +425,7 @@ export default function TechRequirementList() {
                         ) : '-'}
                       </TableCell>
                       <TableCell>{req.submitter_name}</TableCell>
-                      <TableCell>{req.tech_assignee || '未分配'}</TableCell>
+                      <TableCell>{req.tech_assignee || '未分�?}</TableCell>
                       <TableCell>{getProgressBadge(req.progress)}</TableCell>
                       <TableCell>
                         {req.assignee_estimated_time ? 
@@ -434,7 +434,7 @@ export default function TechRequirementList() {
                         }
                       </TableCell>
                       <TableCell>
-                        {req.progress === '已完成' ? (
+                        {req.progress === '已完�? ? (
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             {calculateTechDuration(req)}h
@@ -465,7 +465,7 @@ export default function TechRequirementList() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>确认删除</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  您确定要删除这个技术需求吗？此操作无法撤销。
+                                  您确定要删除这个技术需求吗？此操作无法撤销�?
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -483,7 +483,7 @@ export default function TechRequirementList() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-8">
-                      没有找到符合条件的技术需求
+                      没有找到符合条件的技术需�?
                     </TableCell>
                   </TableRow>
                 )}

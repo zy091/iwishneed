@@ -37,7 +37,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <div className="flex justify-center items-center h-64">加载中...</div>
+  if (loading) return <div className="flex justify-center items-center h-64">加载�?..</div>
 
   return (
     <div className="container mx-auto py-6">
@@ -52,7 +52,7 @@ export default function SettingsPage() {
             <Switch id="tech" checked={form.enableTechModule} onCheckedChange={(v) => setForm(prev => ({ ...prev, enableTechModule: !!v }))} />
           </div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="creative">启用创意部模块</Label>
+            <Label htmlFor="creative">启用创意部模�?/Label>
             <Switch id="creative" checked={form.enableCreativeModule} onCheckedChange={(v) => setForm(prev => ({ ...prev, enableCreativeModule: !!v }))} />
           </div>
           <div>
@@ -66,7 +66,7 @@ export default function SettingsPage() {
             </Select>
           </div>
           <div className="flex justify-end">
-            <Button onClick={save} disabled={saving}>{saving ? '保存中...' : '保存设置'}</Button>
+            <Button onClick={save} disabled={saving}>{saving ? '保存�?..' : '保存设置'}</Button>
           </div>
         </CardContent>
       </Card>

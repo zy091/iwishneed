@@ -14,7 +14,7 @@ import {
   type Comment,
   type AddCommentParams 
 } from '@/services/comments-service'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { logger } from '@/lib/logger'
 import { 
   MessageCircle, 
@@ -53,7 +53,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-    if (!confirm('确定要删除这条评论吗？')) return
+    if (!confirm('确定要删除这条评论吗�?)) return
     
     setIsDeleting(true)
     try {
@@ -91,7 +91,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             {comment.attachments_count > 0 && (
               <Badge variant="secondary" className="text-xs">
                 <Paperclip className="h-3 w-3 mr-1" />
-                {comment.attachments_count} 个附件
+                {comment.attachments_count} 个附�?
               </Badge>
             )}
           </div>
@@ -176,7 +176,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
       setError('获取评论失败，请稍后再试')
       toast({
         title: '获取评论失败',
-        description: err.message || '请稍后再试',
+        description: err.message || '请稍后再�?,
         variant: 'destructive'
       })
     } finally {
@@ -184,13 +184,13 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
     }
   }
 
-  // 检查评论权限
+  // 检查评论权�?
   const checkCommentPermission = async () => {
     try {
       const canAdd = await canAddComment()
       setCanComment(canAdd)
     } catch (err) {
-      logger.warn('检查评论权限失败', { error: err })
+      logger.warn('检查评论权限失�?, { error: err })
       setCanComment(false)
     }
   }
@@ -217,13 +217,13 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
       
       toast({
         title: '评论添加成功',
-        description: '您的评论已成功发布'
+        description: '您的评论已成功发�?
       })
     } catch (err: any) {
       logger.error('添加评论失败', { error: err, requirementId })
       toast({
         title: '添加评论失败',
-        description: err.message || '请稍后再试',
+        description: err.message || '请稍后再�?,
         variant: 'destructive'
       })
     } finally {
@@ -250,13 +250,13 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
       
       toast({
         title: '回复添加成功',
-        description: '您的回复已成功发布'
+        description: '您的回复已成功发�?
       })
     } catch (err: any) {
       logger.error('添加回复失败', { error: err, requirementId })
       toast({
         title: '添加回复失败',
-        description: err.message || '请稍后再试',
+        description: err.message || '请稍后再�?,
         variant: 'destructive'
       })
     } finally {
@@ -272,19 +272,19 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
       
       toast({
         title: '评论删除成功',
-        description: '评论已成功删除'
+        description: '评论已成功删�?
       })
     } catch (err: any) {
       logger.error('删除评论失败', { error: err, commentId })
       toast({
         title: '删除评论失败',
-        description: err.message || '请稍后再试',
+        description: err.message || '请稍后再�?,
         variant: 'destructive'
       })
     }
   }
 
-  // 开始回复
+  // 开始回�?
   const handleStartReply = (parentId: string) => {
     setReplyTo(parentId)
     setReplyContent('')
@@ -302,7 +302,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
         <CardContent className="p-6">
           <div className="flex items-center justify-center space-x-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>加载评论中...</span>
+            <span>加载评论�?..</span>
           </div>
         </CardContent>
       </Card>
@@ -317,7 +317,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
           <span>评论 ({comments.length})</span>
         </CardTitle>
         {requirementTitle && (
-          <p className="text-sm text-gray-600">针对需求: {requirementTitle}</p>
+          <p className="text-sm text-gray-600">针对需�? {requirementTitle}</p>
         )}
       </CardHeader>
       
@@ -358,7 +358,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
 
         {!canComment && user && (
           <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-700">您暂时没有评论权限</p>
+            <p className="text-sm text-yellow-700">您暂时没有评论权�?/p>
           </div>
         )}
 
@@ -374,7 +374,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
         {comments.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>暂无评论，来发表第一条评论吧！</p>
+            <p>暂无评论，来发表第一条评论吧�?/p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -387,7 +387,7 @@ const RequirementComments: React.FC<RequirementCommentsProps> = ({
                   canDelete={isAdmin || comment.user_external_id === user?.id}
                 />
                 
-                {/* 回复框 */}
+                {/* 回复�?*/}
                 {replyTo === comment.id && (
                   <div className="ml-11 mt-3 p-3 bg-gray-50 rounded-md">
                     <Textarea

@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { SimpleComments } from '@/components/simple-comments'
+import Comments from '@/components/Comments'
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { RequirementService, Requirement } from '@/services/requirement-service'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   Calendar, 
   Clock, 
@@ -57,7 +57,7 @@ export default function RequirementDetail() {
           console.error('需求不存在')
         }
       } catch (error) {
-        console.error('获取需求详情失败:', error)
+        console.error('获取需求详情失�?', error)
       } finally {
         setIsLoading(false)
       }
@@ -75,18 +75,18 @@ export default function RequirementDetail() {
         navigate('/requirements')
       }
     } catch (error) {
-      console.error('删除需求失败:', error)
+      console.error('删除需求失�?', error)
     }
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500 hover:bg-green-600">已完成</Badge>
+        return <Badge className="bg-green-500 hover:bg-green-600">已完�?/Badge>
       case 'inProgress':
-        return <Badge className="bg-blue-500 hover:bg-blue-600">进行中</Badge>
+        return <Badge className="bg-blue-500 hover:bg-blue-600">进行�?/Badge>
       case 'pending':
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">待处理</Badge>
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">待处�?/Badge>
       case 'overdue':
         return <Badge className="bg-red-500 hover:bg-red-600">已逾期</Badge>
       default:
@@ -97,11 +97,11 @@ export default function RequirementDetail() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'high':
-        return <Badge variant="outline" className="border-red-500 text-red-500">高</Badge>
+        return <Badge variant="outline" className="border-red-500 text-red-500">�?/Badge>
       case 'medium':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">中</Badge>
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">�?/Badge>
       case 'low':
-        return <Badge variant="outline" className="border-green-500 text-green-500">低</Badge>
+        return <Badge variant="outline" className="border-green-500 text-green-500">�?/Badge>
       default:
         return <Badge variant="outline">未知</Badge>
     }
@@ -122,11 +122,11 @@ export default function RequirementDetail() {
           <CardHeader>
             <CardTitle className="text-center">需求不存在</CardTitle>
             <CardDescription className="text-center">
-              您请求的需求可能已被删除或不存在
+              您请求的需求可能已被删除或不存�?
             </CardDescription>
           </CardHeader>
           <CardFooter className="flex justify-center">
-            <Button onClick={() => navigate('/requirements')}>返回需求列表</Button>
+            <Button onClick={() => navigate('/requirements')}>返回需求列�?/Button>
           </CardFooter>
         </Card>
       </div>
@@ -151,7 +151,7 @@ export default function RequirementDetail() {
               <AlertDialogHeader>
                 <AlertDialogTitle>确认删除</AlertDialogTitle>
                 <AlertDialogDescription>
-                  您确定要删除这个需求吗？此操作无法撤销。
+                  您确定要删除这个需求吗？此操作无法撤销�?
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -169,7 +169,7 @@ export default function RequirementDetail() {
         <div className="md:col-span-2">
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>需求详情</CardTitle>
+              <CardTitle>需求详�?/CardTitle>
               <div className="flex flex-wrap gap-2 mt-2">
                 {getStatusBadge(requirement.status)}
                 {getPriorityBadge(requirement.priority)}
@@ -215,7 +215,7 @@ export default function RequirementDetail() {
             </CardHeader>
             <CardContent>
               {/* 使用新的 CommentsSection 组件 */}
-              {id && <SimpleComments requirementId={id} />}
+              {id && <Comments requirementId={id} />}
             </CardContent>
           </Card>
         </div>
@@ -230,7 +230,7 @@ export default function RequirementDetail() {
                 <div className="flex items-center">
                   <User className="h-5 w-5 mr-2 text-gray-500" />
                   <div>
-                    <p className="text-sm text-gray-500">提交人</p>
+                    <p className="text-sm text-gray-500">提交�?/p>
                     <div className="flex items-center mt-1">
                       <img 
                         src={requirement.submitter.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown'} 
@@ -245,7 +245,7 @@ export default function RequirementDetail() {
                 <div className="flex items-center">
                   <Users className="h-5 w-5 mr-2 text-gray-500" />
                   <div>
-                    <p className="text-sm text-gray-500">负责人</p>
+                    <p className="text-sm text-gray-500">负责�?/p>
                     {requirement.assignee ? (
                       <div className="flex items-center mt-1">
                         <img 
@@ -256,7 +256,7 @@ export default function RequirementDetail() {
                         <p>{requirement.assignee.name}</p>
                       </div>
                     ) : (
-                      <p className="mt-1 text-gray-400">未分配</p>
+                      <p className="mt-1 text-gray-400">未分�?/p>
                     )}
                   </div>
                 </div>
@@ -264,7 +264,7 @@ export default function RequirementDetail() {
                 <div className="flex items-center">
                   <Building className="h-5 w-5 mr-2 text-gray-500" />
                   <div>
-                    <p className="text-sm text-gray-500">所属部门</p>
+                    <p className="text-sm text-gray-500">所属部�?/p>
                     <p className="mt-1">{requirement.department}</p>
                   </div>
                 </div>
@@ -309,7 +309,7 @@ export default function RequirementDetail() {
                       <p className="font-medium">{item.action}</p>
                       <div className="flex items-center text-sm text-gray-500 mt-1">
                         <span>{item.user}</span>
-                        <span className="mx-2">•</span>
+                        <span className="mx-2">�?/span>
                         <span>{item.timestamp}</span>
                       </div>
                     </div>
