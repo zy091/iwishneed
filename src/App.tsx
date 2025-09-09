@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/use-auth'
 import { usePermissions } from './hooks/use-permissions'
 import AuthGuard from './components/auth-guard'
+import { EmergencyLogin } from './components/emergency-login'
 import Layout from './layout'
 import Login from './pages/login'
 import Dashboard from './pages/dashboard'
@@ -25,7 +26,11 @@ function App() {
 
   // 顶层开放 /login，避免任何情况下出现 "No routes matched /login"
   return (
-    <Routes>
+    <>
+      {/* 紧急登录调试组件 - 仅开发环境显示 */}
+      {import.meta.env.DEV && <EmergencyLogin />}
+      
+      <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
 
       <Route path="/" element={<AuthGuard><Layout /></AuthGuard>}>
@@ -68,6 +73,7 @@ function App() {
       {/* 未匹配路径：根据是否登录跳转 */}
       <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
     </Routes>
+    </>
   )
 }
 
