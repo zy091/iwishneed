@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/use-auth'
 import { usePermissions } from './hooks/use-permissions'
+import AuthGuard from './components/auth-guard'
 import Layout from './layout'
 import Login from './pages/login'
 import Dashboard from './pages/dashboard'
@@ -27,7 +28,7 @@ function App() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
 
-      <Route path="/" element={<Layout />}>
+      <Route path="/" element={<AuthGuard><Layout /></AuthGuard>}>
         {/* 仪表盘 */}
         <Route index element={<Dashboard />} />
 

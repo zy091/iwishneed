@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
-import EnterpriseCommentsV2 from '@/components/enterprise-comments-v2'
+import FixedCommentsSystem from '@/components/fixed-comments-system'
 import { Edit, ExternalLink } from 'lucide-react'
 
 export default function TechRequirementDetail() {
@@ -92,7 +92,7 @@ export default function TechRequirementDetail() {
             </CardContent>
           </Card>
 
-          <EnterpriseCommentsV2 requirementId={id} />
+          <FixedCommentsSystem requirementId={id} />
         </div>
 
         <div className="space-y-6">
