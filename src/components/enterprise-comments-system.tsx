@@ -59,8 +59,9 @@ export default function EnterpriseCommentsSystem({
   requirementId, 
   className = '' 
 }: EnterpriseCommentsSystemProps) {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const [userProfile, setUserProfile] = useState<any>(null)
+  const [sessionUser, setSessionUser] = useState<any>(null)
   const { toast } = useToast()
   
   // 状态管理
@@ -77,8 +78,8 @@ export default function EnterpriseCommentsSystem({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const commentsEndRef = useRef<HTMLDivElement>(null)
   
-  // 权限检查
-  const canComment = user && userProfile
+  // 权限检查 - 更宽松的检查
+  const canComment = (user && isAuthenticated) || sessionUser
   const canDelete = (comment: Comment) => {
     if (!userProfile) return false
     return comment.user_id === user?.id || [0, 1].includes(userProfile.role_id)
@@ -193,13 +194,19 @@ export default function EnterpriseCommentsSystem({
     try {
       setSubmitting(true)
       
+      // 获取当前用户信息
+      const currentUser = user || sessionUser
+      if (!currentUser) {
+        throw new Error('用户未登录')
+      }
+      
       const commentData = {
         requirement_id: requirementId,
         content: newComment.trim(),
         parent_id: replyTo,
-        user_id: user!.id,
-        user_external_id: user!.id,
-        user_email: user!.email || '',
+        user_id: currentUser.id,
+        user_external_id: currentUser.id,
+        user_email: currentUser.email || '',
         attachments_count: 0
       }
 
@@ -214,7 +221,7 @@ export default function EnterpriseCommentsSystem({
       // 乐观更新
       const newCommentWithProfile = {
         ...data,
-        user_name: userProfile?.name || user!.email || '当前用户',
+        user_name: userProfile?.name || currentUser.email || '当前用户',
         user_role: getRoleName(userProfile?.role_id),
         attachments: []
       }
@@ -554,25 +561,31 @@ export default function EnterpriseCommentsSystem({
     )
   }
 
-  // 获取用户档案
+  // 获取用户档案和会话信息
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user?.id) return
-      
+    const fetchUserInfo = async () => {
       try {
+        // 检查 Supabase 会话
+        const { data: { session } } = await supabase.auth.getSession()
+        setSessionUser(session?.user || null)
+        
+        const userId = user?.id || session?.user?.id
+        if (!userId) return
+        
+        // 获取用户档案
         const { data } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', userId)
           .single()
         
         setUserProfile(data)
       } catch (error) {
-        console.error('获取用户档案失败:', error)
+        console.error('获取用户信息失败:', error)
       }
     }
     
-    fetchUserProfile()
+    fetchUserInfo()
   }, [user?.id])
 
   // 实时订阅
