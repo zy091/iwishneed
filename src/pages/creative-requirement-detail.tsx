@@ -41,11 +41,11 @@ export default function CreativeRequirementDetail() {
       <div className="container mx-auto py-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-center">未找到该创意需�?/CardTitle>
-            <CardDescription className="text-center">请返回列表重�?/CardDescription>
+            <CardTitle className="text-center">未找到该创意需求</CardTitle>
+            <CardDescription className="text-center">请返回列表重试</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button variant="outline" onClick={() => navigate('/departments/creative')}>返回创意需求列�?/Button>
+            <Button variant="outline" onClick={() => navigate('/departments/creative')}>返回创意需求列表</Button>
           </CardContent>
         </Card>
       </div>
@@ -67,9 +67,9 @@ export default function CreativeRequirementDetail() {
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>需求详�?/CardTitle>
+              <CardTitle>需求详情</CardTitle>
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="outline">{data.urgency}·紧急程�?/Badge>
+                <Badge variant="outline">{data.urgency}·紧急程度</Badge>
                 <Badge variant="outline">{data.platform}</Badge>
                 <Badge className="bg-blue-500">{data.status}</Badge>
               </div>
