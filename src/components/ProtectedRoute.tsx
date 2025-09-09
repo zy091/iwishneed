@@ -16,30 +16,30 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, profile, loading, isAdmin, isSuperAdmin } = useAuth()
 
-  // 加载�?
+  // 加载中
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>加载�?..</p>
+          <p>加载中...</p>
         </div>
       </div>
     )
   }
 
-  // 未登�?
+  // 未登录
   if (!user || !profile) {
     return <LoginForm />
   }
 
-  // 权限检�?
+  // 权限检查
   if (requireSuperAdmin && !isSuperAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">权限不足</h1>
-          <p className="text-gray-600">您需要超级管理员权限才能访问此页�?/p>
+          <p className="text-gray-600">您需要超级管理员权限才能访问此页面</p>
         </div>
       </div>
     )
@@ -50,7 +50,7 @@ export function ProtectedRoute({
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">权限不足</h1>
-          <p className="text-gray-600">您需要管理员权限才能访问此页�?/p>
+          <p className="text-gray-600">您需要管理员权限才能访问此页面</p>
         </div>
       </div>
     )
