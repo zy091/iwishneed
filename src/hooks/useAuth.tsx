@@ -128,19 +128,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 登出
   const signOut = async () => {
     try {
-      setLoading(true)
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      
-      setUser(null)
-      setProfile(null)
-      setError(null)
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Sign out error:', error);
+        setError(error.message);
+        return;
+      }
+      // Redirect to home to trigger a full refresh and clear state, helping with cache issues.
+      window.location.href = '/'; 
     } catch (err) {
-      const message = err instanceof Error ? err.message : '登出失败'
-      setError(message)
-      throw new Error(message)
-    } finally {
-      setLoading(false)
+      const message = err instanceof Error ? err.message : '登出失败';
+      setError(message);
     }
   }
 

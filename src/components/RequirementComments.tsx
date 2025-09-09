@@ -17,7 +17,6 @@ export default function RequirementComments({ requirementId }: RequirementCommen
   const { toast } = useToast();
   const [comments, setComments] = useState<RequirementComment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchComments = async () => {
@@ -41,9 +40,9 @@ export default function RequirementComments({ requirementId }: RequirementCommen
   const handleAddComment = async () => {
     if (!newComment.trim() || !user) return;
     try {
-      await commentService.addComment(requirementId, user.id, newComment, isAnonymous);
+      // All comments are now anonymous
+      await commentService.addComment(requirementId, user.id, newComment, true);
       setNewComment('');
-      setIsAnonymous(false);
       await fetchComments();
       toast({ title: '评论已发布' });
     } catch (error) {
@@ -118,12 +117,8 @@ export default function RequirementComments({ requirementId }: RequirementCommen
             onChange={(e) => setNewComment(e.target.value)}
             rows={3}
           />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox id="anonymous" checked={isAnonymous} onCheckedChange={(checked) => setIsAnonymous(Boolean(checked))} />
-              <label htmlFor="anonymous" className="text-sm font-medium">匿名评论</label>
-            </div>
-            <Button onClick={handleAddComment} disabled={!newComment.trim()}>发布</Button>
+          <div className="flex items-center justify-end">
+            <Button onClick={handleAddComment} disabled={!newComment.trim()}>发布匿名评论</Button>
           </div>
         </div>
       )}
