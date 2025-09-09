@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
 import type { CreativeRequirement } from '@/services/creative-requirement-service'
 
-import FixedCommentsSystem from '@/components/fixed-comments-system'
+import { SimpleComments } from '@/components/simple-comments'
 import { Edit, ExternalLink } from 'lucide-react'
 
 export default function CreativeRequirementDetail() {
@@ -93,7 +93,7 @@ export default function CreativeRequirementDetail() {
             </CardContent>
           </Card>
 
-          <FixedCommentsSystem requirementId={id} />
+          <SimpleComments requirementId={id} />
         </div>
 
         <div className="space-y-6">
