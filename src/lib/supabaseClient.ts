@@ -4,7 +4,11 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+  console.error('Missing Supabase environment variables:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey
+  })
+  throw new Error('Missing Supabase environment variables. Please check your .env file.')
 }
 
 // 创建 Supabase 客户端 - 企业级配置
@@ -13,12 +17,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    debug: import.meta.env.DEV
   },
   realtime: {
     params: {
       eventsPerSecond: 10
     }
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'requirement-management-system'
+    }
+  }
+})
+
+// 添加全局错误处理
+supabase.auth.onAuthStateChange((event, session) => {
+  if (import.meta.env.DEV) {
+    console.log('[Supabase] Auth event:', event, { hasSession: !!session })
   }
 })
 

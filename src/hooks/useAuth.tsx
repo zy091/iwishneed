@@ -1,182 +1,218 @@
-import { User } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase, Profile, Role } from '../lib/supabaseClient';
+import type { User } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { supabase } from '@/lib/supabaseClient'
+import { authService } from '@/services/auth.service'
+import type { AuthContextType, AuthState, Profile } from '@/types/auth'
 
-// --- TYPE DEFINITIONS ---
-interface AuthContextType {
-  user: User | null;
-  profile: Profile | null;
-  loading: boolean; // True while checking session and fetching profile
-  error: string | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
+// 创建认证上下文
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+// 初始状态
+const initialState: AuthState = {
+  user: null,
+  profile: null,
+  loading: true,
+  error: null,
+  initialized: false
 }
 
-// --- CONTEXT CREATION ---
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// --- HELPER FUNCTION ---
 /**
- * Fetches a user's profile and role from the database.
- * This is a critical step in the authentication process.
- * @param userId The user's ID from Supabase Auth.
- * @returns The user's profile with role information, or null if not found.
+ * 企业级认证提供者组件
+ * 负责管理全局认证状态和会话
  */
-const fetchProfile = async (userId: string): Promise<Profile | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`*, role:roles(*)`) // Joins with the roles table
-      .eq('user_id', userId) // Match against the user_id foreign key
-      .single();
-
-    if (error) {
-      console.error('Auth: Failed to fetch user profile.', error);
-      // If profile doesn't exist, try to fetch by id
-      const { data: profileById, error: errorById } = await supabase
-        .from('profiles')
-        .select(`*, role:roles(*)`)
-        .eq('id', userId)
-        .single();
-      
-      if (errorById) {
-        console.error('Auth: Failed to fetch profile by id as well.', errorById);
-        return null;
-      }
-      return profileById as Profile & { role: Role };
-    }
-    return data as Profile & { role: Role };
-  } catch (err) {
-    console.error('Auth: An exception occurred while fetching profile.', err);
-    return null;
-  }
-};
-
-// --- AUTH PROVIDER COMPONENT ---
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // Start loading, app is blocked
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<AuthState>(initialState)
 
-  useEffect(() => {
-    // onAuthStateChange is the single source of truth for the user's session.
-    // It fires immediately on component mount with the current session state.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`[Auth] Event received: ${event}`);
+  // 更新状态的辅助函数
+  const updateState = useCallback((updates: Partial<AuthState>) => {
+    setState(prev => ({ ...prev, ...updates }))
+  }, [])
 
-        // A session exists (either from initial load or a new login).
-        // We MUST now fetch the profile to get the user's role.
-        if (session?.user) {
-          // If the user object is already the one we have, we might not need to refetch.
-          // However, fetching ensures profile is always up-to-date.
-          // For robustness, we fetch every time a session is confirmed.
-          try {
-            const userProfile = await fetchProfile(session.user.id);
-            setUser(session.user);
-            setProfile(userProfile);
-          } catch (error) {
-            console.error('[Auth] Failed to fetch profile, but continuing with basic user info:', error);
-            // Create a basic profile if fetch fails
-            const basicProfile: Profile = {
-              id: session.user.id,
-              name: session.user.email?.split('@')[0] || 'User',
-              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-              role_id: 3, // Default user role
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              user_id: session.user.id,
-              avatar_url: session.user.user_metadata?.avatar_url || null,
-              department: null,
-              position: null,
-              phone: null
-            };
-            setUser(session.user);
-            setProfile(basicProfile);
-          }
-        } else {
-          // No session, so clear user and profile.
-          setUser(null);
-          setProfile(null);
-        }
+  // 清除错误
+  const clearError = useCallback(() => {
+    updateState({ error: null })
+  }, [updateState])
+
+  // 处理认证状态变化
+  const handleAuthStateChange = useCallback(async (event: string, session: any) => {
+    console.log(`[Auth] Event: ${event}`, { hasSession: !!session })
+
+    try {
+      if (session?.user) {
+        // 用户已登录，获取配置文件
+        updateState({ loading: true, error: null })
         
-        // CRITICAL: Unlock the app only AFTER the entire auth flow (including profile fetch) is complete.
-        console.log('[Auth] Auth check finished. Unlocking the application.');
-        setLoading(false);
+        let profile = await authService.fetchUserProfile(session.user.id)
+        
+        // 如果没有配置文件，创建默认配置文件
+        if (!profile) {
+          console.log('[Auth] Creating default profile for user')
+          profile = await authService.createDefaultProfile(session.user)
+        }
+
+        updateState({
+          user: session.user,
+          profile,
+          loading: false,
+          initialized: true
+        })
+      } else {
+        // 用户未登录
+        updateState({
+          user: null,
+          profile: null,
+          loading: false,
+          initialized: true
+        })
       }
-    );
+    } catch (error) {
+      console.error('[Auth] Error handling auth state change:', error)
+      updateState({
+        error: error instanceof Error ? error.message : '认证过程中发生错误',
+        loading: false,
+        initialized: true
+      })
+    }
+  }, [updateState])
 
-    // Add a timeout to prevent infinite loading
+  // 登录函数
+  const signIn = useCallback(async (email: string, password: string) => {
+    try {
+      updateState({ loading: true, error: null })
+      
+      const { user, profile } = await authService.signIn(email, password)
+      
+      updateState({
+        user,
+        profile,
+        loading: false,
+        error: null
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '登录失败'
+      updateState({
+        error: errorMessage,
+        loading: false
+      })
+      throw error
+    }
+  }, [updateState])
+
+  // 登出函数
+  const signOut = useCallback(async () => {
+    try {
+      updateState({ loading: true, error: null })
+      
+      await authService.signOut()
+      
+      updateState({
+        user: null,
+        profile: null,
+        loading: false,
+        error: null
+      })
+      
+      // 重定向到首页
+      window.location.href = '/'
+    } catch (error) {
+      console.error('[Auth] Sign out error:', error)
+      updateState({
+        error: error instanceof Error ? error.message : '登出失败',
+        loading: false
+      })
+    }
+  }, [updateState])
+
+  // 初始化认证状态
+  useEffect(() => {
+    let mounted = true
+
+    const initializeAuth = async () => {
+      try {
+        // 获取当前会话
+        const session = await authService.getCurrentSession()
+        
+        if (mounted) {
+          await handleAuthStateChange('INITIAL_SESSION', session)
+        }
+      } catch (error) {
+        console.error('[Auth] Initialization error:', error)
+        if (mounted) {
+          updateState({
+            error: '认证初始化失败',
+            loading: false,
+            initialized: true
+          })
+        }
+      }
+    }
+
+    // 设置认证状态监听器
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (mounted) {
+          handleAuthStateChange(event, session)
+        }
+      }
+    )
+
+    // 初始化认证状态
+    initializeAuth()
+
+    // 设置超时保护
     const timeoutId = setTimeout(() => {
-      console.log('[Auth] Timeout reached, unlocking application');
-      setLoading(false);
-    }, 5000);
+      if (mounted && state.loading) {
+        console.warn('[Auth] Initialization timeout, unlocking app')
+        updateState({
+          loading: false,
+          initialized: true,
+          error: '认证初始化超时，请刷新页面重试'
+        })
+      }
+    }, 10000) // 10秒超时
 
-    // Cleanup function to unsubscribe from the listener when the component unmounts.
+    // 清理函数
     return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeoutId);
-    };
-  }, []); // Empty dependency array ensures this runs only once on mount.
-
-  // --- AUTH ACTIONS ---
-
-  const signIn = async (email: string, password: string) => {
-    setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error('Auth: Sign in failed.', error);
-      setError(error.message);
-      throw error;
+      mounted = false
+      subscription.unsubscribe()
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
     }
-    // The onAuthStateChange listener will handle the successful sign-in event.
-  };
+  }, [handleAuthStateChange, updateState, state.loading])
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Auth: Sign out failed.', error);
-      setError(error.message);
-    }
-    // The onAuthStateChange listener will handle the sign-out.
-    // We redirect to ensure a fully clean state.
-    window.location.href = '/';
-  };
+  // 计算派生状态
+  const isAdmin = authService.isAdmin(state.profile)
+  const isSuperAdmin = authService.isSuperAdmin(state.profile)
 
-  // --- DERIVED STATE ---
-
-  const isAdmin = profile?.role_id === 1 || profile?.role_id === 0;
-  const isSuperAdmin = profile?.role_id === 0;
-
-  // --- PROVIDER VALUE ---
-
-  const value = {
-    user,
-    profile,
-    loading,
-    error,
+  // 上下文值
+  const contextValue: AuthContextType = {
+    ...state,
     signIn,
     signOut,
+    clearError,
     isAdmin,
-    isSuperAdmin,
-  };
-
-  // While loading, you might want to render a global spinner here,
-  // but for flexibility, we'll let consuming components decide based on the `loading` flag.
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-// --- HOOK ---
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    isSuperAdmin
   }
-  return context;
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
-export default useAuth;
+/**
+ * 使用认证上下文的Hook
+ */
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext)
+  
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  
+  return context
+}
+
+export default useAuth
