@@ -180,7 +180,7 @@ export class UserService {
    * @deprecated 已废弃，请使用 auth-service
    */
   static getAllUsers(): Promise<User[]> {
-    Logger.warn('UserService.getAllUsers() 已废弃', { 
+    console.warn('UserService.getAllUsers() 已废弃', { 
       suggestion: '请使用 auth-service' 
     });
     return Promise.resolve([]);

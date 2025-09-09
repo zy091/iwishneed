@@ -84,7 +84,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         if (!mounted) return
 
-        console.log('认证状态变化', event, session?.user?.email)
+        if (import.meta.env.DEV) {
+          console.log('认证状态变化', event, session?.user?.email)
+        }
 
         if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user)

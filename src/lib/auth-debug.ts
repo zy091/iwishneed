@@ -2,6 +2,8 @@
 import { supabase } from './supabaseClient'
 
 export const debugAuth = async () => {
+  if (!import.meta.env.DEV) return
+  
   console.log('🔍 开始认证调试...')
   
   try {
@@ -51,7 +53,9 @@ export const debugAuth = async () => {
 
 // 自动登录函数
 export const autoLogin = async (email: string, password: string) => {
-  console.log('🚀 尝试自动登录...')
+  if (import.meta.env.DEV) {
+    console.log('🚀 尝试自动登录...')
+  }
   
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -83,7 +87,9 @@ export const autoLogin = async (email: string, password: string) => {
 
 // 创建数据库函数来获取当前用户ID
 export const createAuthFunctions = async () => {
-  console.log('🔧 创建认证辅助函数...')
+  if (import.meta.env.DEV) {
+    console.log('🔧 创建认证辅助函数...')
+  }
   
   const { data, error } = await supabase.rpc('create_auth_functions', {})
   
