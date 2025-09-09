@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/hooks/useAuth'
 import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
+import { RequirementPriority, RequirementStatus, ClientType } from '@/types/requirement'
 import { logger } from '@/lib/logger'
 
 function detectDelimiter(sample: string): string {
@@ -109,19 +110,25 @@ export default function TechRequirementImport() {
       }
 
       // 验证枚举值
-      const validateUrgency = (urgency: string): '高' | '中' | '低' => {
-        if (urgency === '高' || urgency === '中' || urgency === '低') return urgency
-        return '中'
+      const validateUrgency = (urgency: string): RequirementPriority => {
+        if (urgency === '高') return 'high'
+        if (urgency === '中') return 'medium'
+        if (urgency === '低') return 'low'
+        return 'medium'
       }
 
-      const validateClientType = (clientType: string): '流量运营服务' | '全案深度服务' => {
-        if (clientType === '流量运营服务' || clientType === '全案深度服务') return clientType
-        return '流量运营服务'
+      const validateClientType = (clientType: string): ClientType => {
+        if (clientType === '流量运营服务') return 'traffic_operation'
+        if (clientType === '全案深度服务') return 'full_service'
+        return 'traffic_operation'
       }
 
-      const validateProgress = (progress: string): '未开始' | '处理中' | '已完成' | '已沟通延迟' => {
-        if (progress === '未开始' || progress === '处理中' || progress === '已完成' || progress === '已沟通延迟') return progress
-        return '未开始'
+      const validateProgress = (progress: string): RequirementStatus => {
+        if (progress === '未开始') return 'pending'
+        if (progress === '处理中') return 'in_progress'
+        if (progress === '已完成') return 'completed'
+        if (progress === '已沟通延迟') return 'cancelled'
+        return 'pending'
       }
 
       return {
