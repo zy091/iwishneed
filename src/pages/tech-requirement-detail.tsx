@@ -1,4 +1,4 @@
-import { Edit, ExternalLink } from 'lucide-react'
+import { Edit, ExternalLink, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import RequirementComments from '@/components/RequirementComments'
@@ -52,8 +52,30 @@ export default function TechRequirementDetail() {
     )
   }
 
+  const handleGoBack = () => {
+    // 检查是否有历史记录可以返回
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      // 如果没有历史记录，导航到技术需求列表
+      navigate('/departments/tech');
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleGoBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          返回
+        </Button>
+      </div>
+      
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold min-w-0 truncate">{data.title}</h1>
         <div className="flex gap-2 flex-wrap justify-end">
