@@ -139,6 +139,8 @@ export default function TechRequirementImport() {
         progress: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度']),
         submitter_id: user.id,
         submitter_avatar: user.avatar,
+        priority: validateUrgency(raw['紧急程度']),
+        status: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度'])
       }
     })
 
