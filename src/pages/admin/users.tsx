@@ -1,23 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import { usePermissions } from '@/hooks/use-permissions'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
-import {
-  listAdmins,
-  createUser,
-  listRoles,
-  listUsers,
-  setUserRole,
-  resetPassword,
-  toggleActive,
-  type Role,
-  type UserRow
-} from '@/services/admin-service'
 import { useNavigate } from 'react-router-dom'
+import { Alert } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { usePermissions } from '@/hooks/use-permissions'
+import {
+  createUser,
+  listAdmins,
+  listRoles,
+  listUsers,
+  resetPassword,
+  setUserRole,
+  toggleActive,
+  type Role,
+  type UserRow,
+} from '@/services/admin-service'
 
 export default function AdminUsersPage() {
   const { isAdmin } = usePermissions()
@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
     }
     ;(async () => {
       try {
-        // 角色列表（后端未实现时降级为本地预设�?
+        // 角色列表（后端未实现时降级为本地预设）
         try {
           const r = await listRoles()
           setRoles(r.roles)
@@ -52,11 +52,11 @@ export default function AdminUsersPage() {
         } catch (e: any) {
           console.error('获取角色列表失败:', e)
           const fallback: Role[] = [
-            { id: 0, name: '超级管理�? },
-            { id: 1, name: '管理�? },
+            { id: 0, name: '超级管理员' },
+            { id: 1, name: '管理员' },
             { id: 2, name: '经理' },
-            { id: 3, name: '开发�? },
-            { id: 4, name: '提交�? },
+            { id: 3, name: '开发者' },
+            { id: 4, name: '提交者' },
           ]
           setRoles(fallback)
           if (!roleId) setRoleId(3)
@@ -64,7 +64,7 @@ export default function AdminUsersPage() {
 
         await refreshUsers()
       } catch (e: any) {
-        setError(e.message || '初始化失�?)
+        setError(e.message || '初始化失败')
       }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
       const r = await listUsers({ page, pageSize, search, role_id: roleFilter })
       setUsers(r.users)
       setTotal(r.total)
-      setError('') // 清除之前的错�?
+      setError('') // 清除之前的错误
     } catch (e: any) {
       console.error('获取用户列表失败:', e)
       // 后端未上线时，至少保证管理员列表可见
@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
           {error && <Alert>{error}</Alert>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Input placeholder="邮箱" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input type="password" placeholder="密码（≥8位，含数�?字母�? value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input type="password" placeholder="密码（≥8位，含数字、字母）" value={password} onChange={(e) => setPassword(e.target.value)} />
             <Input placeholder="姓名（可选）" value={name} onChange={(e) => setName(e.target.value)} />
             <Select value={roleId?.toString() || ''} onValueChange={(v) => setRoleId(Number(v))}>
               <SelectTrigger><SelectValue placeholder="选择角色" /></SelectTrigger>
@@ -137,7 +137,7 @@ export default function AdminUsersPage() {
           <div className="flex flex-wrap gap-2">
             <Input className="w-60" placeholder="搜索姓名/邮箱" value={search} onChange={(e) => setSearch(e.target.value)} />
             <Select value={(roleFilter ?? '').toString()} onValueChange={(v) => setRoleFilter(v ? Number(v) : undefined)}>
-              <SelectTrigger className="w-48"><SelectValue placeholder="角色筛�? /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="角色筛选" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="">全部角色</SelectItem>
                 {roles.map(r => <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>)}
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
                 <TableHead>姓名</TableHead>
                 <TableHead>邮箱</TableHead>
                 <TableHead>角色</TableHead>
-                <TableHead>最近登�?/TableHead>
+                <TableHead>最近登录</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -179,10 +179,10 @@ export default function AdminUsersPage() {
                   <TableCell>{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</TableCell>
                   <TableCell className="space-x-2">
                     <Button variant="outline" size="sm" onClick={async () => {
-                      try { await resetPassword(u.id) } catch {}
+                      try { await resetPassword(u.id) } catch (e) { console.error(e) }
                     }}>重置密码</Button>
                     <Button variant="outline" size="sm" onClick={async () => {
-                      try { await toggleActive(u.id, !(u as any).active) } catch {}
+                      try { await toggleActive(u.id, !(u as any).active) } catch (e) { console.error(e) }
                     }}>{(u as any).active === false ? '启用' : '禁用'}</Button>
                   </TableCell>
                 </TableRow>
@@ -191,9 +191,9 @@ export default function AdminUsersPage() {
           </Table>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" disabled={page <= 1} onClick={() => { setPage(p => Math.max(1, p - 1)); refreshUsers() }}>上一�?/Button>
+            <Button variant="outline" disabled={page <= 1} onClick={() => { setPage(p => Math.max(1, p - 1)); refreshUsers() }}>上一页</Button>
             <span className="text-sm">{page} / {totalPages}</span>
-            <Button variant="outline" disabled={page >= totalPages} onClick={() => { setPage(p => Math.min(totalPages, p + 1)); refreshUsers() }}>下一�?/Button>
+            <Button variant="outline" disabled={page >= totalPages} onClick={() => { setPage(p => Math.min(totalPages, p + 1)); refreshUsers() }}>下一页</Button>
           </div>
         </CardContent>
       </Card>
