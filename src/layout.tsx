@@ -41,19 +41,20 @@ export default function Layout() {
     setSidebarOpen(!sidebarOpen)
   }
 
-  // 导航菜单�?  const navigationItems = [
+  // 导航菜单
+  const navigationItems = [
     {
-      name: '仪表�?,
+      name: '仪表盘',
       href: '/',
       icon: LayoutDashboard,
     },
     {
-      name: '技术需�?,
+      name: '技术需求',
       href: '/departments/tech',
       icon: Folder,
     },
     {
-      name: '创意需�?,
+      name: '创意需求',
       href: '/departments/creative',
       icon: Folder,
     },
@@ -92,7 +93,7 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* 侧边�?*/}
+      {/* 侧边栏 */}
       <div className={cn(
         "bg-white shadow-lg transition-all duration-300 ease-in-out",
         sidebarOpen ? "w-64" : "w-16"
@@ -101,7 +102,7 @@ export default function Layout() {
           {/* 头部 */}
           <div className="flex items-center justify-between p-4 border-b">
             {sidebarOpen && (
-              <h1 className="text-xl font-bold text-gray-800">需求管理系�?/h1>
+              <h1 className="text-xl font-bold text-gray-800">需求管理系统</h1>
             )}
             <Button
               variant="ghost"
@@ -133,7 +134,7 @@ export default function Layout() {
               </NavLink>
             ))}
 
-            {/* 管理员菜�?*/}
+            {/* 管理员菜单 */}
             {isAdmin && (
               <>
                 <div className="pt-4">
@@ -204,14 +205,15 @@ export default function Layout() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  退出登�?                </DropdownMenuItem>
+                  退出登录
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       </div>
 
-      {/* 主内容区�?*/}
+      {/* 主内容区域 */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
