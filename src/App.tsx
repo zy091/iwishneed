@@ -3,6 +3,7 @@ import { useAuth } from './hooks/use-auth'
 import { usePermissions } from './hooks/use-permissions'
 import AuthGuard from './components/auth-guard'
 import { EmergencyLogin } from './components/emergency-login'
+import { SimpleTest } from './components/simple-test'
 import Layout from './layout'
 import Login from './pages/login'
 import Dashboard from './pages/dashboard'
@@ -29,6 +30,8 @@ function App() {
     <>
       {/* 紧急登录调试组件 - 仅开发环境显示 */}
       {import.meta.env.DEV && <EmergencyLogin />}
+      {/* 基础连接测试组件 */}
+      {import.meta.env.DEV && <SimpleTest />}
       
       <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
