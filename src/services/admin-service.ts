@@ -10,20 +10,16 @@ async function authHeader() {
 }
 
 export async function listAdmins() {
-  try {
-    const headers = await authHeader()
-    const res = await fetch(FN_BASE, { method: 'GET', headers })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json() as Promise<{ admins: { user_id: string; created_at: string }[] }>
-  } catch (e) {
-    // 回退：从 profiles 表读取管理员（role_id IN (0,1)）
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id: user_id, created_at')
-      .in('role_id', [0, 1])
-    if (error) throw e
-    return { admins: (data || []).map((x: any) => ({ user_id: x.id, created_at: x.created_at })) }
+  // Using fallback logic directly to avoid edge function issues
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id: user_id, created_at')
+    .in('role_id', [0, 1]);
+  if (error) {
+    console.error('Error fetching admins from profiles:', error);
+    throw error;
   }
+  return { admins: (data || []).map((x: any) => ({ user_id: x.id, created_at: x.created_at })) };
 }
 
 // 扩展：支持 role_id（后端未上线时忽略）
@@ -64,39 +60,35 @@ export async function listRoles(): Promise<{ roles: Role[] }> {
 }
 
 export async function listUsers(params: { page?: number; pageSize?: number; search?: string; role_id?: number }): Promise<{ users: UserRow[]; total: number }> {
-  try {
-    const headers = await authHeader()
-    const res = await fetch(FN_BASE, { method: 'POST', headers, body: JSON.stringify({ action: 'list_users', ...params }) })
-    if (!res.ok) throw new Error(await res.text())
-    return res.json()
-  } catch (e) {
-    // 回退到 profiles（仅使用存在的列）
-    const page = params.page ?? 1
-    const pageSize = params.pageSize ?? 10
-    let query = supabase.from('profiles').select('id, name, role_id, created_at', { count: 'exact' })
-    if (params.search) {
-      query = query.or(`name.ilike.%${params.search}%`)
-    }
-    if (typeof params.role_id === 'number') {
-      query = query.eq('role_id', params.role_id)
-    }
-    const from = (page - 1) * pageSize
-    const to = from + pageSize - 1
-    const { data, count, error } = await query.range(from, to).order('created_at', { ascending: false })
-    if (error) throw e
-    return {
-      users: (data || []).map((u: any) => ({
-        id: u.id,
-        email: '',                 // profiles 无 email 列，留空
-        name: u.name,
-        role_id: u.role_id,
-        last_sign_in_at: null,     // profiles 无 last_sign_in_at
-        created_at: u.created_at,
-        active: true               // profiles 无 active，默认 true
-      })),
-      total: count || 0
-    }
+  // Using fallback logic directly to avoid edge function issues
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? 10;
+  let query = supabase.from('profiles').select('id, name, role_id, created_at', { count: 'exact' });
+  if (params.search) {
+    query = query.or(`name.ilike.%${params.search}%`);
   }
+  if (typeof params.role_id === 'number') {
+    query = query.eq('role_id', params.role_id);
+  }
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+  const { data, count, error } = await query.range(from, to).order('created_at', { ascending: false });
+  if (error) {
+    console.error('Error fetching users from profiles:', error);
+    throw error;
+  }
+  return {
+    users: (data || []).map((u: any) => ({
+      id: u.id,
+      email: '', // profiles does not have email, leave it blank
+      name: u.name,
+      role_id: u.role_id,
+      last_sign_in_at: undefined, // profiles does not have last_sign_in_at
+      created_at: u.created_at,
+      active: true // profiles does not have active, default to true
+    })),
+    total: count || 0
+  };
 }
 
 export async function setUserRole(user_id: string, role_id: number): Promise<{ ok: true }> {

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import RequirementComments from '@/components/RequirementComments'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
-import Comments from '@/components/Comments'
 import { Edit, ExternalLink } from 'lucide-react'
 
 export default function TechRequirementDetail() {
@@ -92,7 +92,11 @@ export default function TechRequirementDetail() {
             </CardContent>
           </Card>
 
-          <Comments requirementId={id} />
+          <Card>
+            <CardContent className="pt-6">
+              <RequirementComments requirementId={id} />
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">
