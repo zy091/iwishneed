@@ -1,88 +1,74 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { User } from '@supabase/supabase-js'
-import { supabase, Profile, Role } from '../lib/supabaseClient'
+import { User } from '@supabase/supabase-js';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase, Profile, Role } from '../lib/supabaseClient';
 
 interface AuthContextType {
-  user: User | null
-  profile: Profile | null
-  loading: boolean
-  error: string | null
-  signIn: (email: string, password: string) => Promise<void>
-  signOut: () => Promise<void>
-  isAdmin: boolean
-  isSuperAdmin: boolean
+  user: User | null;
+  profile: Profile | null;
+  loading: boolean; // Represents the entire auth & profile fetching process
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Fetches a user's profile and role from the database.
+ * @param userId The user's ID.
+ * @returns The user's profile or null if not found.
+ */
+const fetchProfile = async (userId: string): Promise<Profile | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(`*, role:roles(*)`)
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('获取用户资料失败:', error);
+      return null;
+    }
+    return data as Profile & { role: Role };
+  } catch (err) {
+    console.error('获取用户资料异常:', err);
+    return null;
+  }
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true) // Start with loading true
-  const [error, setError] = useState<string | null>(null)
-
-  // Memoized fetch profile function to avoid re-creation on re-renders
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`*, role:roles(*)`)
-        .eq('id', userId)
-        .single()
-
-      if (error) {
-        console.error('获取用户资料失败:', error)
-        return null
-      }
-      return data as Profile & { role: Role }
-    } catch (err) {
-      console.error('获取用户资料异常:', err)
-      return null
-    }
-  }
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true); // loading is true until the initial auth check is complete.
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    console.log('[AuthProvider] useEffect started. Initializing auth state...');
+    // This is the single source of truth for auth state.
+    // It runs once on load with INITIAL_SESSION, and then for any subsequent auth event.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log(`[AuthProvider] Auth state change. Event: ${event}`, session?.user?.email);
 
-    const checkInitialSession = async () => {
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-          throw sessionError;
-        }
-
+        // If a user is logged in (either from initial session or new login)
         if (session?.user) {
-          console.log('[AuthProvider] Initial session found for user:', session.user.email);
+          // Fetch their profile. This is the crucial step.
           const userProfile = await fetchProfile(session.user.id);
           setUser(session.user);
           setProfile(userProfile);
         } else {
-          console.log('[AuthProvider] No initial session found.');
+          // If no user, clear everything.
           setUser(null);
           setProfile(null);
         }
-      } catch (e) {
-        console.error('[AuthProvider] Error during initial session check:', e);
-        setError(e instanceof Error ? e.message : 'Failed to check session.');
-      } finally {
-        console.log('[AuthProvider] Initial check complete. Setting loading to false.');
-        setLoading(false);
-      }
-    };
-
-    checkInitialSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`[AuthProvider] Auth state changed. Event: ${event}`, session?.user?.email);
-        if (event === 'SIGNED_IN' && session?.user) {
-          const userProfile = await fetchProfile(session.user.id);
-          setUser(session.user);
-          setProfile(userProfile);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
+        
+        // IMPORTANT: Only set loading to false after the first check is complete.
+        // This ensures the app doesn't render until we know the user's auth status AND profile.
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            console.log('[AuthProvider] Auth check complete. Unlocking app.');
+            setLoading(false);
         }
       }
     );
@@ -95,39 +81,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      setLoading(true)
-      setError(null)
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-      // The onAuthStateChange listener will handle setting user and profile
+      setError(null);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // The onAuthStateChange listener will handle the rest.
     } catch (err) {
-      const message = err instanceof Error ? err.message : '登录失败'
-      setError(message)
-      throw new Error(message)
-    } finally {
-      setLoading(false)
+      const message = err instanceof Error ? err.message : '登录失败';
+      setError(message);
+      throw new Error(message);
     }
-  }
+  };
 
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Sign out error:', error);
-        setError(error.message);
-        return;
-      }
-      // The onAuthStateChange listener will handle clearing user and profile
-      // Redirect to home to ensure a clean state
-      window.location.href = '/';
+      if (error) throw error;
+      // The onAuthStateChange listener will handle clearing state.
+      window.location.href = '/'; // Redirect to ensure clean state
     } catch (err) {
       const message = err instanceof Error ? err.message : '登出失败';
       setError(message);
     }
-  }
+  };
 
-  const isAdmin = profile?.role_id === 1 || profile?.role_id === 0
-  const isSuperAdmin = profile?.role_id === 0
+  const isAdmin = profile?.role_id === 1 || profile?.role_id === 0;
+  const isSuperAdmin = profile?.role_id === 0;
 
   const value: AuthContextType = {
     user,
@@ -138,17 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     isAdmin,
     isSuperAdmin,
-  }
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }
 
-export default useAuth
+export default useAuth;
