@@ -34,7 +34,18 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
     if (error) {
       console.error('Auth: Failed to fetch user profile.', error);
-      return null;
+      // If profile doesn't exist, try to fetch by id
+      const { data: profileById, error: errorById } = await supabase
+        .from('profiles')
+        .select(`*, role:roles(*)`)
+        .eq('id', userId)
+        .single();
+      
+      if (errorById) {
+        console.error('Auth: Failed to fetch profile by id as well.', errorById);
+        return null;
+      }
+      return profileById as Profile & { role: Role };
     }
     return data as Profile & { role: Role };
   } catch (err) {
@@ -63,9 +74,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // If the user object is already the one we have, we might not need to refetch.
           // However, fetching ensures profile is always up-to-date.
           // For robustness, we fetch every time a session is confirmed.
-          const userProfile = await fetchProfile(session.user.id);
-          setUser(session.user);
-          setProfile(userProfile);
+          try {
+            const userProfile = await fetchProfile(session.user.id);
+            setUser(session.user);
+            setProfile(userProfile);
+          } catch (error) {
+            console.error('[Auth] Failed to fetch profile, but continuing with basic user info:', error);
+            // Create a basic profile if fetch fails
+            const basicProfile: Profile = {
+              id: session.user.id,
+              name: session.user.email?.split('@')[0] || 'User',
+              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+              role_id: 3, // Default user role
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              user_id: session.user.id,
+              avatar_url: session.user.user_metadata?.avatar_url || null,
+              department: null,
+              position: null,
+              phone: null
+            };
+            setUser(session.user);
+            setProfile(basicProfile);
+          }
         } else {
           // No session, so clear user and profile.
           setUser(null);
@@ -78,9 +109,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('[Auth] Timeout reached, unlocking application');
+      setLoading(false);
+    }, 5000);
+
     // Cleanup function to unsubscribe from the listener when the component unmounts.
     return () => {
       subscription.unsubscribe();
+      clearTimeout(timeoutId);
     };
   }, []); // Empty dependency array ensures this runs only once on mount.
 
