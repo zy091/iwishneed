@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
 import type { CreativeRequirement } from '@/services/creative-requirement-service'
 
-import CommentsSection from '@/components/CommentsSection'
+import EnterpriseCommentsSystem from '@/components/enterprise-comments-system'
 import { Edit, ExternalLink } from 'lucide-react'
 
 export default function CreativeRequirementDetail() {
@@ -93,14 +93,7 @@ export default function CreativeRequirementDetail() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>评论</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CommentsSection requirementId={id} />
-            </CardContent>
-          </Card>
+          <EnterpriseCommentsSystem requirementId={id} />
         </div>
 
         <div className="space-y-6">

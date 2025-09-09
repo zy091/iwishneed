@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import CommentsSection from '@/components/CommentsSection'
+import EnterpriseCommentsSystem from '@/components/enterprise-comments-system'
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -215,7 +215,7 @@ export default function RequirementDetail() {
             </CardHeader>
             <CardContent>
               {/* 使用新的 CommentsSection 组件 */}
-              {id && <CommentsSection requirementId={id} />}
+              {id && <EnterpriseCommentsSystem requirementId={id} />}
             </CardContent>
           </Card>
         </div>
