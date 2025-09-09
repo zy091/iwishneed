@@ -14,7 +14,6 @@ import {
   listUsers,
   resetPassword,
   setUserRole,
-  toggleActive,
   type Role,
   type UserRow,
 } from '@/services/admin-service'
@@ -190,12 +189,6 @@ export default function AdminUsersPage() {
                         <Button variant="outline" size="sm" onClick={async () => {
                           try { await resetPassword(u.id) } catch (e) { console.error(e) }
                         }}>重置密码</Button>
-                        <Button variant="outline" size="sm" onClick={async () => {
-                          try {
-                            await toggleActive(u.id, !(u as any).active)
-                            setSearchTrigger(t => t + 1)
-                          } catch (e) { console.error(e) }
-                        }}>{(u as any).active === false ? '启用' : '禁用'}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
