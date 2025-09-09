@@ -39,9 +39,9 @@ type TechAssigneeAgg = {
 type CreativeDesignerAgg = {
   name: string
   total: number
-  notStarted: number       // 未开�?
-  inProgress: number       // 处理�?
-  completed: number        // 已完�?
+  notStarted: number       // 未开始
+  inProgress: number       // 处理中
+  completed: number        // 已完成
   noAction: number         // 不做处理
 }
 
@@ -65,16 +65,16 @@ export default function Dashboard() {
   const [techAgg, setTechAgg] = useState<TechAssigneeAgg[]>([])
   const [creativeAgg, setCreativeAgg] = useState<CreativeDesignerAgg[]>([])
 
-  // 概览数据（当前仅接入技术部真实数据�?
+  // 概览数据（当前仅接入技术部真实数据）
   useEffect(() => {
     const fetchOverview = async () => {
       try {
         const techReqs = await techRequirementService.getTechRequirements()
         const totalTech = techReqs.length
-        const completedTech = techReqs.filter(r => r.progress === '已完�?).length
-        const inProgressTech = techReqs.filter(r => r.progress === '处理�?).length
-        const pendingTech = techReqs.filter(r => r.progress === '未开�?).length
-        const overdueTech = techReqs.filter(r => r.progress === '已沟通延�?).length
+        const completedTech = techReqs.filter(r => r.progress === '已完成').length
+        const inProgressTech = techReqs.filter(r => r.progress === '处理中').length
+        const pendingTech = techReqs.filter(r => r.progress === '未开始').length
+        const overdueTech = techReqs.filter(r => r.progress === '已沟通延期').length
         const total = totalTech
         const completed = completedTech
         const inProgress = inProgressTech
@@ -93,13 +93,13 @@ export default function Dashboard() {
           completionRate
         })
 
-        // 最近需求（技术部�?
+        // 最近需求（技术部）
         const sorted = [...techReqs]
           .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
           .slice(0, 5)
         setRecent(sorted)
       } catch (e) {
-        console.error('获取仪表盘概览失�?', e)
+        console.error('获取仪表盘概览失败', e)
       } finally {
         setIsLoading(false)
       }
@@ -121,7 +121,7 @@ export default function Dashboard() {
         
         // 手动聚合统计数据
         for (const req of techStatsMap) {
-          const assignee = (req as any).tech_assignee || '未分�?
+          const assignee = (req as any).tech_assignee || '未分配'
           if (!techStatsGrouped[assignee]) {
             techStatsGrouped[assignee] = {
               total: 0,
@@ -134,10 +134,10 @@ export default function Dashboard() {
           }
           
           techStatsGrouped[assignee].total++
-          if (req.progress === '未开�?) techStatsGrouped[assignee].pending++
-          else if (req.progress === '处理�?) techStatsGrouped[assignee].inProgress++
-          else if (req.progress === '已完�?) techStatsGrouped[assignee].completed++
-          else if (req.progress === '已沟通延�?) techStatsGrouped[assignee].delayed++
+          if (req.progress === '未开始') techStatsGrouped[assignee].pending++
+          else if (req.progress === '处理中') techStatsGrouped[assignee].inProgress++
+          else if (req.progress === '已完成') techStatsGrouped[assignee].completed++
+          else if (req.progress === '已沟通延期') techStatsGrouped[assignee].delayed++
         }
         const techRows: TechAssigneeAgg[] = techNames.map(name => {
           const s = techStatsGrouped[name] || { total: 0, pending: 0, inProgress: 0, completed: 0, delayed: 0, avgDuration: 0 }
@@ -145,7 +145,7 @@ export default function Dashboard() {
         })
         setTechAgg(techRows)
 
-        // 创意部聚合（�?designer �?status�?
+        // 创意部聚合（按designer/status）
         const creatives = await creativeRequirementService.getCreativeRequirements()
         const counters = new Map<string, CreativeDesignerAgg>()
         for (const name of creativeNames) {
@@ -160,9 +160,9 @@ export default function Dashboard() {
           const item = counters.get(name)!
           item.total += 1
           const st = (row as any).status
-          if (st === '未开�?) item.notStarted += 1
-          else if (st === '处理�?) item.inProgress += 1
-          else if (st === '已完�?) item.completed += 1
+          if (st === '未开始') item.notStarted += 1
+          else if (st === '处理中') item.inProgress += 1
+          else if (st === '已完成') item.completed += 1
           else if (st === '不做处理') item.noAction += 1
         }
         setCreativeAgg(Array.from(counters.values()).sort((a, b) => a.name.localeCompare(b.name)))
@@ -179,10 +179,10 @@ export default function Dashboard() {
 
   const statusBadge = (r: ServiceTechRequirement) => {
     switch (r.progress) {
-      case '已完�?: return <Badge className="bg-green-500">已完�?/Badge>
-      case '处理�?: return <Badge className="bg-blue-500">处理�?/Badge>
-      case '已沟通延�?: return <Badge className="bg-red-500">已沟通延�?/Badge>
-      case '未开�?: return <Badge className="bg-yellow-500">未开�?/Badge>
+      case '已完成': return <Badge className="bg-green-500">已完成</Badge>
+      case '处理中': return <Badge className="bg-blue-500">处理中</Badge>
+      case '已沟通延期': return <Badge className="bg-red-500">已沟通延期</Badge>
+      case '未开始': return <Badge className="bg-yellow-500">未开始</Badge>
       default: return <Badge>未知</Badge>
     }
   }
@@ -221,7 +221,7 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">完成�?/p>
+                  <p className="text-sm text-gray-600">完成率</p>
                   <p className="text-3xl font-bold">{stats.completionRate.toFixed(1)}%</p>
                 </div>
                 <Target className="h-8 w-8 text-green-500" />
@@ -233,7 +233,7 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">技术部需�?/p>
+                  <p className="text-sm text-gray-600">技术部需求</p>
                   <p className="text-3xl font-bold">{stats.techDept}</p>
                 </div>
                 <UsersIcon className="h-8 w-8 text-purple-500" />
@@ -245,36 +245,36 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>需求状态分�?/CardTitle>
-              <CardDescription>技术部分状态统�?/CardDescription>
+              <CardTitle>需求状态分布</CardTitle>
+              <CardDescription>技术部各状态统计</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span>未开�?/span>
+                    <span>未开始</span>
                   </div>
                   <span className="font-medium">{stats.pending}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span>处理�?/span>
+                    <span>处理中</span>
                   </div>
                   <span className="font-medium">{stats.inProgress}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span>已完�?/span>
+                    <span>已完成</span>
                   </div>
                   <span className="font-medium">{stats.completed}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span>已沟通延�?/span>
+                    <span>已沟通延期</span>
                   </div>
                   <span className="font-medium">{stats.overdue}</span>
                 </div>
@@ -284,8 +284,8 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>最近需�?/CardTitle>
-              <CardDescription>最新的 5 条技术需�?/CardDescription>
+              <CardTitle>最近需求</CardTitle>
+              <CardDescription>最新的 5 条技术需求</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -303,7 +303,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>部门对比</CardTitle>
-            <CardDescription>各部门需求数量对�?/CardDescription>
+            <CardDescription>各部门需求数量对比</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
@@ -334,16 +334,16 @@ export default function Dashboard() {
                   <TableRow>
                     <TableHead>人员</TableHead>
                     <TableHead>总数</TableHead>
-                    <TableHead>未开�?/TableHead>
-                    <TableHead>处理�?/TableHead>
-                    <TableHead>已完�?/TableHead>
-                    <TableHead>已沟通延�?/TableHead>
+                    <TableHead>未开始</TableHead>
+                    <TableHead>处理中</TableHead>
+                    <TableHead>已完成</TableHead>
+                    <TableHead>已沟通延期</TableHead>
                     <TableHead>平均耗时(h)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {staffLoading ? (
-                    <TableRow><TableCell colSpan={7}>加载�?..</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7}>加载中...</TableCell></TableRow>
                   ) : techAgg.length ? (
                     techAgg.map(row => (
                       <TableRow key={row.name}>
@@ -367,7 +367,7 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>创意�?/CardTitle>
+            <CardTitle>创意部</CardTitle>
             <CardDescription>按设计师统计</CardDescription>
           </CardHeader>
           <CardContent>
@@ -377,15 +377,15 @@ export default function Dashboard() {
                   <TableRow>
                     <TableHead>人员</TableHead>
                     <TableHead>总数</TableHead>
-                    <TableHead>未开�?/TableHead>
-                    <TableHead>处理�?/TableHead>
-                    <TableHead>已完�?/TableHead>
+                    <TableHead>未开始</TableHead>
+                    <TableHead>处理中</TableHead>
+                    <TableHead>已完成</TableHead>
                     <TableHead>不做处理</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {staffLoading ? (
-                    <TableRow><TableCell colSpan={6}>加载�?..</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6}>加载中...</TableCell></TableRow>
                   ) : creativeAgg.length ? (
                     creativeAgg.map(row => (
                       <TableRow key={row.name}>
