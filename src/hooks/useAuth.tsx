@@ -18,18 +18,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true) // Start with loading true
   const [error, setError] = useState<string | null>(null)
 
-  // 获取用户资料
+  // Memoized fetch profile function to avoid re-creation on re-renders
   const fetchProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          role:roles(*)
-        `)
+        .select(`*, role:roles(*)`)
         .eq('id', userId)
         .single()
 
@@ -37,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('获取用户资料失败:', error)
         return null
       }
-
       return data as Profile & { role: Role }
     } catch (err) {
       console.error('获取用户资料异常:', err)
@@ -45,77 +41,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 初始化认证状态
   useEffect(() => {
-    let mounted = true;
-    let initialCheckCompleted = false;
+    setLoading(true);
+    console.log('[AuthProvider] useEffect started. Initializing auth state...');
+
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        if (session?.user) {
+          console.log('[AuthProvider] Initial session found for user:', session.user.email);
+          const userProfile = await fetchProfile(session.user.id);
+          setUser(session.user);
+          setProfile(userProfile);
+        } else {
+          console.log('[AuthProvider] No initial session found.');
+          setUser(null);
+          setProfile(null);
+        }
+      } catch (e) {
+        console.error('[AuthProvider] Error during initial session check:', e);
+        setError(e instanceof Error ? e.message : 'Failed to check session.');
+      } finally {
+        console.log('[AuthProvider] Initial check complete. Setting loading to false.');
+        setLoading(false);
+      }
+    };
+
+    checkInitialSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        try {
-          if (!mounted) return;
-
-          if (import.meta.env.DEV) {
-            console.log('Auth state change:', event, session?.user?.email);
-          }
-
-          if (session?.user) {
-            const userProfile = await fetchProfile(session.user.id);
-            if (mounted) {
-              setUser(session.user);
-              setProfile(userProfile);
-            }
-          } else {
-            if (mounted) {
-              setUser(null);
-              setProfile(null);
-            }
-          }
-          
-          setError(null);
-
-        } catch (e) {
-          console.error('Error in onAuthStateChange handler:', e);
-          if (mounted) {
-            setError(e instanceof Error ? e.message : 'An error occurred during auth state change');
-          }
-        } finally {
-          if (mounted && !initialCheckCompleted) {
-            setLoading(false);
-            initialCheckCompleted = true;
-          }
+        console.log(`[AuthProvider] Auth state changed. Event: ${event}`, session?.user?.email);
+        if (event === 'SIGNED_IN' && session?.user) {
+          const userProfile = await fetchProfile(session.user.id);
+          setUser(session.user);
+          setProfile(userProfile);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
         }
       }
     );
 
     return () => {
-      mounted = false;
+      console.log('[AuthProvider] Cleaning up auth subscription.');
       subscription.unsubscribe();
     };
-  }, [])
+  }, []);
 
-  // 登录
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true)
       setError(null)
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        throw error
-      }
-
-      if (data.user) {
-        setUser(data.user)
-        const userProfile = await fetchProfile(data.user.id)
-        if (userProfile) {
-          setProfile(userProfile)
-        }
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      // The onAuthStateChange listener will handle setting user and profile
     } catch (err) {
       const message = err instanceof Error ? err.message : '登录失败'
       setError(message)
@@ -125,7 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // 登出
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -134,15 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(error.message);
         return;
       }
-      // Redirect to home to trigger a full refresh and clear state, helping with cache issues.
-      window.location.href = '/'; 
+      // The onAuthStateChange listener will handle clearing user and profile
+      // Redirect to home to ensure a clean state
+      window.location.href = '/';
     } catch (err) {
       const message = err instanceof Error ? err.message : '登出失败';
       setError(message);
     }
   }
 
-  // 权限检查
   const isAdmin = profile?.role_id === 1 || profile?.role_id === 0
   const isSuperAdmin = profile?.role_id === 0
 
