@@ -91,14 +91,14 @@ export default function TechRequirementImport() {
     if (!headers.length || !rows.length || !user) return
 
     const payload: Omit<TechRequirement, 'id' | 'created_at' | 'updated_at'>[] = rows.map((row, i) => {
-      // 原始列字�?
+      // 原始列字段
       const raw: Record<string, string> = {}
       headers.forEach((h, idx) => {
-        const key = h || `�?{idx + 1}列`
+        const key = h || `第${idx + 1}列`
         raw[key] = row[idx] || ''
       })
 
-      // 解析日期字符�?
+      // 解析日期字符串
       const parseDate = (dateStr: string): string => {
         if (!dateStr) return new Date().toISOString()
         try {
@@ -108,10 +108,10 @@ export default function TechRequirementImport() {
         }
       }
 
-      // 验证枚举�?
-      const validateUrgency = (urgency: string): '�? | '�? | '�? => {
-        if (urgency === '�? || urgency === '�? || urgency === '�?) return urgency
-        return '�?
+      // 验证枚举值
+      const validateUrgency = (urgency: string): '高' | '中' | '低' => {
+        if (urgency === '高' || urgency === '中' || urgency === '低') return urgency
+        return '中'
       }
 
       const validateClientType = (clientType: string): '流量运营服务' | '全案深度服务' => {
@@ -119,24 +119,24 @@ export default function TechRequirementImport() {
         return '流量运营服务'
       }
 
-      const validateProgress = (progress: string): '未开�? | '处理�? | '已完�? | '已沟通延�? => {
-        if (progress === '未开�? || progress === '处理�? || progress === '已完�? || progress === '已沟通延�?) return progress
-        return '未开�?
+      const validateProgress = (progress: string): '未开始' | '处理中' | '已完成' | '已沟通延迟' => {
+        if (progress === '未开始' || progress === '处理中' || progress === '已完成' || progress === '已沟通延迟') return progress
+        return '未开始'
       }
 
       return {
-        title: raw['需求标�?] || raw['标题'] || `未命名需�?${i + 1}`,
-        month: raw['月份'] || new Date().getFullYear() + '�? + (new Date().getMonth() + 1) + '�?,
-        expected_completion_time: parseDate(raw['期望完成的时�?] || raw['期望完成时间']),
-        urgency: validateUrgency(raw['紧急程�?]),
-        submitter_name: raw['提交人（直接使用用户名）'] || raw['提交�?] || user.name,
+        title: raw['需求标题'] || raw['标题'] || `未命名需求-${i + 1}`,
+        month: raw['月份'] || new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
+        expected_completion_time: parseDate(raw['期望完成的时间'] || raw['期望完成时间']),
+        urgency: validateUrgency(raw['紧急程度']),
+        submitter_name: raw['提交人（直接使用用户名）'] || raw['提交人'] || user.name,
         client_url: raw['需支持的客户网址'] || raw['客户网址'] || undefined,
-        description: raw['具体需求描�?] || raw['需求描�?] || `来源文件�?{fileName}\n导入时间�?{new Date().toLocaleString()}`,
+        description: raw['具体需求描述'] || raw['需求描述'] || `来源文件：${fileName}\n导入时间：${new Date().toLocaleString()}`,
         tech_assignee: raw['技术负责人'] || undefined,
-        client_type: validateClientType(raw['客户类型（流量运营服�?全案深度服务�?] || raw['客户类型']),
+        client_type: validateClientType(raw['客户类型（流量运营服务/全案深度服务）'] || raw['客户类型']),
         attachments: undefined,
-        assignee_estimated_time: raw['技术负责人预计可完成时�?] ? parseDate(raw['技术负责人预计可完成时�?]) : undefined,
-        progress: validateProgress(raw['技术完成进度（未开�?处理�?已完�?已沟通延迟）'] || raw['技术完成进�?]),
+        assignee_estimated_time: raw['技术负责人预计可完成时间'] ? parseDate(raw['技术负责人预计可完成时间']) : undefined,
+        progress: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度']),
         submitter_id: user.id,
         submitter_avatar: user.avatar,
       }
@@ -144,10 +144,10 @@ export default function TechRequirementImport() {
 
     try {
       const result = await techRequirementService.importTechRequirements(payload)
-      setLog([`导入完成：新�?${result.length} 条技术需求`])
+      setLog([`导入完成：新增 ${result.length} 条技术需求`])
     } catch (error) {
-      Logger.error('Tech requirement import failed', error)
-      setLog([`导入失败�?{error instanceof Error ? error.message : '未知错误'}`])
+      logger.error('Tech requirement import failed', error)
+      setLog([`导入失败：${error instanceof Error ? error.message : '未知错误'}`])
     }
   }
 
@@ -156,13 +156,13 @@ export default function TechRequirementImport() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">导入技术需求（CSV�?/h1>
+        <h1 className="text-2xl font-bold">导入技术需求（CSV）</h1>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => navigate('/departments/tech')}>
             返回列表
           </Button>
           <Button onClick={handleImport} disabled={disableImport}>
-            开始导�?
+            开始导入
           </Button>
         </div>
       </div>
@@ -171,11 +171,11 @@ export default function TechRequirementImport() {
         <CardHeader>
           <CardTitle>上传文件</CardTitle>
           <CardDescription>
-            支持 CSV（UTF-8）格式。请确保 CSV 文件包含以下列名�?
+            支持 CSV（UTF-8）格式。请确保 CSV 文件包含以下列名：
             <br />
-            <strong>必需字段�?/strong>需求标题、月份、期望完成的时间、紧急程度、提交人、具体需求描述、客户类�?
+            <strong>必需字段：</strong>需求标题、月份、期望完成的时间、紧急程度、提交人、具体需求描述、客户类型
             <br />
-            <strong>可选字段：</strong>需支持的客户网址、技术负责人、技术负责人预计可完成时间、技术完成进�?
+            <strong>可选字段：</strong>需支持的客户网址、技术负责人、技术负责人预计可完成时间、技术完成进度
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -197,7 +197,7 @@ export default function TechRequirementImport() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>数据预览（前 10 行）</CardTitle>
-            <CardDescription>以原�?CSV 列展示，用于核对解析是否正确�?/CardDescription>
+            <CardDescription>以原始 CSV 列展示，用于核对解析是否正确。</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-auto">
@@ -205,7 +205,7 @@ export default function TechRequirementImport() {
                 <TableHeader>
                   <TableRow>
                     {headers.map((h, idx) => (
-                      <TableHead key={idx}>{h || `�?{idx + 1}列`}</TableHead>
+                      <TableHead key={idx}>{h || `第${idx + 1}列`}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
@@ -236,7 +236,7 @@ export default function TechRequirementImport() {
               ))}
             </ul>
             <div className="mt-4">
-              <Button onClick={() => navigate('/departments/tech')}>查看技术需求列�?/Button>
+              <Button onClick={() => navigate('/departments/tech')}>查看技术需求列表</Button>
             </div>
           </CardContent>
         </Card>

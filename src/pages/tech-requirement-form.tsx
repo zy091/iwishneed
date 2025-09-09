@@ -21,14 +21,14 @@ import { techRequirementService } from '@/services/tech-requirement-service'
 import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
 import { logger } from '@/lib/logger'
 
-// 技术需求表单验�?
+// 技术需求表单验证
 const techRequirementSchema = z.object({
-  title: z.string().min(1, '需求标题不能为�?),
+  title: z.string().min(1, '需求标题不能为空'),
   month: z.string().min(1, '月份不能为空'),
   expected_completion_time: z.date({ message: '期望完成时间不能为空' }),
-  urgency: z.enum(['high', 'medium', 'low'], { message: '请选择紧急程�? }),
+  urgency: z.enum(['high', 'medium', 'low'], { message: '请选择紧急程度' }),
   client_url: z.string().url('请输入有效的网址').optional().or(z.literal('')),
-  description: z.string().min(1, '具体需求描述不能为�?),
+  description: z.string().min(1, '具体需求描述不能为空'),
   tech_assignee: z.string().optional(),
   client_type: z.enum(['traffic_operation', 'full_service'], { message: '请选择客户类型' }),
   assignee_estimated_time: z.date().optional(),
@@ -37,7 +37,7 @@ const techRequirementSchema = z.object({
 
 type TechRequirementForm = z.infer<typeof techRequirementSchema>
 
-export default function TechRequirementForm() {
+export default function TechRequirementFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -49,28 +49,27 @@ export default function TechRequirementForm() {
   
   const isEdit = !!id
 
-  const toCnUrgency = (v: 'high'|'medium'|'low'): '�?|'�?|'�? => (v === 'high' ? '�? : v === 'low' ? '�? : '�?)
+  const toCnUrgency = (v: 'high'|'medium'|'low'): '高'|'中'|'低' => (v === 'high' ? '高' : v === 'low' ? '低' : '中')
   const toCnClient = (v: 'traffic_operation'|'full_service'): '流量运营服务'|'全案深度服务' => (v === 'full_service' ? '全案深度服务' : '流量运营服务')
-  const toCnProgress = (v: 'not_started'|'in_progress'|'completed'|'delayed'): '未开�?|'处理�?|'已完�?|'已沟通延�? =>
-    (v === 'completed' ? '已完�? : v === 'in_progress' ? '处理�? : v === 'delayed' ? '已沟通延�? : '未开�?)
+  const toCnProgress = (v: 'not_started'|'in_progress'|'completed'|'delayed'): '未开始'|'处理中'|'已完成'|'已沟通延迟' =>
+    (v === 'completed' ? '已完成' : v === 'in_progress' ? '处理中' : v === 'delayed' ? '已沟通延迟' : '未开始')
 
   const toEnUrgency = (v?: string): 'high'|'medium'|'low' =>
-    v === '�? ? 'high' : v === '�? ? 'low' : 'medium'
+    v === '高' ? 'high' : v === '低' ? 'low' : 'medium'
   const toEnClient = (v?: string): 'traffic_operation'|'full_service' =>
     v === '全案深度服务' ? 'full_service' : 'traffic_operation'
   const toEnProgress = (v?: string): 'not_started'|'in_progress'|'completed'|'delayed' =>
-    v === '已完�? ? 'completed' : v === '处理�? ? 'in_progress' : v === '已沟通延�? ? 'delayed' : 'not_started'
+    v === '已完成' ? 'completed' : v === '处理中' ? 'in_progress' : v === '已沟通延迟' ? 'delayed' : 'not_started'
 
   const form = useForm<TechRequirementForm>({
     resolver: zodResolver(techRequirementSchema),
     defaultValues: {
       title: '',
-      month: new Date().getFullYear() + '�? + (new Date().getMonth() + 1) + '�?,
+      month: new Date().getFullYear() + '年' + (new Date().getMonth() + 1) + '月',
       expected_completion_time: new Date(),
       urgency: 'medium',
       client_url: '',
       description: '',
-      // 重要：Radix Select 禁止空字符串，使用占位�?
       tech_assignee: '__none__',
       client_type: 'traffic_operation',
       assignee_estimated_time: undefined,
@@ -82,11 +81,9 @@ export default function TechRequirementForm() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 加载技术负责人列表
         const assignees = await techRequirementService.getTechAssignees()
         setTechAssignees(assignees)
 
-        // 加载需求详�?
         if (isEdit && id) {
           const req = await techRequirementService.getTechRequirement(id)
           if (req) {
@@ -95,14 +92,13 @@ export default function TechRequirementForm() {
               title: req.title,
               month: req.month,
               expected_completion_time: req.expected_completion_time ? new Date(req.expected_completion_time) : new Date(),
-              urgency: toEnUrgency(req.urgency as any),
+              urgency: toEnUrgency(req.urgency),
               client_url: req.client_url || '',
               description: req.description,
-              // 编辑态：为空时也使用占位�?
               tech_assignee: (req.tech_assignee && req.tech_assignee.trim() !== '') ? req.tech_assignee : '__none__',
-              client_type: toEnClient(req.client_type as any),
+              client_type: toEnClient(req.client_type),
               assignee_estimated_time: req.assignee_estimated_time ? new Date(req.assignee_estimated_time) : undefined,
-              progress: toEnProgress(req.progress as any),
+              progress: toEnProgress(req.progress),
             })
           }
         }
@@ -134,21 +130,19 @@ export default function TechRequirementForm() {
         title: data.title,
         month: data.month,
         expected_completion_time: data.expected_completion_time.toISOString(),
-        urgency: toCnUrgency(data.urgency as any),
+        urgency: toCnUrgency(data.urgency),
         submitter_name: user.name,
         client_url: data.client_url || undefined,
         description: data.description,
-        // 映射占位值为 undefined，避免写入无效�?
         tech_assignee: (data.tech_assignee && data.tech_assignee !== '__none__') ? data.tech_assignee : undefined,
-        client_type: toCnClient(data.client_type as any),
+        client_type: toCnClient(data.client_type),
         attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type })),
         assignee_estimated_time: data.assignee_estimated_time?.toISOString(),
-        progress: data.progress ? toCnProgress(data.progress as any) : '未开�?,
+        progress: data.progress ? toCnProgress(data.progress) : '未开始',
         submitter_id: user.id,
         submitter_avatar: user.avatar,
-        // 添加必需的字�?
-        priority: toCnUrgency(data.urgency as any), // 使用urgency映射为priority
-        status: data.progress ? toCnProgress(data.progress as any) : '未开�?, // 使用progress映射为status
+        priority: toCnUrgency(data.urgency),
+        status: data.progress ? toCnProgress(data.progress) : '未开始',
       }
 
       if (isEdit && id) {
@@ -168,7 +162,7 @@ export default function TechRequirementForm() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{isEdit ? '编辑技术需�? : '提交技术需�?}</h1>
+        <h1 className="text-2xl font-bold">{isEdit ? '编辑技术需求' : '提交技术需求'}</h1>
         <Button variant="secondary" onClick={() => navigate('/departments/tech')}>
           返回列表
         </Button>
@@ -176,8 +170,8 @@ export default function TechRequirementForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>技术需求信�?/CardTitle>
-          <CardDescription>请按照飞书表格格式填写完整的技术需求信�?/CardDescription>
+          <CardTitle>技术需求信息</CardTitle>
+          <CardDescription>请按照飞书表格格式填写完整的技术需求信息</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -189,9 +183,9 @@ export default function TechRequirementForm() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>需求标�?*</FormLabel>
+                      <FormLabel>需求标题 *</FormLabel>
                       <FormControl>
-                        <Input placeholder="请输入需求标�? {...field} />
+                        <Input placeholder="请输入需求标题" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -205,7 +199,7 @@ export default function TechRequirementForm() {
                     <FormItem>
                       <FormLabel>月份 *</FormLabel>
                       <FormControl>
-                        <Input placeholder="如：2024�?�? {...field} />
+                        <Input placeholder="如：2024年1月" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -218,7 +212,7 @@ export default function TechRequirementForm() {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>具体需求描�?*</FormLabel>
+                    <FormLabel>具体需求描述 *</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="请详细描述需求内容、功能要求、预期效果等"
@@ -237,7 +231,7 @@ export default function TechRequirementForm() {
                   name="expected_completion_time"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>期望完成的时�?*</FormLabel>
+                      <FormLabel>期望完成的时间 *</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -277,17 +271,17 @@ export default function TechRequirementForm() {
                   name="urgency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>紧急程�?*</FormLabel>
+                      <FormLabel>紧急程度 *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="选择紧急程�? />
+                            <SelectValue placeholder="选择紧急程度" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="high">�?/SelectItem>
-                          <SelectItem value="medium">�?/SelectItem>
-                          <SelectItem value="low">�?/SelectItem>
+                          <SelectItem value="high">高</SelectItem>
+                          <SelectItem value="medium">中</SelectItem>
+                          <SelectItem value="low">低</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -316,7 +310,7 @@ export default function TechRequirementForm() {
                   name="client_type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>客户类型（流量运营服�?全案深度服务�?*</FormLabel>
+                      <FormLabel>客户类型（流量运营服务/全案深度服务） *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -351,7 +345,7 @@ export default function TechRequirementForm() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="__none__">未分�?/SelectItem>
+                            <SelectItem value="__none__">未分配</SelectItem>
                             {techAssignees.map((assignee) => (
                               <SelectItem key={assignee} value={assignee}>
                                 {assignee}
@@ -369,18 +363,18 @@ export default function TechRequirementForm() {
                     name="progress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>技术完成进度（未开�?处理�?已完�?已沟通延迟）</FormLabel>
+                        <FormLabel>技术完成进度（未开始/处理中/已完成/已沟通延迟）</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="选择进度状�? />
+                              <SelectValue placeholder="选择进度状态" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="not_started">未开�?/SelectItem>
-                            <SelectItem value="in_progress">处理�?/SelectItem>
-                            <SelectItem value="completed">已完�?/SelectItem>
-                            <SelectItem value="delayed">已沟通延�?/SelectItem>
+                            <SelectItem value="not_started">未开始</SelectItem>
+                            <SelectItem value="in_progress">处理中</SelectItem>
+                            <SelectItem value="completed">已完成</SelectItem>
+                            <SelectItem value="delayed">已沟通延迟</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -395,7 +389,7 @@ export default function TechRequirementForm() {
                     name="assignee_estimated_time"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>技术负责人预计可完成时�?/FormLabel>
+                        <FormLabel>技术负责人预计可完成时间</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -463,7 +457,7 @@ export default function TechRequirementForm() {
                   取消
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? '保存�?..' : (isEdit ? '更新需�? : '提交需�?)}
+                  {loading ? '保存中...' : (isEdit ? '更新需求' : '提交需求')}
                 </Button>
               </div>
             </form>
