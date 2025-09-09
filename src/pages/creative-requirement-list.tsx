@@ -26,7 +26,7 @@ export default function CreativeRequirementList() {
         setList(data)
         setFiltered(data)
       } catch (e) {
-        console.error('获取创意部需求失�?', e)
+        console.error('获取创意部需求失败', e)
       } finally {
         setLoading(false)
       }
@@ -54,18 +54,18 @@ export default function CreativeRequirementList() {
       await creativeRequirementService.deleteCreativeRequirement(id)
       setList(prev => prev.filter(x => x.id !== id))
     } catch (e) {
-      console.error('删除创意需求失�?', e)
+      console.error('删除创意需求失败', e)
     }
   }
 
   const statusBadge = (s?: string) => {
     switch (s) {
-      case '已完�?:
-        return <Badge className="bg-green-500">已完�?/Badge>
-      case '处理�?:
-        return <Badge className="bg-blue-500">处理�?/Badge>
-      case '未开�?:
-        return <Badge className="bg-gray-500">未开�?/Badge>
+      case '已完成':
+        return <Badge className="bg-green-500">已完成</Badge>
+      case '处理中':
+        return <Badge className="bg-blue-500">处理中</Badge>
+      case '未开始':
+        return <Badge className="bg-gray-500">未开始</Badge>
       case '不做处理':
         return <Badge className="bg-orange-500">不做处理</Badge>
       default:
@@ -76,20 +76,20 @@ export default function CreativeRequirementList() {
   return (
     <div className="container mx-auto py-6 px-3 overflow-x-hidden">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between md:flex-wrap gap-3 mb-6">
-        <h1 className="text-2xl font-bold min-w-0">创意�?- 需求列�?/h1>
+        <h1 className="text-2xl font-bold min-w-0">创意部 - 需求列表</h1>
         <div className="flex gap-2 flex-wrap justify-end">
           <Button variant="outline" onClick={() => navigate('/requirements/import?department=creative')}>
             <Upload className="mr-2 h-4 w-4" /> 批量导入
           </Button>
           <Button onClick={() => navigate('/creative-requirements/new')}>
-            <Plus className="mr-2 h-4 w-4" /> 新建创意需�?
+            <Plus className="mr-2 h-4 w-4" /> 新建创意需求
           </Button>
         </div>
       </div>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>筛选条�?/CardTitle>
+          <CardTitle>筛选条件</CardTitle>
           <CardDescription>搜索提交人、设计师、网站名称或素材类型</CardDescription>
         </CardHeader>
         <CardContent>
@@ -142,7 +142,7 @@ export default function CreativeRequirementList() {
                     <div className="col-span-2">
                       {r.url_or_product_page ? (
                         <a href={r.url_or_product_page} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">链接</a>
-                      ) : '无链�?}
+                      ) : '无链接'}
                     </div>
                   </div>
                   <div className="mt-3 flex justify-end gap-2">
@@ -160,7 +160,7 @@ export default function CreativeRequirementList() {
               </Card>
             )) : (
               <Card>
-                <CardContent className="py-8 text-center text-sm text-gray-500">暂无创意部需�?/CardContent>
+                <CardContent className="py-8 text-center text-sm text-gray-500">暂无创意部需求</CardContent>
               </Card>
             )}
           </div>
@@ -171,16 +171,16 @@ export default function CreativeRequirementList() {
                   <TableHead>提交时间</TableHead>
                   <TableHead>期望交付</TableHead>
                   <TableHead>实际交付</TableHead>
-                  <TableHead>状�?/TableHead>
-                  <TableHead>紧急程�?/TableHead>
-                  <TableHead>设计�?/TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead>紧急程度</TableHead>
+                  <TableHead>设计师</TableHead>
                   <TableHead>平台</TableHead>
                   <TableHead>网站名称</TableHead>
-                  <TableHead>网址/产品�?/TableHead>
+                  <TableHead>网址/产品页</TableHead>
                   <TableHead>素材类型</TableHead>
                   <TableHead>尺寸</TableHead>
                   <TableHead>数量</TableHead>
-                  <TableHead>提交�?/TableHead>
+                  <TableHead>提交人</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -220,7 +220,7 @@ export default function CreativeRequirementList() {
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8">暂无创意部需�?/TableCell>
+                    <TableCell colSpan={14} className="text-center py-8">暂无创意部需求</TableCell>
                   </TableRow>
                 )}
               </TableBody>
