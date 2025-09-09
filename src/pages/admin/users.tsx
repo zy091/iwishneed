@@ -19,11 +19,12 @@ import {
 } from '@/services/admin-service'
 
 export default function AdminUsersPage() {
+  console.log('[AdminUsersPage] Component re-rendering...');
   const { isAdmin } = usePermissions()
   const navigate = useNavigate()
 
   const [roles, setRoles] = useState<Role[]>([])
-  const [users, setUsers] = useState<UserRow[]>([])
+  const [users, setUsers] = useState<Partial<UserRow>[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -64,25 +65,33 @@ export default function AdminUsersPage() {
 
   // Effect for users
   useEffect(() => {
-    if (!isAdmin) return
+    console.log('[AdminUsersPage] User effect triggered. Dependencies:', { isAdmin, page, pageSize, search, roleFilter, searchTrigger });
 
-    const refreshUsers = async () => {
-      setLoading(true)
-      try {
-        const r = await listUsers({ page, pageSize, search, role_id: roleFilter })
-        setUsers(r.users)
-        setTotal(r.total)
-        setError('')
-      } catch (e: any) {
-        console.error('获取用户列表失败:', e)
-        setError(`加载用户列表失败: ${e.message}。请检查您的网络连接和数据库权限。`)
-      } finally {
-        setLoading(false)
-      }
+    if (!isAdmin) {
+      console.log('[AdminUsersPage] Not an admin, skipping user fetch.');
+      return;
     }
 
-    refreshUsers()
-  }, [isAdmin, page, pageSize, roleFilter, searchTrigger])
+    const refreshUsers = async () => {
+      console.log('[AdminUsersPage] Starting user fetch...');
+      setLoading(true);
+      try {
+        const r = await listUsers({ page, pageSize, search, role_id: roleFilter });
+        console.log('[AdminUsersPage] User fetch successful.', r);
+        setUsers(r.users);
+        setTotal(r.total);
+        setError('');
+      } catch (e: any) {
+        console.error('[AdminUsersPage] User fetch failed:', e);
+        setError(`加载用户列表失败: ${e.message}。请检查您的网络连接和数据库权限。`);
+      } finally {
+        console.log('[AdminUsersPage] Finished user fetch, setting loading to false.');
+        setLoading(false);
+      }
+    };
+
+    refreshUsers();
+  }, [isAdmin, page, pageSize, search, roleFilter, searchTrigger]);
 
   const handleCreateUser = async () => {
     setError('')
