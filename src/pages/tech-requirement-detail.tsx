@@ -1,3 +1,4 @@
+import { Edit, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import RequirementComments from '@/components/RequirementComments'
@@ -6,13 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { techRequirementService } from '@/services/tech-requirement-service'
-import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
-import { Edit, ExternalLink } from 'lucide-react'
+import type { TechRequirement } from '@/types/requirement'
 
 export default function TechRequirementDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [data, setData] = useState<ServiceTechRequirement | null>(null)
+  const [data, setData] = useState<TechRequirement | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -69,9 +69,18 @@ export default function TechRequirementDetail() {
             <CardHeader>
               <CardTitle>需求详情</CardTitle>
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="outline">{data.urgency}·紧急程度</Badge>
-                <Badge variant="outline">{data.client_type}</Badge>
-                {data.progress && <Badge className="bg-blue-500">{data.progress}</Badge>}
+                <Badge variant="outline">{
+                  data.urgency === 'high' ? '高' : data.urgency === 'medium' ? '中' : '低'
+                }·紧急程度</Badge>
+                <Badge variant="outline">{
+                  data.client_type === 'traffic_operation' ? '流量运营服务' : '全案深度服务'
+                }</Badge>
+                {data.progress && <Badge className="bg-blue-500">{
+                  data.progress === 'not_started' ? '未开始' :
+                  data.progress === 'in_progress' ? '处理中' :
+                  data.progress === 'completed' ? '已完成' :
+                  data.progress === 'delayed' ? '已沟通延迟' : '未知'
+                }</Badge>}
               </div>
             </CardHeader>
             <CardContent>

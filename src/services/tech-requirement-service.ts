@@ -1,50 +1,11 @@
 import { supabase } from '@/lib/supabaseClient'
-import { TechRequirement as BaseTechRequirement, RequirementPriority, RequirementStatus, ClientType } from '@/types/requirement'
-
-export interface TechRequirement extends BaseTechRequirement {
-  // 提交人填写字段（严格按照飞书表格）
-  month: string // 月份
-  submit_time?: string // 需求提交时间
-  expected_completion_time: string // 期望完成的时间
-  urgency: RequirementPriority // 紧急程度
-  submitter_name: string // 提交人（直接使用用户名）
-  client_url?: string // 需支持的客户网址
-  description: string // 具体需求描述
-  tech_assignee?: string // 技术负责人
-  client_type: ClientType // 客户类型
-  attachments?: any[] // 支持上传附件
-  
-  // 技术负责人填写字段
-  assignee_estimated_time?: string // 技术负责人预计可完成时间
-  progress?: RequirementStatus // 技术完成进度
-  start_time?: string // 开始时间
-  end_time?: string // 结束时间
-  
-  // 系统字段
-  submitter_id?: string
-  submitter_avatar?: string
-  
-  // 必需的基础字段
-  priority: RequirementPriority
-  status: RequirementStatus
-}
-
-export interface TechRequirementStats {
-  total: number
-  pending: number // 未开始
-  inProgress: number // 处理中
-  completed: number // 已完成
-  delayed: number // 已沟通延迟
-  byUrgency: {
-    high: number // 高
-    medium: number // 中
-    low: number // 低
-  }
-  byClientType: {
-    traffic: number // 流量运营服务
-    fullService: number // 全案深度服务
-  }
-}
+import { 
+  TechRequirement, 
+  RequirementPriority, 
+  RequirementStatus, 
+  ClientType,
+  TechRequirementStats
+} from '@/types/requirement'
 
 class TechRequirementService {
   // 获取技术需求列表
@@ -75,36 +36,28 @@ class TechRequirementService {
     const { data, error } = await query
     if (error) throw error
     
-    // 为每个需求添加默认的priority和status字段
-    const requirements = (data || []).map(req => ({
-      ...req,
-      priority: this.mapUrgencyToPriority(req.urgency),
-      status: this.mapProgressToStatus(req.progress)
-    })) as TechRequirement[]
-    
-    return requirements
+    // Normalize data to ensure consistency
+    const normalizedData = (data || []).map(req => {
+      const newReq = { ...req };
+      if (newReq.urgency === '高') newReq.urgency = 'high';
+      else if (newReq.urgency === '中') newReq.urgency = 'medium';
+      else if (newReq.urgency === '低') newReq.urgency = 'low';
+
+      if (newReq.progress === '未开始') newReq.progress = 'not_started';
+      else if (newReq.progress === '处理中') newReq.progress = 'in_progress';
+      else if (newReq.progress === '已完成') newReq.progress = 'completed';
+      else if (newReq.progress === '已沟通延迟') newReq.progress = 'delayed';
+
+      if (newReq.client_type === '流量运营服务') newReq.client_type = 'traffic_operation';
+      else if (newReq.client_type === '全案深度服务') newReq.client_type = 'full_service';
+      
+      return newReq;
+    });
+
+    return normalizedData as TechRequirement[]
   }
 
-  // 映射紧急程度到优先级
-  private mapUrgencyToPriority(urgency?: string): RequirementPriority {
-    switch (urgency) {
-      case '高': return 'high'
-      case '中': return 'medium'
-      case '低': return 'low'
-      default: return 'medium'
-    }
-  }
 
-  // 映射进度到状态
-  private mapProgressToStatus(progress?: string): RequirementStatus {
-    switch (progress) {
-      case '未开始': return 'pending'
-      case '处理中': return 'in_progress'
-      case '已完成': return 'completed'
-      case '已沟通延迟': return 'pending'
-      default: return 'pending'
-    }
-  }
 
   // 获取技术需求详情
   async getTechRequirement(id: string): Promise<TechRequirement | null> {
@@ -121,12 +74,20 @@ class TechRequirementService {
     
     if (!data) return null
     
-    // 添加默认的priority和status字段
-    return {
-      ...data,
-      priority: this.mapUrgencyToPriority(data.urgency),
-      status: this.mapProgressToStatus(data.progress)
-    } as TechRequirement
+    const newReq = { ...data };
+    if (newReq.urgency === '高') newReq.urgency = 'high';
+    else if (newReq.urgency === '中') newReq.urgency = 'medium';
+    else if (newReq.urgency === '低') newReq.urgency = 'low';
+
+    if (newReq.progress === '未开始') newReq.progress = 'not_started';
+    else if (newReq.progress === '处理中') newReq.progress = 'in_progress';
+    else if (newReq.progress === '已完成') newReq.progress = 'completed';
+    else if (newReq.progress === '已沟通延迟') newReq.progress = 'delayed';
+
+    if (newReq.client_type === '流量运营服务') newReq.client_type = 'traffic_operation';
+    else if (newReq.client_type === '全案深度服务') newReq.client_type = 'full_service';
+
+    return newReq as TechRequirement
   }
 
   // 创建技术需求
@@ -143,14 +104,25 @@ class TechRequirementService {
 
   // 更新技术需求
   async updateTechRequirement(id: string, updates: Partial<TechRequirement>): Promise<TechRequirement> {
-    // 如果进度从"未开始"变为"处理中"，自动设置开始时间
-    if (updates.progress === '处理中' && !updates.start_time) {
-      updates.start_time = new Date().toISOString()
+    // Fetch the existing requirement to check old progress state
+    const { data: existingReqData } = await supabase
+      .from('tech_requirements')
+      .select('progress')
+      .eq('id', id)
+      .single();
+
+    // If progress changes from "not_started" to "in_progress", set start_time
+    if (
+      updates.progress === 'in_progress' &&
+      existingReqData &&
+      (existingReqData.progress === 'not_started' || existingReqData.progress === '未开始')
+    ) {
+      updates.start_time = new Date().toISOString();
     }
     
-    // 如果进度变为"已完成"，自动设置结束时间
-    if (updates.progress === '已完成' && !updates.end_time) {
-      updates.end_time = new Date().toISOString()
+    // If progress changes to "completed", set end_time
+    if (updates.progress === 'completed' && !updates.end_time) {
+      updates.end_time = new Date().toISOString();
     }
 
     const { data, error } = await supabase
@@ -207,8 +179,8 @@ class TechRequirementService {
         low: requirements.filter(r => r.urgency === '低').length,
       },
       byClientType: {
-        traffic: requirements.filter(r => r.client_type === '流量运营服务').length,
-        fullService: requirements.filter(r => r.client_type === '全案深度服务').length,
+        traffic: requirements.filter(r => r.client_type === 'traffic_operation').length,
+        fullService: requirements.filter(r => r.client_type === 'full_service').length,
       }
     }
   }

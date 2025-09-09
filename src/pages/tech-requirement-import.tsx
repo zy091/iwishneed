@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/hooks/useAuth'
-import { techRequirementService, TechRequirement } from '@/services/tech-requirement-service'
-import { RequirementPriority, RequirementStatus, ClientType } from '@/types/requirement'
 import { logger } from '@/lib/logger'
+import { techRequirementService } from '@/services/tech-requirement-service'
+import { ClientType, TechProgress, TechRequirement, Urgency } from '@/types/requirement'
 
 function detectDelimiter(sample: string): string {
   const lines = sample.split(/\r?\n/).slice(0, 5)
@@ -110,7 +110,7 @@ export default function TechRequirementImport() {
       }
 
       // 验证枚举值
-      const validateUrgency = (urgency: string): RequirementPriority => {
+      const validateUrgency = (urgency: string): Urgency => {
         if (urgency === '高') return 'high'
         if (urgency === '中') return 'medium'
         if (urgency === '低') return 'low'
@@ -123,12 +123,12 @@ export default function TechRequirementImport() {
         return 'traffic_operation'
       }
 
-      const validateProgress = (progress: string): RequirementStatus => {
-        if (progress === '未开始') return 'pending'
+      const validateProgress = (progress: string): TechProgress => {
+        if (progress === '未开始') return 'not_started'
         if (progress === '处理中') return 'in_progress'
         if (progress === '已完成') return 'completed'
-        if (progress === '已沟通延迟') return 'cancelled'
-        return 'pending'
+        if (progress === '已沟通延迟') return 'blocked'
+        return 'not_started'
       }
 
       return {
@@ -145,9 +145,7 @@ export default function TechRequirementImport() {
         assignee_estimated_time: raw['技术负责人预计可完成时间'] ? parseDate(raw['技术负责人预计可完成时间']) : undefined,
         progress: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度']),
         submitter_id: user.id,
-        submitter_avatar: user.avatar,
-        priority: validateUrgency(raw['紧急程度']),
-        status: validateProgress(raw['技术完成进度（未开始/处理中/已完成/已沟通延迟）'] || raw['技术完成进度'])
+        submitter_avatar: user.avatar_url
       }
     })
 

@@ -3,13 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { creativeRequirementService } from '@/services/creative-requirement-service'
-import type { CreativeRequirement } from '@/services/creative-requirement-service'
-
+import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/hooks/useAuth'
+import { creativeRequirementService } from '@/services/creative-requirement-service'
+import type { CreativeRequirement } from '@/types/requirement'
 
 const PLATFORMS = ['GG', 'FB', 'CT', '网站'] as const
 const STATUSES = ['未开始', '处理中', '已完成', '不做处理'] as const
@@ -22,32 +21,16 @@ export default function CreativeRequirementForm() {
   const { id } = useParams()
   const isEdit = !!id
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { profile } = useAuth()
 
   const [designers, setDesigners] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
-  const [form, setForm] = useState<Omit<CreativeRequirement, 'id' | 'created_at' | 'updated_at'>>({
+  const [form, setForm] = useState<Partial<CreativeRequirement>>({
     submit_time: new Date().toISOString(),
-    expected_delivery_time: undefined,
-    actual_delivery_time: undefined,
-    submitter_name: user?.name || '',
     platform: 'GG',
     status: '未开始',
     urgency: '中',
-    designer: undefined,
-    site_name: '',
-    url_or_product_page: '',
-    asset_type: undefined,
-    asset_size: '',
-    layout_style: '',
-    asset_count: undefined,
-    copy: '',
-    style_requirements: '',
-    original_assets: '',
-    asset_package: '',
-    remark: '',
-    reference_examples: '',
   })
 
   useEffect(() => {
@@ -55,12 +38,15 @@ export default function CreativeRequirementForm() {
       try {
         const ds = await creativeRequirementService.getDesigners()
         setDesigners(ds)
+        if (profile?.full_name && !isEdit) {
+          handleChange('submitter_name', profile.full_name)
+        }
       } catch (e) {
         console.error('获取设计师失败', e)
       }
     }
     run()
-  }, [])
+  }, [profile, isEdit])
 
   useEffect(() => {
     const load = async () => {
@@ -68,10 +54,7 @@ export default function CreativeRequirementForm() {
       try {
         const data = await creativeRequirementService.getCreativeRequirement(id)
         if (data) {
-          const { id: _id, created_at, updated_at, ...rest } = data
-          setForm({
-            ...rest
-          })
+          setForm(data)
         }
       } catch (e) {
         console.error('获取创意需求失败', e)
@@ -80,7 +63,7 @@ export default function CreativeRequirementForm() {
     load()
   }, [isEdit, id])
 
-  const handleChange = (key: keyof typeof form, value: any) => {
+  const handleChange = (key: keyof CreativeRequirement, value: any) => {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
@@ -88,9 +71,9 @@ export default function CreativeRequirementForm() {
     setSaving(true)
     try {
       if (isEdit && id) {
-        await creativeRequirementService.updateCreativeRequirement(id, form as any)
+        await creativeRequirementService.updateCreativeRequirement(id, form)
       } else {
-        await creativeRequirementService.createCreativeRequirement(form as any)
+        await creativeRequirementService.createCreativeRequirement(form)
       }
       navigate('/departments/creative')
     } catch (e) {
@@ -154,7 +137,7 @@ export default function CreativeRequirementForm() {
             </div>
             <div>
               <Label>平台</Label>
-              <Select value={(form.platform as any) || ''} onValueChange={(v) => handleChange('platform', v as any)}>
+              <Select value={form.platform || ''} onValueChange={(v) => handleChange('platform', v)}>
                 <SelectTrigger><SelectValue placeholder="选择平台" /></SelectTrigger>
                 <SelectContent>
                   {PLATFORMS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
@@ -163,7 +146,7 @@ export default function CreativeRequirementForm() {
             </div>
             <div>
               <Label>状态</Label>
-              <Select value={(form.status as any) || ''} onValueChange={(v) => handleChange('status', v as any)}>
+              <Select value={form.status || ''} onValueChange={(v) => handleChange('status', v)}>
                 <SelectTrigger><SelectValue placeholder="选择状态" /></SelectTrigger>
                 <SelectContent>
                   {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -175,7 +158,7 @@ export default function CreativeRequirementForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>紧急程度</Label>
-              <Select value={(form.urgency as any) || ''} onValueChange={(v) => handleChange('urgency', v as any)}>
+              <Select value={form.urgency || ''} onValueChange={(v) => handleChange('urgency', v)}>
                 <SelectTrigger><SelectValue placeholder="选择紧急程度" /></SelectTrigger>
                 <SelectContent>
                   {URGENCIES.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
@@ -204,7 +187,7 @@ export default function CreativeRequirementForm() {
             </div>
             <div>
               <Label>素材类型</Label>
-              <Select value={(form.asset_type as any) || ''} onValueChange={(v) => handleChange('asset_type', v as any)}>
+              <Select value={form.asset_type || ''} onValueChange={(v) => handleChange('asset_type', v)}>
                 <SelectTrigger><SelectValue placeholder="选择素材类型" /></SelectTrigger>
                 <SelectContent>
                   {ASSET_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}

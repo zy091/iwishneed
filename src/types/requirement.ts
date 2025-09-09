@@ -8,7 +8,7 @@ export type RequirementStatus = 'pending' | 'in_progress' | 'completed' | 'cance
 export type TechProgress =
   | 'not_started' | 'in_progress' | 'completed' | 'delayed'  // 英文枚举（数据库）
   | '未开始' | '处理中' | '已完成' | '已沟通延迟'              // 兼容旧中文值
-export type CreativeStatus = 'not_started' | 'in_progress' | 'completed' | 'no_action'
+export type CreativeStatus = 'not_started' | 'in_progress' | 'completed' | 'no_action' | '未开始' | '处理中' | '已完成' | '不做处理'
 export type CreativeUrgency = 'high' | 'medium' | 'low'
 export type CreativePlatform = 'GG' | 'FB' | 'CT' | 'website'
 export type ClientType = 'traffic_operation' | 'full_service'
@@ -16,77 +16,96 @@ export type CreativeType = 'google_ad' | 'meta_ad' | 'website_banner' | 'website
 
 // 技术需求类型（匹配数据库结构）
 export interface TechRequirement {
-  id?: string
-  title: string
-  description?: string
-  priority: RequirementPriority
-  status: RequirementStatus
-  assigned_to?: string // UUID reference to tech_staff
-  // 兼容旧字段
-  tech_assignee?: string
-  submit_time?: string
-  created_by?: string // UUID reference to auth.users
-  created_at?: string
-  updated_at?: string
-  due_date?: string
-  estimated_hours?: number
-  actual_hours?: number
-  tags?: string[]
-  metadata?: Record<string, any>
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
 
-  // 技术部特有字段
-  month?: string
-  expected_completion_time?: string
-  urgency?: RequirementPriority
-  submitter_name?: string
-  client_url?: string
-  client_type?: ClientType
-  attachments?: any[]
-  assignee_estimated_time?: string
-  progress?: TechProgress
-  start_time?: string
-  end_time?: string
+  // Core fields
+  title: string;
+  description: string;
+  priority?: RequirementPriority;
+  status?: RequirementStatus;
+  urgency: string; // 紧急程度, often same as priority
+  progress?: TechProgress; // More detailed status for tech
+
+  // Submission fields
+  submitter_id?: string; // User ID of submitter
+  submitter_name: string; // Name of submitter
+  submitter_avatar?: string;
+  submit_time?: string; // 需求提交时间
+  
+  // Assignment fields
+  assigned_to?: string; // UUID of assignee (new)
+  tech_assignee?: string; // Name of assignee (legacy)
+  
+  // Time fields
+  expected_completion_time: string; // 期望完成的时间
+  assignee_estimated_time?: string; // 技术负责人预计可完成时间
+  start_time?: string; // 开始时间
+  end_time?: string; // 结束时间
+  due_date?: string;
+  
+  // Client fields
+  client_type: ClientType; // 客户类型
+  client_url?: string; // 需支持的客户网址
+
+  // Other
+  month: string; // 月份
+  attachments?: any[]; // 支持上传附件
+  tags?: string[];
+  estimated_hours?: number;
+  actual_hours?: number;
+  metadata?: Record<string, any>;
 }
 
 // 创意需求类型（匹配数据库结构）
 export interface CreativeRequirement {
-  id?: string
-  title: string
-  description?: string
-  priority: RequirementPriority
-  status: RequirementStatus
-  created_by?: string // UUID reference to auth.users
-  created_at?: string
-  updated_at?: string
-  due_date?: string
-  budget_range?: string
-  deliverables?: string[]
-  inspiration_links?: string[]
-  metadata?: Record<string, any>
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string; // UUID reference to auth.users
 
-  // 创意部特有字段
-  creative_type?: CreativeType
-  target_audience?: string
-  brand_guidelines?: string
-  submit_time?: string
-  expected_delivery_time?: string
-  actual_delivery_time?: string
-  submitter_name?: string
-  platform?: CreativePlatform
-  urgency?: CreativeUrgency
-  designer?: string
-  site_name?: string
-  url_or_product_page?: string
-  asset_type?: string
-  asset_size?: string
-  layout_style?: string
-  asset_count?: number
-  copy?: string
-  style_requirements?: string
-  original_assets?: string
-  asset_package?: string
-  remark?: string
-  reference_examples?: string
+  // Core fields
+  title: string;
+  description?: string;
+  priority?: RequirementPriority;
+  status: CreativeStatus;
+  urgency: string;
+
+  // Submission fields
+  submitter_name: string;
+  submit_time?: string;
+
+  // Assignment fields
+  designer?: string;
+
+  // Time fields
+  expected_delivery_time?: string;
+  actual_delivery_time?: string;
+  due_date?: string;
+
+  // Creative specific fields
+  platform: CreativePlatform;
+  site_name?: string;
+  url_or_product_page?: string;
+  asset_type?: CreativeType | string; // Allow string for old values
+  asset_size?: string;
+  asset_count?: number;
+  layout_style?: string;
+  copy?: string;
+  style_requirements?: string;
+  original_assets?: string;
+  asset_package?: string;
+  remark?: string;
+  reference_examples?: string;
+  inspiration_links?: string[];
+  
+  // Other
+  budget_range?: string;
+  deliverables?: string[];
+  target_audience?: string;
+  brand_guidelines?: string;
+  metadata?: Record<string, any>;
 }
 
 // 统一需求类型
@@ -178,6 +197,24 @@ export interface ActivityLog {
   user_id?: string
   user_name?: string
   created_at?: string
+}
+
+// 技术需求统计
+export interface TechRequirementStats {
+  total: number;
+  pending: number;
+  inProgress: number;
+  completed: number;
+  delayed: number;
+  byUrgency: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  byClientType: {
+    traffic: number; // Corresponds to 'traffic_operation'
+    fullService: number; // Corresponds to 'full_service'
+  };
 }
 
 // 管理员审计日志类型

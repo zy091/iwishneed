@@ -1,13 +1,12 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Alert } from '@/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { usePermissions } from '@/hooks/use-permissions'
 import {
   createUser,
   listRoles,
@@ -17,14 +16,15 @@ import {
   type Role,
   type UserRow,
 } from '@/services/admin-service'
+import { useAuth } from '@/hooks/useAuth'
 
 export default function AdminUsersPage() {
   console.log('[AdminUsersPage] Component re-rendering...');
-  const { isAdmin } = usePermissions()
+  const { isSuperAdmin } = useAuth() // Use a more specific permission if available
   const navigate = useNavigate()
 
   const [roles, setRoles] = useState<Role[]>([])
-  const [users, setUsers] = useState<Partial<UserRow>[]>([])
+  const [users, setUsers] = useState<UserRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -41,34 +41,32 @@ export default function AdminUsersPage() {
 
   // Effect for roles
   useEffect(() => {
-    if (!isAdmin) {
-      navigate('/')
-      return
+    if (!isSuperAdmin) {
+      // Silently redirect if not super admin, or show an error message
+      // navigate('/');
+      // return;
     }
     listRoles()
-      .then(r => {
-        setRoles(r.roles)
-        if (roleId === undefined && r.roles.length) {
-          setRoleId(r.roles.find(role => role.name === '开发者')?.id ?? r.roles[0]?.id)
+      .then(fetchedRoles => {
+        setRoles(fetchedRoles)
+        // Set a default role for the creation form
+        if (roleId === undefined && fetchedRoles.length) {
+          setRoleId(fetchedRoles.find(role => role.name === '开发者')?.id ?? fetchedRoles[0]?.id)
         }
       })
       .catch(e => {
         console.error('获取角色列表失败:', e)
-        const fallback: Role[] = [
-          { id: 0, name: '超级管理员' }, { id: 1, name: '管理员' }, { id: 2, name: '经理' },
-          { id: 3, name: '开发者' }, { id: 4, name: '提交者' },
-        ]
-        setRoles(fallback)
-        if (roleId === undefined) setRoleId(3)
+        setError('无法加载角色列表。')
       })
-  }, [isAdmin, navigate])
+  }, [isSuperAdmin, navigate, roleId])
 
   // Effect for users
   useEffect(() => {
-    console.log('[AdminUsersPage] User effect triggered. Dependencies:', { isAdmin, page, pageSize, search, roleFilter, searchTrigger });
+    console.log('[AdminUsersPage] User effect triggered. Dependencies:', { isSuperAdmin, page, pageSize, search, roleFilter, searchTrigger });
 
-    if (!isAdmin) {
-      console.log('[AdminUsersPage] Not an admin, skipping user fetch.');
+    if (!isSuperAdmin) {
+      console.log('[AdminUsersPage] Not a super admin, skipping user fetch.');
+      setLoading(false)
       return;
     }
 
@@ -76,10 +74,10 @@ export default function AdminUsersPage() {
       console.log('[AdminUsersPage] Starting user fetch...');
       setLoading(true);
       try {
-        const r = await listUsers({ page, pageSize, search, role_id: roleFilter });
-        console.log('[AdminUsersPage] User fetch successful.', r);
-        setUsers(r.users);
-        setTotal(r.total);
+        const { users: fetchedUsers, total: totalCount } = await listUsers({ page, pageSize, search, role_id: roleFilter });
+        console.log('[AdminUsersPage] User fetch successful.', { fetchedUsers, totalCount });
+        setUsers(fetchedUsers);
+        setTotal(totalCount);
         setError('');
       } catch (e: any) {
         console.error('[AdminUsersPage] User fetch failed:', e);
@@ -91,7 +89,7 @@ export default function AdminUsersPage() {
     };
 
     refreshUsers();
-  }, [isAdmin, page, pageSize, search, roleFilter, searchTrigger]);
+  }, [isSuperAdmin, page, pageSize, search, roleFilter, searchTrigger]);
 
   const handleCreateUser = async () => {
     setError('')
@@ -119,7 +117,16 @@ export default function AdminUsersPage() {
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total, pageSize])
 
-  if (!isAdmin) return null
+  if (!isSuperAdmin) {
+    return (
+        <div className="container mx-auto py-6">
+            <Alert variant="destructive">
+                <AlertTitle>无权访问</AlertTitle>
+                <AlertDescription>您没有权限查看此页面。</AlertDescription>
+            </Alert>
+        </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -176,18 +183,18 @@ export default function AdminUsersPage() {
                 <TableBody>
                   {users.map(u => (
                     <TableRow key={u.id}>
-                      <TableCell>{u.name || '-'}</TableCell>
-                      <TableCell>{u.email || '-'}</TableCell>
+                      <TableCell>{u.name || 'N/A'}</TableCell>
+                      <TableCell>{u.email}</TableCell>
                       <TableCell className="min-w-[160px]">
                         <Select value={u.role_id?.toString()} onValueChange={async (v) => {
                           try {
-                            await setUserRole(u.id, Number(v))
+                            await setUserRole(u.id, Number(v)) // u.id is now profile_id
                             setSearchTrigger(t => t + 1)
                           } catch (e) {
-                            // 后端未上线：忽略错误
+                            setError(`更新角色失败: ${e instanceof Error ? e.message : '未知错误'}`)
                           }
                         }}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger><SelectValue placeholder={u.role_name || '选择角色'} /></SelectTrigger>
                           <SelectContent>
                             {roles.map(r => <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>)}
                           </SelectContent>
@@ -196,7 +203,12 @@ export default function AdminUsersPage() {
                       <TableCell>{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</TableCell>
                       <TableCell className="space-x-2">
                         <Button variant="outline" size="sm" onClick={async () => {
-                          try { await resetPassword(u.id) } catch (e) { console.error(e) }
+                          try {
+                            await resetPassword(u.user_id) // Use user_id for auth operations
+                            alert('重置密码链接已发送')
+                          } catch (e) {
+                            setError(`重置密码失败: ${e instanceof Error ? e.message : '未知错误'}`)
+                          }
                         }}>重置密码</Button>
                       </TableCell>
                     </TableRow>

@@ -7,16 +7,17 @@ export type Role = {
   name: string;
 };
 
-// Represents the data structure for a user row in the UI
+// Represents the data structure for a user row in the UI, matching the RPC response
 export type UserRow = {
-  id: string; // This is the profile id (UUID)
-  user_id: string; // This is the auth.users id (UUID)
-  email: string; // From auth.users
-  name: string | null; // From profiles
-  role_id: number; // From profiles
-  last_sign_in_at: string | null; // From auth.users
-  created_at: string; // From auth.users
-  active: boolean; // This might not be a real field, assuming default
+  id: string; // profile id
+  user_id: string; // auth.users id
+  email: string;
+  name: string | null;
+  role_id: number;
+  role_name: string;
+  last_sign_in_at: string | null;
+  created_at: string;
+  total_count: number; // Total number of users matching the filter
 };
 
 // Represents the structure of the 'profiles' table
@@ -67,55 +68,43 @@ export async function listRoles(): Promise<Role[]> {
 }
 
 /**
- * Fetches a paginated and filterable list of users.
- * This function is complex because it needs to combine data from `auth.users` and `profiles`.
- * Supabase does not allow direct joins with `auth.users`, so we fetch from `profiles`
- * and must accept that some `UserRow` fields (like email) will be missing.
+ * Fetches a paginated and filterable list of users using the `get_users_with_details` RPC.
+ * This provides a complete user object with profile and auth details.
  */
 export async function listUsers(params: {
   page?: number;
   pageSize?: number;
   search?: string;
   role_id?: number;
-}): Promise<{ users: Partial<UserRow>[]; total: number }> {
-  const page = params.page ?? 1;
-  const pageSize = params.pageSize ?? 10;
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+}): Promise<{ users: UserRow[]; total: number }> {
+  const response = await supabase.rpc('get_users_with_details', {
+    page_number: params.page ?? 1,
+    page_size: params.pageSize ?? 10,
+    search_query: params.search || null,
+    role_filter: params.role_id ?? null,
+  });
 
-  let query = supabase.from('profiles').select('id, user_id, name, role_id, created_at', { count: 'exact' });
+  const { data, error } = response;
 
-  if (params.search) {
-    query = query.ilike('name', `%${params.search}%`);
+  if (error) {
+    console.error('Error fetching users via RPC:', error);
+    throw error;
   }
-  if (typeof params.role_id === 'number') {
-    query = query.eq('role_id', params.role_id);
-  }
 
-  const response = await query.range(from, to).order('created_at', { ascending: false });
-  const { data, count } = handleResponse<Profile[]>(response, 'exact');
+  const users = (data as UserRow[]) || [];
+  const total = users.length > 0 ? users[0].total_count : 0;
 
-  // Map the profile data to a partial UserRow, as we can't get all fields.
-  const users: Partial<UserRow>[] = data.map(p => ({
-    id: p.id,
-    user_id: p.user_id,
-    name: p.name,
-    role_id: p.role_id,
-    created_at: p.created_at,
-    // email, last_sign_in_at, and active are not available from 'profiles'
-  }));
-
-  return { users, total: count };
+  return { users, total };
 }
 
 /**
  * Updates a user's role in the profiles table.
  */
-export async function setUserRole(userId: string, roleId: number): Promise<Profile> {
+export async function setUserRole(profileId: string, roleId: number): Promise<Profile> {
   const response = await supabase
     .from('profiles')
     .update({ role_id: roleId })
-    .eq('user_id', userId)
+    .eq('id', profileId) // Use the profile ID (which is the main `id` in UserRow)
     .select()
     .single();
   

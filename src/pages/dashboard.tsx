@@ -1,18 +1,13 @@
+import { BarChart3, CheckCircle, Target, Users as UsersIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { 
-  BarChart3,
-  Users as UsersIcon,
-  Target,
-  CheckCircle
-} from 'lucide-react'
-import { techRequirementService } from '@/services/tech-requirement-service'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
-import type { TechRequirement as ServiceTechRequirement } from '@/services/tech-requirement-service'
+import { techRequirementService } from '@/services/tech-requirement-service'
+import type { CreativeRequirement, TechRequirement } from '@/types/requirement'
 
 
 interface OverviewStats {
@@ -71,10 +66,10 @@ export default function Dashboard() {
       try {
         const techReqs = await techRequirementService.getTechRequirements()
         const totalTech = techReqs.length
-        const completedTech = techReqs.filter(r => r.progress === '已完成').length
-        const inProgressTech = techReqs.filter(r => r.progress === '处理中').length
-        const pendingTech = techReqs.filter(r => r.progress === '未开始').length
-        const overdueTech = techReqs.filter(r => r.progress === '已沟通延期').length
+        const completedTech = techReqs.filter(r => r.progress === 'completed').length
+        const inProgressTech = techReqs.filter(r => r.progress === 'in_progress').length
+        const pendingTech = techReqs.filter(r => r.progress === 'not_started').length
+        const overdueTech = techReqs.filter(r => r.progress === 'delayed').length
         const total = totalTech
         const completed = completedTech
         const inProgress = inProgressTech
@@ -121,7 +116,7 @@ export default function Dashboard() {
         
         // 手动聚合统计数据
         for (const req of techStatsMap) {
-          const assignee = (req as any).tech_assignee || '未分配'
+          const assignee = req.tech_assignee || '未分配'
           if (!techStatsGrouped[assignee]) {
             techStatsGrouped[assignee] = {
               total: 0,
@@ -134,10 +129,10 @@ export default function Dashboard() {
           }
           
           techStatsGrouped[assignee].total++
-          if (req.progress === '未开始') techStatsGrouped[assignee].pending++
-          else if (req.progress === '处理中') techStatsGrouped[assignee].inProgress++
-          else if (req.progress === '已完成') techStatsGrouped[assignee].completed++
-          else if (req.progress === '已沟通延期') techStatsGrouped[assignee].delayed++
+          if (req.progress === 'not_started') techStatsGrouped[assignee].pending++
+          else if (req.progress === 'in_progress') techStatsGrouped[assignee].inProgress++
+          else if (req.progress === 'completed') techStatsGrouped[assignee].completed++
+          else if (req.progress === 'delayed') techStatsGrouped[assignee].delayed++
         }
         const techRows: TechAssigneeAgg[] = techNames.map(name => {
           const s = techStatsGrouped[name] || { total: 0, pending: 0, inProgress: 0, completed: 0, delayed: 0, avgDuration: 0 }
@@ -152,18 +147,18 @@ export default function Dashboard() {
           counters.set(name, { name, total: 0, notStarted: 0, inProgress: 0, completed: 0, noAction: 0 })
         }
         for (const row of creatives || []) {
-          const name = (row as any).designer as string | null
+          const name = row.designer as string | null
           if (!name) continue
           if (!counters.has(name)) {
             counters.set(name, { name, total: 0, notStarted: 0, inProgress: 0, completed: 0, noAction: 0 })
           }
           const item = counters.get(name)!
           item.total += 1
-          const st = (row as any).status
-          if (st === '未开始') item.notStarted += 1
-          else if (st === '处理中') item.inProgress += 1
-          else if (st === '已完成') item.completed += 1
-          else if (st === '不做处理') item.noAction += 1
+          const st = row.status
+          if (st === 'not_started') item.notStarted += 1
+          else if (st === 'in_progress') item.inProgress += 1
+          else if (st === 'completed') item.completed += 1
+          else if (st === 'no_action') item.noAction += 1
         }
         setCreativeAgg(Array.from(counters.values()).sort((a, b) => a.name.localeCompare(b.name)))
       } catch (e) {
@@ -177,12 +172,12 @@ export default function Dashboard() {
     fetchUsersAgg()
   }, [])
 
-  const statusBadge = (r: ServiceTechRequirement) => {
+  const statusBadge = (r: TechRequirement) => {
     switch (r.progress) {
-      case '已完成': return <Badge className="bg-green-500">已完成</Badge>
-      case '处理中': return <Badge className="bg-blue-500">处理中</Badge>
-      case '已沟通延期': return <Badge className="bg-red-500">已沟通延期</Badge>
-      case '未开始': return <Badge className="bg-yellow-500">未开始</Badge>
+      case 'completed': return <Badge className="bg-green-500">已完成</Badge>
+      case 'in_progress': return <Badge className="bg-blue-500">处理中</Badge>
+      case 'delayed': return <Badge className="bg-red-500">已沟通延期</Badge>
+      case 'not_started': return <Badge className="bg-yellow-500">未开始</Badge>
       default: return <Badge>未知</Badge>
     }
   }

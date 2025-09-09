@@ -32,8 +32,8 @@ import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
 import { useAuth } from '@/hooks/useAuth'
 import { logger } from '@/lib/logger'
-import { techRequirementService, type TechRequirementStats } from '@/services/tech-requirement-service'
-import type { TechRequirement } from '@/services/tech-requirement-service'
+import { techRequirementService } from '@/services/tech-requirement-service'
+import type { TechRequirement, TechRequirementStats } from '@/types/requirement'
 
 export default function TechRequirementList() {
   const [requirements, setRequirements] = useState<TechRequirement[]>([])
@@ -126,11 +126,11 @@ export default function TechRequirementList() {
 
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
-      case '高':
+      case 'high':
         return <Badge variant="destructive">高</Badge>
-      case '中':
+      case 'medium':
         return <Badge variant="secondary">中</Badge>
-      case '低':
+      case 'low':
         return <Badge variant="outline">低</Badge>
       default:
         return <Badge variant="outline">{urgency}</Badge>
@@ -139,13 +139,13 @@ export default function TechRequirementList() {
 
   const getProgressBadge = (progress?: string) => {
     switch (progress) {
-      case '已完成':
+      case 'completed':
         return <Badge className="bg-green-500">已完成</Badge>
-      case '处理中':
+      case 'in_progress':
         return <Badge className="bg-blue-500">处理中</Badge>
-      case '未开始':
+      case 'not_started':
         return <Badge className="bg-gray-500">未开始</Badge>
-      case '已沟通延迟':
+      case 'delayed':
         return <Badge className="bg-orange-500">已沟通延迟</Badge>
       default:
         return <Badge variant="outline">{progress || '未开始'}</Badge>
@@ -153,7 +153,14 @@ export default function TechRequirementList() {
   }
 
   const getClientTypeBadge = (clientType: string) => {
-    return <Badge variant="outline">{clientType}</Badge>
+    switch (clientType) {
+      case 'traffic_operation':
+        return <Badge variant="outline">流量运营服务</Badge>
+      case 'full_service':
+        return <Badge variant="outline">全案深度服务</Badge>
+      default:
+        return <Badge variant="outline">{clientType}</Badge>
+    }
   }
 
   const calculateTechDuration = (req: TechRequirement) => {
@@ -270,9 +277,9 @@ export default function TechRequirementList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all-urgency">全部紧急程度</SelectItem>
-                  <SelectItem value="高">高</SelectItem>
-                  <SelectItem value="中">中</SelectItem>
-                  <SelectItem value="低">低</SelectItem>
+                  <SelectItem value="high">高</SelectItem>
+                  <SelectItem value="medium">中</SelectItem>
+                  <SelectItem value="low">低</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -283,10 +290,10 @@ export default function TechRequirementList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all-progress">全部进度</SelectItem>
-                  <SelectItem value="未开始">未开始</SelectItem>
-                  <SelectItem value="处理中">处理中</SelectItem>
-                  <SelectItem value="已完成">已完成</SelectItem>
-                  <SelectItem value="已沟通延迟">已沟通延迟</SelectItem>
+                  <SelectItem value="not_started">未开始</SelectItem>
+                  <SelectItem value="in_progress">处理中</SelectItem>
+                  <SelectItem value="completed">已完成</SelectItem>
+                  <SelectItem value="delayed">已沟通延迟</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -310,8 +317,8 @@ export default function TechRequirementList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all-client-type">全部客户类型</SelectItem>
-                  <SelectItem value="流量运营服务">流量运营服务</SelectItem>
-                  <SelectItem value="全案深度服务">全案深度服务</SelectItem>
+                  <SelectItem value="traffic_operation">流量运营服务</SelectItem>
+                  <SelectItem value="full_service">全案深度服务</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -434,7 +441,7 @@ export default function TechRequirementList() {
                         }
                       </TableCell>
                       <TableCell>
-                        {req.progress === '已完成' ? (
+                        {req.progress === 'completed' ? (
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
                             {calculateTechDuration(req)}h

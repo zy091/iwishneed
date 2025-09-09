@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Search, Plus, Upload, Edit, Trash2, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
+import { Edit, Eye, Plus, Search, Trash2, Upload } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
-import type { CreativeRequirement } from '@/services/creative-requirement-service'
+import type { CreativeRequirement } from '@/types/requirement'
 
 
 export default function CreativeRequirementList() {
@@ -137,7 +137,7 @@ export default function CreativeRequirementList() {
                     <div>平台：{r.platform || '-'}</div>
                     <div>素材：{r.asset_type || '-'}</div>
                     <div>尺寸：{r.asset_size || '-'}</div>
-                    <div>数量：{(r.asset_count ?? '-') as any}</div>
+                    <div>数量：{r.asset_count ?? '-'}</div>
                     <div>期望：{r.expected_delivery_time ? format(new Date(r.expected_delivery_time), 'P', { locale: zhCN }) : '-'}</div>
                     <div className="col-span-2">
                       {r.url_or_product_page ? (
@@ -202,7 +202,7 @@ export default function CreativeRequirementList() {
                     </TableCell>
                     <TableCell>{r.asset_type || '-'}</TableCell>
                     <TableCell>{r.asset_size || '-'}</TableCell>
-                    <TableCell>{(r.asset_count ?? '-') as any}</TableCell>
+                    <TableCell>{r.asset_count ?? '-'}</TableCell>
                     <TableCell>{r.submitter_name || '-'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

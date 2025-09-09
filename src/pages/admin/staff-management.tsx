@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table'
-import { staffService, type Staff, type StaffDepartment } from '@/services/staff-service'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { staffService } from '@/services/staff-service'
+import type { Staff, StaffDepartment } from '@/types/staff'
 
 export default function StaffManagementPage() {
   const [list, setList] = useState<Staff[]>([])
@@ -47,9 +48,9 @@ export default function StaffManagementPage() {
     }
   }
 
-  const changeDept = async (s: Staff, d: StaffDepartment) => {
+  const changeDept = async (s: Staff, d: string) => {
     try {
-      await staffService.updateStaff(s.id!, { department: d })
+      await staffService.updateStaff(s.id!, { department: d as StaffDepartment })
       await load()
     } catch (e) {
       console.error('更新失败', e)

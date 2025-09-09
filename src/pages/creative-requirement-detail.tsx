@@ -1,13 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { creativeRequirementService } from '@/services/creative-requirement-service'
-import type { CreativeRequirement } from '@/services/creative-requirement-service'
-
-import Comments from '@/components/Comments'
 import { Edit, ExternalLink } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import Comments from '@/components/Comments'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { creativeRequirementService } from '@/services/creative-requirement-service'
+import type { CreativeRequirement } from '@/types/requirement'
 
 export default function CreativeRequirementDetail() {
   const { id } = useParams<{ id: string }>()
@@ -80,7 +79,7 @@ export default function CreativeRequirementDetail() {
                 <div>设计师：{data.designer || '-'}</div>
                 <div>素材类型：{data.asset_type || '-'}</div>
                 <div>尺寸：{data.asset_size || '-'}</div>
-                <div>数量：{(data.asset_count ?? '-') as any}</div>
+                <div>数量：{data.asset_count ?? '-'}</div>
                 {data.url_or_product_page && (
                   <div>
                     网址/产品页：

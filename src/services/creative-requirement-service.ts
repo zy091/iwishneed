@@ -1,31 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
-import { RequirementPriority } from '@/types/requirement'
-
-export interface CreativeRequirement {
-  id?: string
-  submit_time?: string
-  expected_delivery_time?: string
-  actual_delivery_time?: string
-  submitter_name: string
-  platform: 'GG' | 'FB' | 'CT' | '网站'
-  status: '未开始' | '处理中' | '已完成' | '不做处理'
-  urgency: RequirementPriority
-  designer?: string
-  site_name?: string
-  url_or_product_page?: string
-  asset_type?: 'Google广告图' | 'Meta广告图' | '网站Banner图' | '网站产品图' | '网站横幅图' | '联盟营销' | 'EDM营销' | 'Criteo广告图'
-  asset_size?: string
-  layout_style?: string
-  asset_count?: number
-  copy?: string
-  style_requirements?: string
-  original_assets?: string
-  asset_package?: string
-  remark?: string
-  reference_examples?: string
-  created_at?: string
-  updated_at?: string
-}
+import { CreativeRequirement } from '@/types/requirement'
 
 class CreativeRequirementService {
   async getCreativeRequirements(): Promise<CreativeRequirement[]> {
@@ -34,7 +8,19 @@ class CreativeRequirementService {
       .select('*')
       .order('submit_time', { ascending: false })
     if (error) throw error
-    return data || []
+    
+    const normalizedData = (data || []).map(req => {
+        const newReq = { ...req };
+        if (newReq.status === '未开始') newReq.status = 'not_started';
+        else if (newReq.status === '处理中') newReq.status = 'in_progress';
+        else if (newReq.status === '已完成') newReq.status = 'completed';
+        else if (newReq.status === '不做处理') newReq.status = 'no_action';
+
+        if (newReq.platform === '网站') newReq.platform = 'website';
+        return newReq;
+    });
+
+    return normalizedData as CreativeRequirement[]
   }
 
   async getCreativeRequirement(id: string): Promise<CreativeRequirement | null> {
@@ -44,10 +30,20 @@ class CreativeRequirementService {
       .eq('id', id)
       .single()
     if (error) {
-      if ((error as any).code === 'PGRST116') return null
+      if (error.code === 'PGRST116') return null
       throw error
     }
-    return data
+    if (!data) return null;
+
+    const newReq = { ...data };
+    if (newReq.status === '未开始') newReq.status = 'not_started';
+    else if (newReq.status === '处理中') newReq.status = 'in_progress';
+    else if (newReq.status === '已完成') newReq.status = 'completed';
+    else if (newReq.status === '不做处理') newReq.status = 'no_action';
+
+    if (newReq.platform === '网站') newReq.platform = 'website';
+
+    return newReq as CreativeRequirement
   }
 
   async createCreativeRequirement(payload: Omit<CreativeRequirement, 'id' | 'created_at' | 'updated_at'>): Promise<CreativeRequirement> {

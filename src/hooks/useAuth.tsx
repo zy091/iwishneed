@@ -29,7 +29,7 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
       .select(`*, role:roles(*)`) // Joins with the roles table
-      .eq('id', userId)
+      .eq('user_id', userId) // Match against the user_id foreign key
       .single();
 
     if (error) {
