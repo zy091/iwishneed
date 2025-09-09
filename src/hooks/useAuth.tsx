@@ -47,66 +47,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 初始化认证状态
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
+    let initialCheckCompleted = false;
 
-    const initAuth = async () => {
-      try {
-        // 获取当前会话
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        if (sessionError) {
-          console.error('获取会话失败:', sessionError)
-          setError(sessionError.message)
-          return
-        }
-
-        if (session?.user && mounted) {
-          setUser(session.user)
-          const userProfile = await fetchProfile(session.user.id)
-          if (userProfile && mounted) {
-            setProfile(userProfile)
-          }
-        }
-      } catch (err) {
-        console.error('初始化认证失败', err)
-        setError(err instanceof Error ? err.message : '认证初始化失败')
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    initAuth()
-
-    // 监听认证状态变化
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return
+        try {
+          if (!mounted) return;
 
-        if (import.meta.env.DEV) {
-          console.log('认证状态变化', event, session?.user?.email)
-        }
-
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user)
-          const userProfile = await fetchProfile(session.user.id)
-          if (userProfile && mounted) {
-            setProfile(userProfile)
+          if (import.meta.env.DEV) {
+            console.log('Auth state change:', event, session?.user?.email);
           }
-          setError(null)
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setProfile(null)
-          setError(null)
+
+          if (session?.user) {
+            const userProfile = await fetchProfile(session.user.id);
+            if (mounted) {
+              setUser(session.user);
+              setProfile(userProfile);
+            }
+          } else {
+            if (mounted) {
+              setUser(null);
+              setProfile(null);
+            }
+          }
+          
+          setError(null);
+
+        } catch (e) {
+          console.error('Error in onAuthStateChange handler:', e);
+          if (mounted) {
+            setError(e instanceof Error ? e.message : 'An error occurred during auth state change');
+          }
+        } finally {
+          if (mounted && !initialCheckCompleted) {
+            setLoading(false);
+            initialCheckCompleted = true;
+          }
         }
       }
-    )
+    );
 
     return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [])
 
   // 登录
