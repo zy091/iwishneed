@@ -21,23 +21,23 @@ function App() {
 
   return (
     <Routes>
-      {/* 主应用路�?- 需要登�?*/}
+      {/* 主应用路由 - 需要登录 */}
       <Route path="/" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
       }>
-        {/* 仪表�?*/}
+        {/* 仪表盘 */}
         <Route index element={<Dashboard />} />
 
-        {/* 技术部需�?*/}
+        {/* 技术部需求 */}
         <Route path="departments/tech" element={<TechRequirementList />} />
         <Route path="tech-requirements/new" element={<TechRequirementForm />} />
         <Route path="tech-requirements/:id" element={<TechRequirementDetail />} />
         <Route path="tech-requirements/:id/edit" element={<TechRequirementForm />} />
         <Route path="tech-requirements/import" element={<TechRequirementImport />} />
 
-        {/* 创意部需�?*/}
+        {/* 创意部需求 */}
         <Route path="departments/creative" element={<CreativeRequirementList />} />
         <Route path="creative-requirements/new" element={<CreativeRequirementForm />} />
         <Route path="creative-requirements/:id" element={<CreativeRequirementDetail />} />
@@ -46,7 +46,7 @@ function App() {
         {/* 通用导入 */}
         <Route path="requirements/import" element={<RequirementImport />} />
         
-        {/* 管理员页�?- 需要管理员权限 */}
+        {/* 管理员页面 - 需要管理员权限 */}
         <Route path="admin/users" element={
           <ProtectedRoute requireAdmin>
             <AdminUsersPage />
@@ -62,7 +62,7 @@ function App() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
 
-        {/* 兼容重定�?*/}
+        {/* 兼容重定向 */}
         <Route path="requirements/*" element={<Navigate to="/departments/tech" replace />} />
         <Route path="departments" element={<Navigate to="/departments/tech" replace />} />
         <Route path="tech/requirements" element={<Navigate to="/departments/tech" replace />} />
