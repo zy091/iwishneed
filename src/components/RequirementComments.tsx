@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 
-import { Trash2, Paperclip, Download, X, Image, FileText } from 'lucide-react';
+import { Trash2, Paperclip, X, Image, FileText } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
 import { commentService, RequirementComment, CommentAttachment } from '@/services/comment-service';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
 import { Textarea } from './ui/textarea';
 import { useToast } from './ui/use-toast';
 
@@ -20,9 +19,9 @@ export default function RequirementComments({ requirementId }: RequirementCommen
   const [comments, setComments] = useState<RequirementComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isAnonymous, setIsAnonymous] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [attachmentUrls, setAttachmentUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchComments = async () => {
@@ -39,6 +38,29 @@ export default function RequirementComments({ requirementId }: RequirementCommen
       );
       
       setComments(commentsWithAttachments);
+      
+      // 预加载所有图片附件的URL
+      const urlPromises: Promise<void>[] = [];
+      commentsWithAttachments.forEach(comment => {
+        comment.attachments?.forEach(attachment => {
+          if (isImageFile(attachment.mime_type)) {
+            urlPromises.push(
+              commentService.getAttachmentUrl(attachment.file_path).then(url => {
+                if (url) {
+                  setAttachmentUrls(prev => ({
+                    ...prev,
+                    [attachment.id]: url
+                  }));
+                }
+              }).catch(() => {
+                // 忽略错误，继续处理其他图片
+              })
+            );
+          }
+        });
+      });
+      
+      await Promise.all(urlPromises);
     } catch (error) {
       toast({ title: '获取评论失败', description: '无法加载评论列表。', variant: 'destructive' });
     } finally {
@@ -57,11 +79,12 @@ export default function RequirementComments({ requirementId }: RequirementCommen
     
     try {
       setUploading(true);
+      // 强制匿名评论
       await commentService.addComment(
         requirementId, 
         user.id, 
         newComment, 
-        isAnonymous,
+        true, // 强制匿名
         selectedFiles.length > 0 ? selectedFiles : undefined
       );
       
@@ -72,7 +95,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
       }
       
       await fetchComments();
-      toast({ title: '评论已发布' });
+      toast({ title: '匿名评论已发布' });
     } catch (error) {
       toast({ title: '评论失败', description: '无法发布评论。', variant: 'destructive' });
     } finally {
@@ -93,31 +116,6 @@ export default function RequirementComments({ requirementId }: RequirementCommen
   const canDelete = (comment: RequirementComment) => {
     if (!user) return false;
     return isAdmin || isSuperAdmin || comment.user_id === user.id;
-  };
-
-  const canSeeRealName = (comment: RequirementComment) => {
-    if (!user) return false;
-    // 管理员或评论作者本人可以看到真实姓名
-    return isAdmin || isSuperAdmin || comment.user_id === user.id;
-  };
-
-  const getCommentAuthor = (comment: RequirementComment) => {
-    if (comment.is_anonymous) {
-      // 如果是匿名评论，只有管理员和作者本人能看到真实姓名
-      if (canSeeRealName(comment)) {
-        return `${comment.profile?.name || '未知用户'} (匿名)`;
-      }
-      return '匿名用户';
-    }
-    return comment.profile?.name || '未知用户';
-  };
-  
-  const getCommentAvatar = (comment: RequirementComment) => {
-    if (comment.is_anonymous && !canSeeRealName(comment)) {
-      return '匿';
-    }
-    const name = comment.profile?.name || 'U';
-    return name.charAt(0).toUpperCase();
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,11 +185,11 @@ export default function RequirementComments({ requirementId }: RequirementCommen
           comments.map(comment => (
             <div key={comment.id} className="flex space-x-3">
               <Avatar>
-                <AvatarFallback>{getCommentAvatar(comment)}</AvatarFallback>
+                <AvatarFallback>匿</AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">{getCommentAuthor(comment)}</p>
+                  <p className="text-sm font-medium">匿名用户</p>
                   <div className="flex items-center space-x-2">
                     <p className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</p>
                     {canDelete(comment) && (
@@ -205,21 +203,41 @@ export default function RequirementComments({ requirementId }: RequirementCommen
                 
                 {/* 附件显示 */}
                 {comment.attachments && comment.attachments.length > 0 && (
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-3 space-y-2">
                     {comment.attachments.map((attachment) => (
-                      <div
-                        key={attachment.id}
-                        className="flex items-center space-x-2 bg-gray-50 p-2 rounded cursor-pointer hover:bg-gray-100"
-                        onClick={() => handleAttachmentDownload(attachment)}
-                      >
+                      <div key={attachment.id}>
                         {isImageFile(attachment.mime_type) ? (
-                          <Image className="h-4 w-4 text-blue-500" />
+                          // 图片直接显示
+                          <div className="space-y-1">
+                            {attachmentUrls[attachment.id] && (
+                              <img
+                                src={attachmentUrls[attachment.id]}
+                                alt={attachment.file_name}
+                                className="max-w-sm max-h-64 rounded-lg border cursor-pointer hover:opacity-90"
+                                onClick={() => handleAttachmentDownload(attachment)}
+                                onError={() => {
+                                  // 如果图片加载失败，移除URL
+                                  setAttachmentUrls(prev => {
+                                    const newUrls = { ...prev };
+                                    delete newUrls[attachment.id];
+                                    return newUrls;
+                                  });
+                                }}
+                              />
+                            )}
+                            <p className="text-xs text-gray-500">{attachment.file_name} ({formatFileSize(attachment.file_size)})</p>
+                          </div>
                         ) : (
-                          <FileText className="h-4 w-4 text-gray-500" />
+                          // 非图片文件显示下载链接
+                          <div
+                            className="flex items-center space-x-2 bg-gray-50 p-2 rounded cursor-pointer hover:bg-gray-100"
+                            onClick={() => handleAttachmentDownload(attachment)}
+                          >
+                            <FileText className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm">{attachment.file_name}</span>
+                            <span className="text-xs text-gray-500">({formatFileSize(attachment.file_size)})</span>
+                          </div>
                         )}
-                        <span className="text-sm">{attachment.file_name}</span>
-                        <span className="text-xs text-gray-500">({formatFileSize(attachment.file_size)})</span>
-                        <Download className="h-3 w-3 text-gray-400" />
                       </div>
                     ))}
                   </div>
@@ -233,7 +251,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
       {user && (
         <div className="space-y-4 pt-4 border-t">
           <Textarea
-            placeholder="添加评论..."
+            placeholder="添加匿名评论..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             rows={3}
@@ -250,7 +268,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
                 disabled={uploading}
               >
                 <Paperclip className="h-4 w-4 mr-1" />
-                添加附件
+                添加图片或文件
               </Button>
               <input
                 ref={fileInputRef}
@@ -290,20 +308,12 @@ export default function RequirementComments({ requirementId }: RequirementCommen
             )}
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="anonymous"
-                checked={isAnonymous}
-                onCheckedChange={(checked) => setIsAnonymous(checked as boolean)}
-              />
-              <label htmlFor="anonymous" className="text-sm">匿名评论</label>
-            </div>
+          <div className="flex items-center justify-end">
             <Button 
               onClick={handleAddComment} 
               disabled={!newComment.trim() || uploading}
             >
-              {uploading ? '发布中...' : '发布评论'}
+              {uploading ? '发布中...' : '发布匿名评论'}
             </Button>
           </div>
         </div>

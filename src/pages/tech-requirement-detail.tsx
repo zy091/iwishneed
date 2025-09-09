@@ -53,11 +53,20 @@ export default function TechRequirementDetail() {
   }
 
   const handleGoBack = () => {
-    // 检查是否有历史记录可以返回
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      // 如果没有历史记录，导航到技术需求列表
+    // 使用更可靠的后退逻辑
+    try {
+      // 尝试后退，如果没有历史记录会自动处理
+      window.history.back();
+      
+      // 设置一个超时，如果后退没有生效（比如这是第一个页面），则导航到列表页
+      setTimeout(() => {
+        // 检查当前URL是否还是详情页，如果是则说明后退没有生效
+        if (window.location.pathname.includes('/tech-requirements/') && window.location.pathname.includes('/')) {
+          navigate('/departments/tech');
+        }
+      }, 100);
+    } catch (error) {
+      // 如果出现错误，直接导航到列表页
       navigate('/departments/tech');
     }
   };

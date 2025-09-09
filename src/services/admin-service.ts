@@ -98,17 +98,20 @@ export async function listUsers(params: {
 }
 
 /**
- * Updates a user's role in the profiles table.
+ * Updates a user's role using the RPC function.
  */
-export async function setUserRole(profileId: string, roleId: number): Promise<Profile> {
-  const response = await supabase
-    .from('profiles')
-    .update({ role_id: roleId })
-    .eq('id', profileId) // Use the profile ID (which is the main `id` in UserRow)
-    .select()
-    .single();
-  
-  return handleResponse<Profile>(response);
+export async function setUserRole(profileId: string, roleId: number): Promise<any> {
+  const { data, error } = await supabase.rpc('update_user_role', {
+    profile_id: profileId,
+    new_role_id: roleId
+  });
+
+  if (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
+
+  return data;
 }
 
 // NOTE: The following functions require Supabase Edge Functions with admin privileges.
@@ -133,8 +136,14 @@ export async function createUser(params: { email: string; password: string; name
 }
 
 export async function resetPassword(userId: string) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(FN_BASE, { method: 'POST', headers, body: JSON.stringify({ action: 'reset_password', user_id: userId }) });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const { data, error } = await supabase.rpc('request_password_reset', {
+    target_user_id: userId
+  });
+
+  if (error) {
+    console.error('Error requesting password reset:', error);
+    throw error;
+  }
+
+  return data;
 }
