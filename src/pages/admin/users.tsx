@@ -1,3 +1,4 @@
+import { Loader2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/ui/alert'
@@ -9,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { usePermissions } from '@/hooks/use-permissions'
 import {
   createUser,
-  listAdmins,
   listRoles,
   listUsers,
   resetPassword,
@@ -18,7 +18,6 @@ import {
   type Role,
   type UserRow,
 } from '@/services/admin-service'
-import { Loader2 } from 'lucide-react'
 
 export default function AdminUsersPage() {
   const { isAdmin } = usePermissions()
@@ -77,24 +76,7 @@ export default function AdminUsersPage() {
         setError('')
       } catch (e: any) {
         console.error('获取用户列表失败:', e)
-        try {
-          const r = await listAdmins()
-          const mapped: UserRow[] = r.admins.map(a => ({
-            id: a.user_id,
-            email: '',
-            role_id: 1,
-            name: 'Admin', // Placeholder name
-            created_at: a.created_at,
-            active: true,
-            last_sign_in_at: undefined,
-          }))
-          setUsers(mapped)
-          setTotal(mapped.length)
-          setError('')
-        } catch (e2: any) {
-          console.error('获取管理员列表也失败:', e2)
-          setError(`加载用户列表失败: ${e.message}。请检查网络连接和Edge Function配置。`)
-        }
+        setError(`加载用户列表失败: ${e.message}。请检查您的网络连接和数据库权限。`)
       } finally {
         setLoading(false)
       }
