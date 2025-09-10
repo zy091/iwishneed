@@ -1,3 +1,5 @@
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
 import { Edit, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -13,6 +15,54 @@ export default function CreativeRequirementDetail() {
   const navigate = useNavigate()
   const [data, setData] = useState<CreativeRequirement | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const statusBadge = (s?: string) => {
+    switch (s) {
+      case '已完成':
+        return <Badge className="bg-green-500 text-white">已完成</Badge>
+      case '处理中':
+        return <Badge className="bg-blue-500 text-white">处理中</Badge>
+      case '未开始':
+        return <Badge className="bg-gray-500 text-white">未开始</Badge>
+      case '不做处理':
+        return <Badge className="bg-orange-500 text-white">不做处理</Badge>
+      default:
+        return <Badge variant="outline">{s || '-'}</Badge>
+    }
+  }
+
+  const urgencyBadge = (u?: string) => {
+    switch (u) {
+      case '高':
+        return <Badge className="bg-red-500 text-white">高</Badge>
+      case '中':
+        return <Badge className="bg-yellow-500 text-white">中</Badge>
+      case '低':
+        return <Badge className="bg-green-500 text-white">低</Badge>
+      default:
+        return <Badge variant="outline">{u || '-'}</Badge>
+    }
+  }
+
+  const assetTypeBadge = (type?: string) => {
+    const colorMap: Record<string, string> = {
+      'Google广告素材': 'bg-blue-600 text-white',
+      'Meta广告素材': 'bg-indigo-600 text-white',
+      '网站Banner素材': 'bg-purple-600 text-white',
+      '网站产品素材': 'bg-pink-600 text-white',
+      '网站横幅素材': 'bg-cyan-600 text-white',
+      '联盟营销': 'bg-teal-600 text-white',
+      'EDM营销': 'bg-emerald-600 text-white',
+      'Criteo广告素材': 'bg-amber-600 text-white'
+    }
+    const className = colorMap[type || ''] || 'bg-gray-500 text-white'
+    return <Badge className={className}>{type || '-'}</Badge>
+  }
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-'
+    return format(new Date(dateStr), 'yyyy年MM月dd日', { locale: zhCN })
+  }
 
   useEffect(() => {
     const run = async () => {
@@ -68,16 +118,16 @@ export default function CreativeRequirementDetail() {
             <CardHeader>
               <CardTitle>需求详情</CardTitle>
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge variant="outline">{data.urgency}·紧急程度</Badge>
+                {urgencyBadge(data.urgency)}
                 <Badge variant="outline">{data.platform}</Badge>
-                <Badge className="bg-blue-500">{data.status}</Badge>
+                {statusBadge(data.status)}
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm text-gray-700">
                 <div>提交人：{data.submitter_name || '-'}</div>
                 <div>设计师：{data.designer || '-'}</div>
-                <div>素材类型：{data.asset_type || '-'}</div>
+                <div className="flex items-center gap-2">素材类型：{assetTypeBadge(data.asset_type)}</div>
                 <div>尺寸：{data.asset_size || '-'}</div>
                 <div>数量：{data.asset_count ?? '-'}</div>
                 {data.url_or_product_page && (
@@ -102,9 +152,9 @@ export default function CreativeRequirementDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm text-gray-700">
-                <div>提交时间：{data.submit_time || '-'}</div>
-                <div>期望交付：{data.expected_delivery_time || '-'}</div>
-                <div>实际交付：{data.actual_delivery_time || '-'}</div>
+                <div>提交时间：{formatDate(data.submit_time)}</div>
+                <div>期望交付：{formatDate(data.expected_delivery_time)}</div>
+                <div>实际交付：{formatDate(data.actual_delivery_time)}</div>
               </div>
             </CardContent>
           </Card>

@@ -103,25 +103,25 @@ export default function CreativeRequirementForm() {
             <div>
               <Label>提交时间</Label>
               <Input
-                type="datetime-local"
-                value={form.submit_time ? new Date(form.submit_time).toISOString().slice(0,16) : ''}
-                onChange={(e) => handleChange('submit_time', new Date(e.target.value).toISOString())}
+                type="date"
+                value={form.submit_time ? new Date(form.submit_time).toISOString().slice(0,10) : ''}
+                onChange={(e) => handleChange('submit_time', e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : undefined)}
               />
             </div>
             <div>
               <Label>期望交付时间</Label>
               <Input
-                type="datetime-local"
-                value={form.expected_delivery_time ? new Date(form.expected_delivery_time).toISOString().slice(0,16) : ''}
-                onChange={(e) => handleChange('expected_delivery_time', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
+                type="date"
+                value={form.expected_delivery_time ? new Date(form.expected_delivery_time).toISOString().slice(0,10) : ''}
+                onChange={(e) => handleChange('expected_delivery_time', e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : undefined)}
               />
             </div>
             <div>
               <Label>实际交付时间</Label>
               <Input
-                type="datetime-local"
-                value={form.actual_delivery_time ? new Date(form.actual_delivery_time).toISOString().slice(0,16) : ''}
-                onChange={(e) => handleChange('actual_delivery_time', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
+                type="date"
+                value={form.actual_delivery_time ? new Date(form.actual_delivery_time).toISOString().slice(0,10) : ''}
+                onChange={(e) => handleChange('actual_delivery_time', e.target.value ? new Date(e.target.value + 'T00:00:00').toISOString() : undefined)}
               />
             </div>
           </div>

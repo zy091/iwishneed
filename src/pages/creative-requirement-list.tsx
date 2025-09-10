@@ -61,16 +61,49 @@ export default function CreativeRequirementList() {
   const statusBadge = (s?: string) => {
     switch (s) {
       case '已完成':
-        return <Badge className="bg-green-500">已完成</Badge>
+        return <Badge className="bg-green-500 text-white">已完成</Badge>
       case '处理中':
-        return <Badge className="bg-blue-500">处理中</Badge>
+        return <Badge className="bg-blue-500 text-white">处理中</Badge>
       case '未开始':
-        return <Badge className="bg-gray-500">未开始</Badge>
+        return <Badge className="bg-gray-500 text-white">未开始</Badge>
       case '不做处理':
-        return <Badge className="bg-orange-500">不做处理</Badge>
+        return <Badge className="bg-orange-500 text-white">不做处理</Badge>
       default:
         return <Badge variant="outline">{s || '-'}</Badge>
     }
+  }
+
+  const urgencyBadge = (u?: string) => {
+    switch (u) {
+      case '高':
+        return <Badge className="bg-red-500 text-white">高</Badge>
+      case '中':
+        return <Badge className="bg-yellow-500 text-white">中</Badge>
+      case '低':
+        return <Badge className="bg-green-500 text-white">低</Badge>
+      default:
+        return <Badge variant="outline">{u || '-'}</Badge>
+    }
+  }
+
+  const assetTypeBadge = (type?: string) => {
+    const colorMap: Record<string, string> = {
+      'Google广告素材': 'bg-blue-600 text-white',
+      'Meta广告素材': 'bg-indigo-600 text-white',
+      '网站Banner素材': 'bg-purple-600 text-white',
+      '网站产品素材': 'bg-pink-600 text-white',
+      '网站横幅素材': 'bg-cyan-600 text-white',
+      '联盟营销': 'bg-teal-600 text-white',
+      'EDM营销': 'bg-emerald-600 text-white',
+      'Criteo广告素材': 'bg-amber-600 text-white'
+    }
+    const className = colorMap[type || ''] || 'bg-gray-500 text-white'
+    return <Badge className={className}>{type || '-'}</Badge>
+  }
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-'
+    return format(new Date(dateStr), 'yyyy年MM月dd日', { locale: zhCN })
   }
 
   return (
@@ -127,7 +160,7 @@ export default function CreativeRequirementList() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {statusBadge(r.status)}
-                      <Badge variant="outline">{r.urgency || '-'}</Badge>
+                      {urgencyBadge(r.urgency)}
                     </div>
                   </div>
                 </CardHeader>
@@ -135,10 +168,10 @@ export default function CreativeRequirementList() {
                   <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
                     <div>设计师：{r.designer || '-'}</div>
                     <div>平台：{r.platform || '-'}</div>
-                    <div>素材：{r.asset_type || '-'}</div>
+                    <div className="col-span-2">素材：{assetTypeBadge(r.asset_type)}</div>
                     <div>尺寸：{r.asset_size || '-'}</div>
                     <div>数量：{r.asset_count ?? '-'}</div>
-                    <div>期望：{r.expected_delivery_time ? format(new Date(r.expected_delivery_time), 'P', { locale: zhCN }) : '-'}</div>
+                    <div>期望：{formatDate(r.expected_delivery_time)}</div>
                     <div className="col-span-2">
                       {r.url_or_product_page ? (
                         <a href={r.url_or_product_page} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">链接</a>
@@ -187,11 +220,11 @@ export default function CreativeRequirementList() {
               <TableBody>
                 {filtered.length ? filtered.map(r => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.submit_time ? format(new Date(r.submit_time), 'PPP', { locale: zhCN }) : '-'}</TableCell>
-                    <TableCell>{r.expected_delivery_time ? format(new Date(r.expected_delivery_time), 'PPP', { locale: zhCN }) : '-'}</TableCell>
-                    <TableCell>{r.actual_delivery_time ? format(new Date(r.actual_delivery_time), 'PPP', { locale: zhCN }) : '-'}</TableCell>
+                    <TableCell>{formatDate(r.submit_time)}</TableCell>
+                    <TableCell>{formatDate(r.expected_delivery_time)}</TableCell>
+                    <TableCell>{formatDate(r.actual_delivery_time)}</TableCell>
                     <TableCell>{statusBadge(r.status)}</TableCell>
-                    <TableCell><Badge variant="outline">{r.urgency || '-'}</Badge></TableCell>
+                    <TableCell>{urgencyBadge(r.urgency)}</TableCell>
                     <TableCell>{r.designer || '-'}</TableCell>
                     <TableCell>{r.platform || '-'}</TableCell>
                     <TableCell>{r.site_name || '-'}</TableCell>
@@ -200,7 +233,7 @@ export default function CreativeRequirementList() {
                         <a href={r.url_or_product_page} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">链接</a>
                       ) : '-'}
                     </TableCell>
-                    <TableCell>{r.asset_type || '-'}</TableCell>
+                    <TableCell>{assetTypeBadge(r.asset_type)}</TableCell>
                     <TableCell>{r.asset_size || '-'}</TableCell>
                     <TableCell>{r.asset_count ?? '-'}</TableCell>
                     <TableCell>{r.submitter_name || '-'}</TableCell>
