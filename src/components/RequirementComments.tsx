@@ -82,7 +82,10 @@ function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: 
           ) : (
             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={onDownload}>
               <Image className="h-5 w-5 text-gray-400" />
-              <span className="text-sm text-gray-600">点击下载图片</span>
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-600">图片加载失败</span>
+                <span className="text-xs text-gray-400">点击下载: {attachment.file_name}</span>
+              </div>
             </div>
           )}
         </div>

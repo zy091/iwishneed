@@ -134,7 +134,7 @@ export default function TechRequirementFormPage() {
         month: data.month,
         expected_completion_time: data.expected_completion_time.toISOString(),
         urgency: toCnUrgency(data.urgency),
-        submitter_name: profile.full_name || '未知用户',
+        submitter_name: profile?.name || '未知用户',
         submitter_id: user.id,
         submitter_avatar: profile.avatar_url,
         client_url: data.client_url || undefined,

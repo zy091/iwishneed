@@ -38,8 +38,8 @@ export default function CreativeRequirementForm() {
       try {
         const ds = await creativeRequirementService.getDesigners()
         setDesigners(ds)
-        if (profile?.full_name && !isEdit) {
-          handleChange('submitter_name', profile.full_name)
+        if (profile?.name && !isEdit) {
+          handleChange('submitter_name', profile.name)
         }
       } catch (e) {
         console.error('获取设计师失败', e)
@@ -131,8 +131,9 @@ export default function CreativeRequirementForm() {
               <Label>提交人</Label>
               <Input
                 value={form.submitter_name || ''}
-                onChange={(e) => handleChange('submitter_name', e.target.value)}
-                placeholder="提交人姓名"
+                readOnly
+                className="bg-gray-50"
+                placeholder="自动填充当前用户"
               />
             </div>
             <div>
