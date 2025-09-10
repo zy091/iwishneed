@@ -161,3 +161,21 @@ export async function resetPassword(userId: string) {
 
   return data;
 }
+
+export async function deleteUser(userId: string) {
+  const { data, error } = await supabase.rpc('delete_user', {
+    target_user_id: userId
+  });
+
+  if (error) {
+    console.error('Error deleting user:', error);
+    throw new Error(error.message);
+  }
+
+  // 检查返回的结果
+  if (data && !data.success) {
+    throw new Error(data.error || '删除用户失败');
+  }
+
+  return data;
+}

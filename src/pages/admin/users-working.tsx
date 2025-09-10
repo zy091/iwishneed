@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { listUsers, listRoles, createUser, setUserRole, resetPassword, type UserRow, type Role } from '@/services/admin-service'
+import { listUsers, listRoles, createUser, setUserRole, resetPassword, deleteUser, type UserRow, type Role } from '@/services/admin-service'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -133,6 +133,28 @@ export default function AdminUsersWorkingPage() {
       toast({
         title: '密码重置失败',
         description: err instanceof Error ? err.message : '重置失败',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // 删除用户
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`确定要删除用户 ${userEmail} 吗？此操作不可撤销。`)) {
+      return
+    }
+
+    try {
+      await deleteUser(userId)
+      toast({
+        title: '删除成功',
+        description: `用户 ${userEmail} 已删除`
+      })
+      await loadData()
+    } catch (err) {
+      toast({
+        title: '删除失败',
+        description: err instanceof Error ? err.message : '删除失败',
         variant: 'destructive'
       })
     }
@@ -324,6 +346,15 @@ export default function AdminUsersWorkingPage() {
                           >
                             <RotateCcw className="h-4 w-4 mr-1" />
                             重置密码
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.user_id, user.email)}
+                            className="text-red-600 hover:text-red-700 hover:border-red-300"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            删除
                           </Button>
                         </div>
                       </td>
