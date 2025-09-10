@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
 import type { CreativeRequirement } from '@/types/requirement'
@@ -17,6 +18,12 @@ export default function CreativeRequirementList() {
   const [filtered, setFiltered] = useState<CreativeRequirement[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [urgencyFilter, setUrgencyFilter] = useState('')
+  const [designerFilter, setDesignerFilter] = useState('')
+  const [assetTypeFilter, setAssetTypeFilter] = useState('')
+  const [platformFilter, setPlatformFilter] = useState('')
+  const [designers, setDesigners] = useState<string[]>([])
   const [stats, setStats] = useState({
     total: 0,
     notStarted: 0,
@@ -31,13 +38,15 @@ export default function CreativeRequirementList() {
   useEffect(() => {
     const run = async () => {
       try {
-        const [data, statsData] = await Promise.all([
+        const [data, statsData, designersData] = await Promise.all([
           creativeRequirementService.getCreativeRequirements(),
-          creativeRequirementService.getCreativeRequirementStats()
+          creativeRequirementService.getCreativeRequirementStats(),
+          creativeRequirementService.getDesigners()
         ])
         setList(data)
         setFiltered(data)
         setStats(statsData)
+        setDesigners(designersData)
       } catch (e) {
         console.error('获取创意部需求失败', e)
       } finally {
@@ -49,17 +58,46 @@ export default function CreativeRequirementList() {
 
   useEffect(() => {
     let res = list
+
+    // 搜索过滤
     if (search) {
       const q = search.toLowerCase()
       res = res.filter(r =>
         (r.submitter_name || '').toLowerCase().includes(q) ||
         (r.designer || '').toLowerCase().includes(q) ||
         (r.site_name || '').toLowerCase().includes(q) ||
-        (r.asset_type || '').toLowerCase().includes(q)
+        (r.asset_type || '').toLowerCase().includes(q) ||
+        (r.copy || '').toLowerCase().includes(q)
       )
     }
+
+    // 状态过滤
+    if (statusFilter && statusFilter !== 'all-status') {
+      res = res.filter(r => r.status === statusFilter)
+    }
+
+    // 紧急程度过滤
+    if (urgencyFilter && urgencyFilter !== 'all-urgency') {
+      res = res.filter(r => r.urgency === urgencyFilter)
+    }
+
+    // 设计师过滤
+    if (designerFilter && designerFilter !== 'all-designer') {
+      res = res.filter(r => r.designer === designerFilter)
+    }
+
+    // 素材类型过滤
+    if (assetTypeFilter && assetTypeFilter !== 'all-asset-type') {
+      res = res.filter(r => r.asset_type === assetTypeFilter)
+    }
+
+    // 平台过滤
+    if (platformFilter && platformFilter !== 'all-platform') {
+      res = res.filter(r => r.platform === platformFilter)
+    }
+
     setFiltered(res)
-  }, [search, list])
+  }, [search, statusFilter, urgencyFilter, designerFilter, assetTypeFilter, platformFilter, list])
 
   const handleDelete = async (id?: string) => {
     if (!id) return
@@ -180,18 +218,97 @@ export default function CreativeRequirementList() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>筛选条件</CardTitle>
-          <CardDescription>搜索提交人、设计师、网站名称或素材类型</CardDescription>
+          <CardDescription>使用以下选项筛选创意需求列表</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-            <Input
-              type="search"
-              placeholder="搜索..."
-              className="pl-8"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                type="search"
+                placeholder="搜索..."
+                className="pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            
+            <div className="w-full">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="需求状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-status">全部状态</SelectItem>
+                  <SelectItem value="未开始">未开始</SelectItem>
+                  <SelectItem value="处理中">处理中</SelectItem>
+                  <SelectItem value="已完成">已完成</SelectItem>
+                  <SelectItem value="不做处理">不做处理</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full">
+              <Select value={urgencyFilter} onValueChange={setUrgencyFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="紧急程度" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-urgency">全部程度</SelectItem>
+                  <SelectItem value="高">高</SelectItem>
+                  <SelectItem value="中">中</SelectItem>
+                  <SelectItem value="低">低</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full">
+              <Select value={designerFilter} onValueChange={setDesignerFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="设计师" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-designer">全部设计师</SelectItem>
+                  {designers.map(designer => (
+                    <SelectItem key={designer} value={designer}>{designer}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full">
+              <Select value={assetTypeFilter} onValueChange={setAssetTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="素材类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-asset-type">全部类型</SelectItem>
+                  <SelectItem value="Google广告素材">Google广告素材</SelectItem>
+                  <SelectItem value="Meta广告素材">Meta广告素材</SelectItem>
+                  <SelectItem value="网站Banner素材">网站Banner素材</SelectItem>
+                  <SelectItem value="网站产品素材">网站产品素材</SelectItem>
+                  <SelectItem value="网站横幅素材">网站横幅素材</SelectItem>
+                  <SelectItem value="联盟营销">联盟营销</SelectItem>
+                  <SelectItem value="EDM营销">EDM营销</SelectItem>
+                  <SelectItem value="Criteo广告素材">Criteo广告素材</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full">
+              <Select value={platformFilter} onValueChange={setPlatformFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="平台" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-platform">全部平台</SelectItem>
+                  <SelectItem value="GG">GG</SelectItem>
+                  <SelectItem value="FB">FB</SelectItem>
+                  <SelectItem value="CT">CT</SelectItem>
+                  <SelectItem value="网站">网站</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

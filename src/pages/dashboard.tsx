@@ -60,21 +60,35 @@ export default function Dashboard() {
   const [techAgg, setTechAgg] = useState<TechAssigneeAgg[]>([])
   const [creativeAgg, setCreativeAgg] = useState<CreativeDesignerAgg[]>([])
 
-  // 概览数据（当前仅接入技术部真实数据）
+  // 概览数据（集成技术部和创意部数据）
   useEffect(() => {
     const fetchOverview = async () => {
       try {
-        const techReqs = await techRequirementService.getTechRequirements()
+        const [techReqs, creativeReqs] = await Promise.all([
+          techRequirementService.getTechRequirements(),
+          creativeRequirementService.getCreativeRequirements()
+        ])
+
+        // 技术部统计
         const totalTech = techReqs.length
         const completedTech = techReqs.filter(r => r.progress === 'completed').length
         const inProgressTech = techReqs.filter(r => r.progress === 'in_progress').length
         const pendingTech = techReqs.filter(r => r.progress === 'not_started').length
         const overdueTech = techReqs.filter(r => r.progress === 'delayed').length
-        const total = totalTech
-        const completed = completedTech
-        const inProgress = inProgressTech
-        const pending = pendingTech
-        const overdue = overdueTech
+
+        // 创意部统计
+        const totalCreative = creativeReqs.length
+        const completedCreative = creativeReqs.filter(r => r.status === '已完成').length
+        const inProgressCreative = creativeReqs.filter(r => r.status === '处理中').length
+        const pendingCreative = creativeReqs.filter(r => r.status === '未开始').length
+        const noActionCreative = creativeReqs.filter(r => r.status === '不做处理').length
+
+        // 合并统计
+        const total = totalTech + totalCreative
+        const completed = completedTech + completedCreative
+        const inProgress = inProgressTech + inProgressCreative
+        const pending = pendingTech + pendingCreative
+        const overdue = overdueTech + noActionCreative // 将"不做处理"归类为特殊状态
         const completionRate = total > 0 ? (completed / total) * 100 : 0
 
         setStats({
@@ -84,7 +98,7 @@ export default function Dashboard() {
           pending,
           overdue,
           techDept: totalTech,
-          creativeDept: 0,
+          creativeDept: totalCreative,
           completionRate
         })
 
@@ -155,10 +169,10 @@ export default function Dashboard() {
           const item = counters.get(name)!
           item.total += 1
           const st = row.status
-          if (st === 'not_started') item.notStarted += 1
-          else if (st === 'in_progress') item.inProgress += 1
-          else if (st === 'completed') item.completed += 1
-          else if (st === 'no_action') item.noAction += 1
+          if (st === '未开始') item.notStarted += 1
+          else if (st === '处理中') item.inProgress += 1
+          else if (st === '已完成') item.completed += 1
+          else if (st === '不做处理') item.noAction += 1
         }
         setCreativeAgg(Array.from(counters.values()).sort((a, b) => a.name.localeCompare(b.name)))
       } catch (e) {
@@ -199,13 +213,14 @@ export default function Dashboard() {
 
       {/* 概览 */}
       <TabsContent value="overview" className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">总需求数</p>
                   <p className="text-3xl font-bold">{stats.total}</p>
+                  <p className="text-xs text-gray-500 mt-1">全公司</p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-blue-500" />
               </div>
@@ -218,6 +233,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-gray-600">完成率</p>
                   <p className="text-3xl font-bold">{stats.completionRate.toFixed(1)}%</p>
+                  <p className="text-xs text-gray-500 mt-1">整体进度</p>
                 </div>
                 <Target className="h-8 w-8 text-green-500" />
               </div>
@@ -230,8 +246,22 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-gray-600">技术部需求</p>
                   <p className="text-3xl font-bold">{stats.techDept}</p>
+                  <p className="text-xs text-gray-500 mt-1">开发类需求</p>
                 </div>
                 <UsersIcon className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">创意部需求</p>
+                  <p className="text-3xl font-bold">{stats.creativeDept}</p>
+                  <p className="text-xs text-gray-500 mt-1">设计类需求</p>
+                </div>
+                <UsersIcon className="h-8 w-8 text-pink-500" />
               </div>
             </CardContent>
           </Card>
@@ -241,13 +271,13 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle>需求状态分布</CardTitle>
-              <CardDescription>技术部各状态统计</CardDescription>
+              <CardDescription>全公司各状态统计（技术部+创意部）</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
                     <span>未开始</span>
                   </div>
                   <span className="font-medium">{stats.pending}</span>
@@ -268,8 +298,8 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span>已沟通延期</span>
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <span>延期/不处理</span>
                   </div>
                   <span className="font-medium">{stats.overdue}</span>
                 </div>
@@ -301,14 +331,32 @@ export default function Dashboard() {
             <CardDescription>各部门需求数量对比</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-purple-500" />
-                <span>技术部</span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5 text-purple-500" />
+                  <span>技术部</span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <Progress value={stats.total > 0 ? (stats.techDept / stats.total) * 100 : 0} className="w-32" />
+                  <span className="font-medium w-12 text-right">{stats.techDept}</span>
+                  <span className="text-sm text-gray-500 w-12 text-right">
+                    {stats.total > 0 ? Math.round((stats.techDept / stats.total) * 100) : 0}%
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <Progress value={stats.total > 0 ? (stats.techDept / stats.total) * 100 : 0} className="w-24" />
-                <span className="font-medium w-8">{stats.techDept}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="h-5 w-5 text-pink-500" />
+                  <span>创意部</span>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <Progress value={stats.total > 0 ? (stats.creativeDept / stats.total) * 100 : 0} className="w-32" />
+                  <span className="font-medium w-12 text-right">{stats.creativeDept}</span>
+                  <span className="text-sm text-gray-500 w-12 text-right">
+                    {stats.total > 0 ? Math.round((stats.creativeDept / stats.total) * 100) : 0}%
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
