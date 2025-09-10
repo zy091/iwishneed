@@ -1,5 +1,5 @@
-import type { Profile } from '@/types/auth';
 import { supabase } from '@/lib/supabaseClient';
+import type { Profile } from '@/types/auth';
 
 export interface CommentAttachment {
   id: string;
