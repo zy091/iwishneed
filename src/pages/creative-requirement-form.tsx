@@ -255,14 +255,6 @@ export default function CreativeRequirementForm() {
               {saving ? '保存中...' : (isEdit ? '更新需求' : '提交需求')}
             </Button>
           </div>
-
-          <div className="flex justify-end gap-4 mt-6">
-            <Button type="button" variant="secondary" onClick={() => navigate('/departments/creative')}>
-              取消
-            </Button>
-            <Button onClick={handleSubmit} disabled={saving}>
-              {saving ? '保存中...' : (isEdit ? '更新需求' : '提交需求')}
-            </Button>
           </div>
         </CardContent>
       </Card>
