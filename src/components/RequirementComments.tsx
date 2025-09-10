@@ -23,98 +23,117 @@ function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  };
 
   return (
     <>
       <div className="space-y-1">
-        {attachmentUrl ? (
-          <div className="relative group">
-            <img
-              src={attachmentUrl}
-              alt={attachment.file_name}
-              className="max-w-sm max-h-64 rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => setIsModalOpen(true)}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {
-                onUrlError();
-                setImageLoaded(false);
-              }}
-            />
-            {imageLoaded && (
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-8 w-8 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="h-8 w-8 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDownload();
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="max-w-sm h-32 bg-gray-100 rounded-lg border flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-               onClick={onDownload}>
-            <div className="text-center">
-              <Image className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-500">点击下载图片</p>
+        <div className="relative group inline-block">
+          {attachmentUrl ? (
+            <div className="relative">
+              <button
+                type="button"
+                className="border-0 bg-transparent p-0 cursor-pointer"
+                onClick={() => setIsModalOpen(true)}
+              >
+                <img
+                  src={attachmentUrl}
+                  alt={attachment.file_name}
+                  className="max-w-sm max-h-64 rounded-lg hover:opacity-90 transition-opacity"
+                  onLoad={() => setImageLoaded(true)}
+                  onError={onUrlError}
+                />
+              </button>
+              {imageLoaded && (
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="bg-white/90 hover:bg-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="bg-white/90 hover:bg-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload();
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-        <p className="text-xs text-gray-500">{attachment.file_name} ({formatFileSize(attachment.file_size)})</p>
+          ) : (
+            <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={onDownload}>
+              <Image className="h-5 w-5 text-gray-400" />
+              <span className="text-sm text-gray-600">点击下载图片</span>
+            </div>
+          )}
+        </div>
+        <div className="text-xs text-gray-500">
+          {attachment.file_name} ({formatFileSize(attachment.file_size)})
+        </div>
       </div>
 
-      {/* 图片查看模态框 */}
+      {/* 全屏模态框 */}
       {isModalOpen && attachmentUrl && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" 
+          role="button"
+          tabIndex={0}
           onClick={() => setIsModalOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsModalOpen(false);
+            }
+          }}
         >
-          <div className="relative max-w-full max-h-full">
-            <img
-              src={attachmentUrl}
-              alt={attachment.file_name}
-              className="max-w-full max-h-full object-contain rounded-lg"
+          <div className="relative max-w-4xl max-h-4xl p-4">
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute top-2 right-2 z-10"
+              onClick={() => setIsModalOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <button
+              type="button"
+              className="border-0 bg-transparent p-0"
               onClick={(e) => e.stopPropagation()}
-            />
-            <div className="absolute top-4 right-4 flex gap-2">
+            >
+              <img
+                src={attachmentUrl}
+                alt={attachment.file_name}
+                className="max-w-full max-h-full object-contain"
+              />
+            </button>
+            <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded flex justify-between items-center">
+              <span className="text-sm">{attachment.file_name}</span>
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDownload();
-                }}
+                onClick={onDownload}
               >
                 <Download className="h-4 w-4 mr-1" />
                 下载
               </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setIsModalOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
-              {attachment.file_name}
             </div>
           </div>
         </div>
@@ -231,20 +250,17 @@ export default function RequirementComments({ requirementId }: RequirementCommen
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     const maxSize = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = ['image/', 'application/pdf', 'text/', 'application/msword', 'application/vnd.openxmlformats-officedocument'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'text/plain'];
     
     const validFiles = files.filter(file => {
       if (file.size > maxSize) {
         toast({ title: '文件过大', description: `${file.name} 超过10MB限制`, variant: 'destructive' });
         return false;
       }
-      
-      const isValidType = allowedTypes.some(type => file.type.startsWith(type));
-      if (!isValidType) {
+      if (!allowedTypes.includes(file.type)) {
         toast({ title: '文件类型不支持', description: `${file.name} 类型不支持`, variant: 'destructive' });
         return false;
       }
-      
       return true;
     });
     
@@ -331,14 +347,14 @@ export default function RequirementComments({ requirementId }: RequirementCommen
                             onDownload={() => handleAttachmentDownload(attachment)}
                           />
                         ) : (
-                          // 非图片文件显示下载链接
-                          <div
-                            className="flex items-center space-x-2 bg-gray-50 p-2 rounded cursor-pointer hover:bg-gray-100"
-                            onClick={() => handleAttachmentDownload(attachment)}
-                          >
-                            <FileText className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm">{attachment.file_name}</span>
-                            <span className="text-xs text-gray-500">({formatFileSize(attachment.file_size)})</span>
+                          // 非图片文件显示
+                          <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100" onClick={() => handleAttachmentDownload(attachment)}>
+                            <FileText className="h-5 w-5 text-gray-400" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{attachment.file_name}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(attachment.file_size)}</p>
+                            </div>
+                            <Download className="h-4 w-4 text-gray-400" />
                           </div>
                         )}
                       </div>
@@ -351,59 +367,61 @@ export default function RequirementComments({ requirementId }: RequirementCommen
         )}
       </div>
 
+      {/* 添加评论 */}
       {user && (
-        <div className="space-y-4 pt-4 border-t">
+        <div className="space-y-4">
           <Textarea
             placeholder="添加匿名评论..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            rows={3}
+            className="min-h-[100px]"
           />
           
-          {/* 文件选择区域 */}
+          {/* 文件选择 */}
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
               >
-                <Paperclip className="h-4 w-4 mr-1" />
-                添加图片或文件
+                <Paperclip className="h-4 w-4 mr-2" />
+                添加附件
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={handleFileSelect}
-                accept="image/*,.pdf,.doc,.docx,.txt"
-              />
+              <span className="text-xs text-gray-500">支持图片、PDF、文本文件，最大10MB</span>
             </div>
             
-            {/* 已选择的文件列表 */}
+            {/* 已选择的文件 */}
             {selectedFiles.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {selectedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <div className="flex items-center space-x-2">
-                      {isImageFile(file.type) ? (
-                        <Image className="h-4 w-4 text-blue-500" />
+                      {file.type.startsWith('image/') ? (
+                        <Image className="h-4 w-4 text-gray-400" />
                       ) : (
-                        <FileText className="h-4 w-4 text-gray-500" />
+                        <FileText className="h-4 w-4 text-gray-400" />
                       )}
-                      <span>{file.name}</span>
-                      <span className="text-gray-500">({formatFileSize(file.size)})</span>
+                      <span className="text-sm">{file.name}</span>
+                      <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
                     </div>
                     <Button
                       type="button"
                       variant="ghost"
-                      size="sm"
+                      size="icon"
+                      className="h-6 w-6"
                       onClick={() => removeFile(index)}
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}
@@ -411,11 +429,8 @@ export default function RequirementComments({ requirementId }: RequirementCommen
             )}
           </div>
           
-          <div className="flex items-center justify-end">
-            <Button 
-              onClick={handleAddComment} 
-              disabled={!newComment.trim() || uploading}
-            >
+          <div className="flex justify-end">
+            <Button onClick={handleAddComment} disabled={!newComment.trim() || uploading}>
               {uploading ? '发布中...' : '发布匿名评论'}
             </Button>
           </div>
