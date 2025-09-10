@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
+import { Toaster } from './components/ui/toaster'
 import Layout from './layout'
 import Dashboard from './pages/dashboard'
 import TechRequirementList from './pages/tech-requirement-list'
@@ -20,7 +21,8 @@ function App() {
   const { user } = useAuth()
 
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* 主应用路由 - 需要登录 */}
       <Route path="/" element={
         <ProtectedRoute>
@@ -75,6 +77,8 @@ function App() {
       {/* 未匹配路径：根据是否登录跳转 */}
       <Route path="*" element={<Navigate to={user ? "/" : "/"} replace />} />
     </Routes>
+    <Toaster />
+    </>
   )
 }
 

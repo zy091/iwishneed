@@ -1,4 +1,4 @@
-import { Profile } from '@/hooks/useAuth';
+import type { Profile } from '@/types/auth';
 import { supabase } from '@/lib/supabaseClient';
 
 export interface CommentAttachment {
@@ -79,7 +79,7 @@ class CommentService {
 
         // 上传文件到 Supabase Storage
         const { error: uploadError } = await supabase.storage
-          .from('attachments')
+          .from('comments-attachments')
           .upload(filePath, file);
 
         if (uploadError) {
@@ -132,7 +132,7 @@ class CommentService {
   async getAttachmentUrl(filePath: string): Promise<string | null> {
     try {
       const { data } = await supabase.storage
-        .from('attachments')
+        .from('comments-attachments')
         .createSignedUrl(filePath, 3600); // 1小时有效期
 
       return data?.signedUrl || null;
@@ -157,7 +157,7 @@ class CommentService {
 
     // 删除存储中的文件
     const { error: storageError } = await supabase.storage
-      .from('attachments')
+      .from('comments-attachments')
       .remove([attachment.file_path]);
 
     if (storageError) {
