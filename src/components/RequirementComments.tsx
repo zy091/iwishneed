@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-
-import { Trash2, Paperclip, X, Image, FileText } from 'lucide-react';
-
+import { Trash2, Paperclip, X, Image, FileText, ZoomIn, Download } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { commentService, RequirementComment, CommentAttachment } from '@/services/comment-service';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -11,6 +9,118 @@ import { useToast } from './ui/use-toast';
 
 interface RequirementCommentsProps {
   requirementId: string;
+}
+
+interface ImageAttachmentProps {
+  attachment: CommentAttachment;
+  attachmentUrl?: string;
+  onUrlError: () => void;
+  onDownload: () => void;
+}
+
+// 图片附件组件
+function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: ImageAttachmentProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+
+
+  return (
+    <>
+      <div className="space-y-1">
+        {attachmentUrl ? (
+          <div className="relative group">
+            <img
+              src={attachmentUrl}
+              alt={attachment.file_name}
+              className="max-w-sm max-h-64 rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => setIsModalOpen(true)}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {
+                onUrlError();
+                setImageLoaded(false);
+              }}
+            />
+            {imageLoaded && (
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload();
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="max-w-sm h-32 bg-gray-100 rounded-lg border flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+               onClick={onDownload}>
+            <div className="text-center">
+              <Image className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500">点击下载图片</p>
+            </div>
+          </div>
+        )}
+        <p className="text-xs text-gray-500">{attachment.file_name} ({formatFileSize(attachment.file_size)})</p>
+      </div>
+
+      {/* 图片查看模态框 */}
+      {isModalOpen && attachmentUrl && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div className="relative max-w-full max-h-full">
+            <img
+              src={attachmentUrl}
+              alt={attachment.file_name}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute top-4 right-4 flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDownload();
+                }}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                下载
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setIsModalOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">
+              {attachment.file_name}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function RequirementComments({ requirementId }: RequirementCommentsProps) {
@@ -207,26 +317,19 @@ export default function RequirementComments({ requirementId }: RequirementCommen
                     {comment.attachments.map((attachment) => (
                       <div key={attachment.id}>
                         {isImageFile(attachment.mime_type) ? (
-                          // 图片直接显示
-                          <div className="space-y-1">
-                            {attachmentUrls[attachment.id] && (
-                              <img
-                                src={attachmentUrls[attachment.id]}
-                                alt={attachment.file_name}
-                                className="max-w-sm max-h-64 rounded-lg border cursor-pointer hover:opacity-90"
-                                onClick={() => handleAttachmentDownload(attachment)}
-                                onError={() => {
-                                  // 如果图片加载失败，移除URL
-                                  setAttachmentUrls(prev => {
-                                    const newUrls = { ...prev };
-                                    delete newUrls[attachment.id];
-                                    return newUrls;
-                                  });
-                                }}
-                              />
-                            )}
-                            <p className="text-xs text-gray-500">{attachment.file_name} ({formatFileSize(attachment.file_size)})</p>
-                          </div>
+                          // 图片显示
+                          <ImageAttachment 
+                            attachment={attachment}
+                            attachmentUrl={attachmentUrls[attachment.id]}
+                            onUrlError={() => {
+                              setAttachmentUrls(prev => {
+                                const newUrls = { ...prev };
+                                delete newUrls[attachment.id];
+                                return newUrls;
+                              });
+                            }}
+                            onDownload={() => handleAttachmentDownload(attachment)}
+                          />
                         ) : (
                           // 非图片文件显示下载链接
                           <div

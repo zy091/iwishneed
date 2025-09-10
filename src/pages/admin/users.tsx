@@ -19,8 +19,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 
 export default function AdminUsersPage() {
-  console.log('[AdminUsersPage] Component re-rendering...');
-  const { isSuperAdmin } = useAuth() // Use a more specific permission if available
+  const { user, profile, isSuperAdmin, isAdmin } = useAuth()
   const navigate = useNavigate()
 
   const [roles, setRoles] = useState<Role[]>([])
@@ -41,15 +40,9 @@ export default function AdminUsersPage() {
 
   // Effect for roles
   useEffect(() => {
-    if (!isSuperAdmin) {
-      // Silently redirect if not super admin, or show an error message
-      // navigate('/');
-      // return;
-    }
     listRoles()
       .then(fetchedRoles => {
         setRoles(fetchedRoles)
-        // Set a default role for the creation form
         if (roleId === undefined && fetchedRoles.length) {
           setRoleId(fetchedRoles.find(role => role.name === '开发者')?.id ?? fetchedRoles[0]?.id)
         }
@@ -58,24 +51,14 @@ export default function AdminUsersPage() {
         console.error('获取角色列表失败:', e)
         setError('无法加载角色列表。')
       })
-  }, [isSuperAdmin, navigate, roleId])
+  }, [roleId])
 
   // Effect for users
   useEffect(() => {
-    console.log('[AdminUsersPage] User effect triggered. Dependencies:', { isSuperAdmin, page, pageSize, search, roleFilter, searchTrigger });
-
-    if (!isSuperAdmin) {
-      console.log('[AdminUsersPage] Not a super admin, skipping user fetch.');
-      setLoading(false)
-      return;
-    }
-
     const refreshUsers = async () => {
-      console.log('[AdminUsersPage] Starting user fetch...');
       setLoading(true);
       try {
         const { users: fetchedUsers, total: totalCount } = await listUsers({ page, pageSize, search, role_id: roleFilter });
-        console.log('[AdminUsersPage] User fetch successful.', { fetchedUsers, totalCount });
         setUsers(fetchedUsers);
         setTotal(totalCount);
         setError('');
@@ -83,13 +66,12 @@ export default function AdminUsersPage() {
         console.error('[AdminUsersPage] User fetch failed:', e);
         setError(`加载用户列表失败: ${e.message}。请检查您的网络连接和数据库权限。`);
       } finally {
-        console.log('[AdminUsersPage] Finished user fetch, setting loading to false.');
         setLoading(false);
       }
     };
 
     refreshUsers();
-  }, [isSuperAdmin, page, pageSize, search, roleFilter, searchTrigger]);
+  }, [page, pageSize, search, roleFilter, searchTrigger]);
 
   const handleCreateUser = async () => {
     setError('')
@@ -119,12 +101,12 @@ export default function AdminUsersPage() {
 
   if (!isSuperAdmin) {
     return (
-        <div className="container mx-auto py-6">
-            <Alert variant="destructive">
-                <AlertTitle>无权访问</AlertTitle>
-                <AlertDescription>您没有权限查看此页面。</AlertDescription>
-            </Alert>
-        </div>
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertTitle>无权访问</AlertTitle>
+          <AlertDescription>您需要超级管理员权限才能访问此页面。</AlertDescription>
+        </Alert>
+      </div>
     )
   }
 

@@ -11,7 +11,7 @@ import CreativeRequirementList from './pages/creative-requirement-list'
 import CreativeRequirementForm from './pages/creative-requirement-form'
 import CreativeRequirementDetail from './pages/creative-requirement-detail'
 import RequirementImport from './pages/requirement-import'
-import AdminUsersPage from './pages/admin/users'
+import AdminUsersWorkingPage from './pages/admin/users-working'
 import StaffManagementPage from './pages/admin/staff-management'
 import ProfilePage from './pages/profile'
 import SettingsPage from './pages/settings'
@@ -49,7 +49,7 @@ function App() {
         {/* 管理员页面 - 需要管理员权限 */}
         <Route path="admin/users" element={
           <ProtectedRoute requireAdmin>
-            <AdminUsersPage />
+            <AdminUsersWorkingPage />
           </ProtectedRoute>
         } />
         <Route path="admin/staff" element={

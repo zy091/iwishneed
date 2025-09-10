@@ -129,10 +129,24 @@ async function getAuthHeaders() {
 }
 
 export async function createUser(params: { email: string; password: string; name?: string; role_id?: number }) {
-  const headers = await getAuthHeaders();
-  const res = await fetch(FN_BASE, { method: 'POST', headers, body: JSON.stringify({ action: 'create_user', ...params }) });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  const { data, error } = await supabase.rpc('create_new_user', {
+    user_email: params.email,
+    user_password: params.password,
+    user_name: params.name || null,
+    user_role_id: params.role_id || 3
+  });
+
+  if (error) {
+    console.error('Error creating user:', error);
+    throw new Error(error.message);
+  }
+
+  // 检查返回的结果
+  if (data && !data.success) {
+    throw new Error(data.error || '创建用户失败');
+  }
+
+  return data;
 }
 
 export async function resetPassword(userId: string) {
