@@ -17,14 +17,27 @@ export default function CreativeRequirementList() {
   const [filtered, setFiltered] = useState<CreativeRequirement[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [stats, setStats] = useState({
+    total: 0,
+    notStarted: 0,
+    inProgress: 0,
+    completed: 0,
+    noAction: 0,
+    byUrgency: { high: 0, medium: 0, low: 0 },
+    byAssetType: {} as Record<string, number>
+  })
   const navigate = useNavigate()
 
   useEffect(() => {
     const run = async () => {
       try {
-        const data = await creativeRequirementService.getCreativeRequirements()
+        const [data, statsData] = await Promise.all([
+          creativeRequirementService.getCreativeRequirements(),
+          creativeRequirementService.getCreativeRequirementStats()
+        ])
         setList(data)
         setFiltered(data)
+        setStats(statsData)
       } catch (e) {
         console.error('获取创意部需求失败', e)
       } finally {
@@ -118,6 +131,50 @@ export default function CreativeRequirementList() {
             <Plus className="mr-2 h-4 w-4" /> 新建创意需求
           </Button>
         </div>
+      </div>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600">总计</p>
+              <p className="text-2xl font-bold">{stats.total}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600">未开始</p>
+              <p className="text-2xl font-bold text-gray-600">{stats.notStarted}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600">处理中</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600">已完成</p>
+              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-sm text-gray-600">不做处理</p>
+              <p className="text-2xl font-bold text-orange-600">{stats.noAction}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="mb-6">

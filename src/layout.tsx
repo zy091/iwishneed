@@ -58,8 +58,13 @@ export default function Layout() {
         sidebarOpen ? "w-64" : "w-16"
       )}>
         <div className="flex items-center justify-center p-4 border-b h-[65px]">
-          {!sidebarOpen && (
-             <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+          {sidebarOpen ? (
+            <div className="flex items-center space-x-2">
+              <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
+              <span className="text-lg font-semibold text-gray-800">需求管理系统</span>
+            </div>
+          ) : (
+            <img src="/iw.png" alt="Logo" className="h-8 w-auto" />
           )}
         </div>
         {/* 导航菜单 */}

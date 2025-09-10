@@ -9,18 +9,7 @@ class CreativeRequirementService {
       .order('submit_time', { ascending: false })
     if (error) throw error
     
-    const normalizedData = (data || []).map(req => {
-        const newReq = { ...req };
-        if (newReq.status === '未开始') newReq.status = 'not_started';
-        else if (newReq.status === '处理中') newReq.status = 'in_progress';
-        else if (newReq.status === '已完成') newReq.status = 'completed';
-        else if (newReq.status === '不做处理') newReq.status = 'no_action';
-
-        if (newReq.platform === '网站') newReq.platform = 'website';
-        return newReq;
-    });
-
-    return normalizedData as CreativeRequirement[]
+    return (data || []) as CreativeRequirement[]
   }
 
   async getCreativeRequirement(id: string): Promise<CreativeRequirement | null> {
@@ -33,17 +22,9 @@ class CreativeRequirementService {
       if (error.code === 'PGRST116') return null
       throw error
     }
-    if (!data) return null;
+    if (!data) return null
 
-    const newReq = { ...data };
-    if (newReq.status === '未开始') newReq.status = 'not_started';
-    else if (newReq.status === '处理中') newReq.status = 'in_progress';
-    else if (newReq.status === '已完成') newReq.status = 'completed';
-    else if (newReq.status === '不做处理') newReq.status = 'no_action';
-
-    if (newReq.platform === '网站') newReq.platform = 'website';
-
-    return newReq as CreativeRequirement
+    return data as CreativeRequirement
   }
 
   async createCreativeRequirement(payload: Omit<CreativeRequirement, 'id' | 'created_at' | 'updated_at'>): Promise<CreativeRequirement> {
@@ -85,6 +66,35 @@ class CreativeRequirementService {
       .order('name', { ascending: true })
     if (error) throw error
     return (data || []).map((r: any) => r.name)
+  }
+
+  // 获取创意需求统计
+  async getCreativeRequirementStats() {
+    const { data, error } = await supabase
+      .from('creative_requirements')
+      .select('status, urgency, asset_type')
+    
+    if (error) throw error
+
+    const requirements = data || []
+    
+    return {
+      total: requirements.length,
+      notStarted: requirements.filter(r => r.status === '未开始').length,
+      inProgress: requirements.filter(r => r.status === '处理中').length,
+      completed: requirements.filter(r => r.status === '已完成').length,
+      noAction: requirements.filter(r => r.status === '不做处理').length,
+      byUrgency: {
+        high: requirements.filter(r => r.urgency === '高').length,
+        medium: requirements.filter(r => r.urgency === '中').length,
+        low: requirements.filter(r => r.urgency === '低').length
+      },
+      byAssetType: requirements.reduce((acc: Record<string, number>, req) => {
+        const type = req.asset_type || '未分类'
+        acc[type] = (acc[type] || 0) + 1
+        return acc
+      }, {})
+    }
   }
 }
 
