@@ -85,20 +85,20 @@ export default function CreativeRequirementForm() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">{isEdit ? '编辑创意需求' : '新建创意需求'}</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/departments/creative')}>返回列表</Button>
-          <Button onClick={handleSubmit} disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">{isEdit ? '编辑创意需求' : '提交创意需求'}</h1>
+        <Button variant="secondary" onClick={() => navigate('/departments/creative')}>
+          返回列表
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>基础信息</CardTitle>
-          <CardDescription>按需填写以下字段</CardDescription>
+          <CardTitle>创意需求信息</CardTitle>
+          <CardDescription>请按照飞书表格格式填写完整的创意需求信息</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
+          <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>提交时间</Label>
@@ -245,6 +245,24 @@ export default function CreativeRequirementForm() {
           <div>
             <Label>参考案例（链接或说明）</Label>
             <Textarea value={form.reference_examples || ''} onChange={(e) => handleChange('reference_examples', e.target.value)} rows={3} />
+          </div>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <Button type="button" variant="secondary" onClick={() => navigate('/departments/creative')}>
+              取消
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? '保存中...' : (isEdit ? '更新需求' : '提交需求')}
+            </Button>
+          </div>
+
+          <div className="flex justify-end gap-4 mt-6">
+            <Button type="button" variant="secondary" onClick={() => navigate('/departments/creative')}>
+              取消
+            </Button>
+            <Button onClick={handleSubmit} disabled={saving}>
+              {saving ? '保存中...' : (isEdit ? '更新需求' : '提交需求')}
+            </Button>
           </div>
         </CardContent>
       </Card>

@@ -118,7 +118,7 @@ export default function AdminUsersPage() {
           {error && <Alert>{error}</Alert>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Input placeholder="邮箱" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input type="password" placeholder="密码（≥8位，含数字、字母）" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input type="password" placeholder="密码（≥6位）" value={password} onChange={(e) => setPassword(e.target.value)} />
             <Input placeholder="姓名（可选）" value={name} onChange={(e) => setName(e.target.value)} />
             <Select value={roleId?.toString() || ''} onValueChange={(v) => setRoleId(Number(v))}>
               <SelectTrigger><SelectValue placeholder="选择角色" /></SelectTrigger>
