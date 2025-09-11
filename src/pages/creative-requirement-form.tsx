@@ -73,7 +73,16 @@ export default function CreativeRequirementForm() {
       if (isEdit && id) {
         await creativeRequirementService.updateCreativeRequirement(id, form)
       } else {
-        await creativeRequirementService.createCreativeRequirement(form)
+        // 创建新需求时添加submitter_id和必需字段
+        const formWithSubmitter = {
+          ...form,
+          submitter_id: profile?.id,
+          status: form.status || '未开始',
+          urgency: form.urgency || '中',
+          platform: form.platform || 'GG',
+          submitter_name: form.submitter_name || profile?.name || ''
+        } as Omit<CreativeRequirement, 'id' | 'created_at' | 'updated_at'>
+        await creativeRequirementService.createCreativeRequirement(formWithSubmitter)
       }
       navigate('/departments/creative')
     } catch (e) {

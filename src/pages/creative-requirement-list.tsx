@@ -39,11 +39,11 @@ export default function CreativeRequirementList() {
 
   // 权限检查函数
   const canEditRequirement = (req: CreativeRequirement) => {
-    return isAdmin || isSuperAdmin || req.submitter_name === user?.name
+    return isAdmin || isSuperAdmin || (req as any).submitter_id === user?.id
   }
 
   const canDeleteRequirement = (req: CreativeRequirement) => {
-    return isAdmin || isSuperAdmin || req.submitter_name === user?.name
+    return isAdmin || isSuperAdmin || (req as any).submitter_id === user?.id
   }
 
   useEffect(() => {

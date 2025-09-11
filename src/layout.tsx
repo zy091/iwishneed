@@ -59,10 +59,7 @@ export default function Layout() {
       )}>
         <div className="flex items-center justify-center p-4 border-b h-[65px]">
           {sidebarOpen ? (
-            <div className="flex items-center space-x-2">
-              <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
-              <span className="text-lg font-semibold text-gray-800">IWISH需求管理系统</span>
-            </div>
+            <img src="/logo.png" alt="Logo" className="h-8 w-auto" />
           ) : (
             <img src="/iw.png" alt="Logo" className="h-8 w-auto" />
           )}

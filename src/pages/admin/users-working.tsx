@@ -231,7 +231,7 @@ export default function AdminUsersWorkingPage() {
               onChange={(e) => setCreateForm(prev => ({ ...prev, email: e.target.value }))}
             />
             <Input
-              placeholder="密码 (≥8位)"
+              placeholder="密码 (≥6位)"
               type="password"
               value={createForm.password}
               onChange={(e) => setCreateForm(prev => ({ ...prev, password: e.target.value }))}
