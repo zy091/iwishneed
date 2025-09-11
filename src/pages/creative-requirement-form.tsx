@@ -68,6 +68,12 @@ export default function CreativeRequirementForm() {
   }
 
   const handleSubmit = async () => {
+    // 验证必填字段
+    if (!form.title?.trim()) {
+      alert('请填写需求标题')
+      return
+    }
+
     setSaving(true)
     try {
       if (isEdit && id) {
@@ -77,6 +83,7 @@ export default function CreativeRequirementForm() {
         const formWithSubmitter = {
           ...form,
           submitter_id: profile?.id,
+          title: form.title?.trim() || '',
           status: form.status || '未开始',
           urgency: form.urgency || '中',
           platform: form.platform || 'GG',
@@ -87,6 +94,7 @@ export default function CreativeRequirementForm() {
       navigate('/departments/creative')
     } catch (e) {
       console.error('保存失败:', e)
+      alert('保存失败，请检查填写的信息是否完整')
     } finally {
       setSaving(false)
     }
@@ -108,6 +116,29 @@ export default function CreativeRequirementForm() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
+          {/* 基本信息 */}
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label>需求标题 *</Label>
+              <Input
+                value={form.title || ''}
+                onChange={(e) => handleChange('title', e.target.value)}
+                placeholder="请输入需求标题"
+                required
+              />
+            </div>
+            <div>
+              <Label>需求描述</Label>
+              <Textarea
+                value={form.description || ''}
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="请详细描述需求内容"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          {/* 时间信息 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>提交时间</Label>
