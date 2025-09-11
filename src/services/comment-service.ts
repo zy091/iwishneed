@@ -90,10 +90,10 @@ class CommentService {
 
     for (const file of files) {
       try {
-        // 生成唯一文件名
+        // 生成唯一文件名 - 使用与数据库中一致的格式
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `comment-attachments/${commentId}/${fileName}`;
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${commentId}/${fileName}`;
 
         // 上传文件到 Supabase Storage
         const { error: uploadError } = await supabase.storage
