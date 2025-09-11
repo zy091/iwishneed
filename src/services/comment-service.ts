@@ -24,12 +24,22 @@ export interface RequirementComment {
 
 class CommentService {
   async getComments(requirementId: string): Promise<RequirementComment[]> {
-    // Using RPC to handle the join correctly and avoid schema/RLS issues
+    // 直接查询comments表，不使用RPC
     const { data, error } = await supabase
-      .rpc('get_comments_with_profiles', { req_id: requirementId });
+      .from('comments')
+      .select(`
+        id,
+        created_at,
+        requirement_id,
+        user_id,
+        content,
+        is_anonymous
+      `)
+      .eq('requirement_id', requirementId)
+      .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching comments via rpc:', error);
+      console.error('Error fetching comments:', error);
       throw error;
     }
 
