@@ -90,7 +90,7 @@ function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: 
           )}
         </div>
         <div className="text-xs text-gray-500">
-          {attachment.file_name} ({formatFileSize(attachment.file_size)})
+          {attachment.file_name} ({formatFileSize(attachment.size)})
         </div>
       </div>
 
@@ -355,7 +355,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
                             <FileText className="h-5 w-5 text-gray-400" />
                             <div className="flex-1">
                               <p className="text-sm font-medium">{attachment.file_name}</p>
-                              <p className="text-xs text-gray-500">{formatFileSize(attachment.file_size)}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
                             </div>
                             <Download className="h-4 w-4 text-gray-400" />
                           </div>

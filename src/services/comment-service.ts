@@ -6,7 +6,7 @@ export interface CommentAttachment {
   comment_id: string;
   file_name: string;
   file_path: string;
-  file_size: number;
+  size: number;
   mime_type: string;
   created_at: string;
 }
@@ -44,7 +44,7 @@ class CommentService {
     files?: File[]
   ): Promise<RequirementComment> {
     const { data, error } = await supabase
-      .from('requirement_comments')
+      .from('comments')
       .insert({
         requirement_id: requirementId,
         user_id: userId,
@@ -89,12 +89,12 @@ class CommentService {
 
         // 保存附件信息到数据库
         const { data: attachment, error: dbError } = await supabase
-          .from('requirement_comment_attachments')
+          .from('comment_attachments')
           .insert({
             comment_id: commentId,
             file_name: file.name,
             file_path: filePath,
-            file_size: file.size,
+            size: file.size,
             mime_type: file.type,
           })
           .select()
@@ -116,7 +116,7 @@ class CommentService {
 
   async getCommentAttachments(commentId: string): Promise<CommentAttachment[]> {
     const { data, error } = await supabase
-      .from('requirement_comment_attachments')
+      .from('comment_attachments')
       .select('*')
       .eq('comment_id', commentId)
       .order('created_at', { ascending: true });
@@ -145,7 +145,7 @@ class CommentService {
   async deleteAttachment(attachmentId: string): Promise<void> {
     // 先获取附件信息
     const { data: attachment, error: fetchError } = await supabase
-      .from('requirement_comment_attachments')
+      .from('comment_attachments')
       .select('file_path')
       .eq('id', attachmentId)
       .single();
@@ -166,7 +166,7 @@ class CommentService {
 
     // 删除数据库记录
     const { error: dbError } = await supabase
-      .from('requirement_comment_attachments')
+      .from('comment_attachments')
       .delete()
       .eq('id', attachmentId);
 
@@ -178,7 +178,7 @@ class CommentService {
 
   async deleteComment(commentId: string): Promise<void> {
     const { error } = await supabase
-      .from('requirement_comments')
+      .from('comments')
       .delete()
       .eq('id', commentId);
 
