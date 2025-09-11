@@ -161,19 +161,11 @@ export default function RequirementComments({ requirementId }: RequirementCommen
       setLoading(true);
       const fetchedComments = await commentService.getComments(requirementId);
       
-      // 为每个评论获取附件
-      const commentsWithAttachments = await Promise.all(
-        fetchedComments.map(async (comment) => {
-          const attachments = await commentService.getCommentAttachments(comment.id);
-          return { ...comment, attachments };
-        })
-      );
-      
-      setComments(commentsWithAttachments);
+      setComments(fetchedComments);
       
       // 预加载所有图片附件的URL
       const urlPromises: Promise<void>[] = [];
-      commentsWithAttachments.forEach(comment => {
+      fetchedComments.forEach(comment => {
         comment.attachments?.forEach(attachment => {
           if (isImageFile(attachment.mime_type)) {
             urlPromises.push(

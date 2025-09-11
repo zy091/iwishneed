@@ -43,7 +43,15 @@ class CommentService {
       throw error;
     }
 
-    return data || [];
+    // 为每个评论获取附件
+    const commentsWithAttachments = await Promise.all(
+      (data || []).map(async (comment) => {
+        const attachments = await this.getCommentAttachments(comment.id);
+        return { ...comment, attachments };
+      })
+    );
+
+    return commentsWithAttachments;
   }
 
   async addComment(
