@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { creativeRequirementService } from '@/services/creative-requirement-service'
 import type { CreativeRequirement } from '@/types/requirement'
+import { useAuth } from '@/hooks/useAuth'
 
 
 export default function CreativeRequirementList() {
@@ -34,6 +35,16 @@ export default function CreativeRequirementList() {
     byAssetType: {} as Record<string, number>
   })
   const navigate = useNavigate()
+  const { user, isAdmin, isSuperAdmin } = useAuth()
+
+  // 权限检查函数
+  const canEditRequirement = (req: CreativeRequirement) => {
+    return isAdmin || isSuperAdmin || req.submitter_name === user?.name
+  }
+
+  const canDeleteRequirement = (req: CreativeRequirement) => {
+    return isAdmin || isSuperAdmin || req.submitter_name === user?.name
+  }
 
   useEffect(() => {
     const run = async () => {
@@ -175,41 +186,66 @@ export default function CreativeRequirementList() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">总计</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">总计</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-gray-400"></div>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">未开始</p>
-              <p className="text-2xl font-bold text-gray-600">{stats.notStarted}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">未开始</p>
+                <p className="text-2xl font-bold text-gray-600">{stats.notStarted}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-gray-500"></div>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">处理中</p>
-              <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">处理中</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">已完成</p>
-              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">已完成</p>
+                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-green-500"></div>
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">不做处理</p>
-              <p className="text-2xl font-bold text-orange-600">{stats.noAction}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">不做处理</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.noAction}</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full bg-orange-500"></div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -356,12 +392,16 @@ export default function CreativeRequirementList() {
                     <Button variant="secondary" size="sm" onClick={() => navigate(`/creative-requirements/${r.id}`)}>
                       <Eye className="h-4 w-4 mr-1" /> 查看
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/creative-requirements/${r.id}/edit`)}>
-                      <Edit className="h-4 w-4 mr-1" /> 编辑
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(r.id)}>
-                      <Trash2 className="h-4 w-4 mr-1 text-red-500" /> 删除
-                    </Button>
+                    {canEditRequirement(r) && (
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/creative-requirements/${r.id}/edit`)}>
+                        <Edit className="h-4 w-4 mr-1" /> 编辑
+                      </Button>
+                    )}
+                    {canDeleteRequirement(r) && (
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(r.id)}>
+                        <Trash2 className="h-4 w-4 mr-1 text-red-500" /> 删除
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -416,12 +456,16 @@ export default function CreativeRequirementList() {
                         <Button variant="ghost" size="icon" onClick={() => navigate(`/creative-requirements/${r.id}`)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => navigate(`/creative-requirements/${r.id}/edit`)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        {canEditRequirement(r) && (
+                          <Button variant="ghost" size="icon" onClick={() => navigate(`/creative-requirements/${r.id}/edit`)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDeleteRequirement(r) && (
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

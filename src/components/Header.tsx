@@ -62,7 +62,7 @@ export default function Header({ sidebarOpen, toggleSidebar }: HeaderProps) {
           {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
         {sidebarOpen && (
-          <h1 className="text-xl font-bold text-gray-800 ml-4">需求管理系统</h1>
+          <h1 className="text-xl font-bold text-gray-800 ml-4">IWISH需求管理系统</h1>
         )}
       </div>
 

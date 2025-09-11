@@ -55,8 +55,17 @@ export default function TechRequirementList() {
   })
   const [techAssignees, setTechAssignees] = useState<string[]>([])
   
-  const { user } = useAuth()
+  const { user, isAdmin, isSuperAdmin } = useAuth()
   const navigate = useNavigate()
+
+  // 权限检查函数
+  const canEditRequirement = (req: TechRequirement) => {
+    return isAdmin || isSuperAdmin || req.submitter_id === user?.id
+  }
+
+  const canDeleteRequirement = (req: TechRequirement) => {
+    return isAdmin || isSuperAdmin || req.submitter_id === user?.id
+  }
 
   useEffect(() => {
     const fetchRequirements = async () => {
@@ -373,9 +382,11 @@ export default function TechRequirementList() {
                     <Button variant="secondary" size="sm" onClick={() => navigate(`/tech-requirements/${req.id!}`)}>
                       <Eye className="h-4 w-4 mr-1" /> 查看
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/tech-requirements/${req.id!}/edit`)}>
-                      <Edit className="h-4 w-4 mr-1" /> 编辑
-                    </Button>
+                    {canEditRequirement(req) && (
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/tech-requirements/${req.id!}/edit`)}>
+                        <Edit className="h-4 w-4 mr-1" /> 编辑
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -459,30 +470,34 @@ export default function TechRequirementList() {
                           <Button variant="ghost" size="icon" onClick={() => navigate(`/tech-requirements/${req.id}`)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => navigate(`/tech-requirements/${req.id}/edit`)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>确认删除</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  您确定要删除这个技术需求吗？此操作无法撤销。
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>取消</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(req.id!)}>
-                                  删除
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {canEditRequirement(req) && (
+                            <Button variant="ghost" size="icon" onClick={() => navigate(`/tech-requirements/${req.id}/edit`)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canDeleteRequirement(req) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>确认删除</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    您确定要删除这个技术需求吗？此操作无法撤销。
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>取消</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(req.id!)}>
+                                    删除
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

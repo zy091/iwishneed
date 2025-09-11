@@ -67,7 +67,7 @@ export function LoginForm() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold text-gray-900">
-            需求管理系统
+            IWISH需求管理系统
           </CardTitle>
           <CardDescription className="text-gray-600">
             请输入您的邮箱和密码登录系统
