@@ -134,7 +134,7 @@ export default function TechRequirementDetail() {
 
           <Card>
             <CardContent className="pt-6">
-              <RequirementComments requirementId={id} />
+              <RequirementComments requirementId={id} requirementType="tech" />
             </CardContent>
           </Card>
         </div>

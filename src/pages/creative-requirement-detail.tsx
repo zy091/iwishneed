@@ -189,7 +189,7 @@ export default function CreativeRequirementDetail() {
 
           <Card>
             <CardContent className="pt-6">
-              <RequirementComments requirementId={id} />
+              <RequirementComments requirementId={id} requirementType="creative" />
             </CardContent>
           </Card>
         </div>

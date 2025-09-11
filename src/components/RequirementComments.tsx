@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trash2, Paperclip, X, Image, FileText, ZoomIn, Download } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { commentService, RequirementComment, CommentAttachment } from '@/services/comment-service';
+import { techCommentService, TechRequirementComment, TechCommentAttachment } from '@/services/tech-comment-service';
+import { creativeCommentService, CreativeRequirementComment, CreativeCommentAttachment } from '@/services/creative-comment-service';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -9,10 +10,15 @@ import { useToast } from './ui/use-toast';
 
 interface RequirementCommentsProps {
   requirementId: string;
+  requirementType: 'tech' | 'creative';
 }
 
+// 统一的评论和附件类型
+type UnifiedComment = TechRequirementComment | CreativeRequirementComment;
+type UnifiedAttachment = TechCommentAttachment | CreativeCommentAttachment;
+
 interface ImageAttachmentProps {
-  attachment: CommentAttachment;
+  attachment: UnifiedAttachment;
   attachmentUrl?: string;
   onUrlError: () => void;
   onDownload: () => void;
@@ -29,6 +35,11 @@ function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: 
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  };
+
+  // 获取文件大小，兼容两种字段名
+  const getFileSize = (attachment: UnifiedAttachment): number => {
+    return 'size' in attachment ? attachment.size : attachment.file_size;
   };
 
   return (
@@ -90,7 +101,7 @@ function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: 
           )}
         </div>
         <div className="text-xs text-gray-500">
-          {attachment.file_name} ({formatFileSize(attachment.size)})
+          {attachment.file_name} ({formatFileSize(getFileSize(attachment))})
         </div>
       </div>
 
@@ -145,10 +156,10 @@ function ImageAttachment({ attachment, attachmentUrl, onUrlError, onDownload }: 
   );
 }
 
-export default function RequirementComments({ requirementId }: RequirementCommentsProps) {
+export default function RequirementComments({ requirementId, requirementType }: RequirementCommentsProps) {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const { toast } = useToast();
-  const [comments, setComments] = useState<RequirementComment[]>([]);
+  const [comments, setComments] = useState<UnifiedComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -156,10 +167,21 @@ export default function RequirementComments({ requirementId }: RequirementCommen
   const [attachmentUrls, setAttachmentUrls] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 根据需求类型选择服务
+  const getCommentService = () => {
+    return requirementType === 'tech' ? techCommentService : creativeCommentService;
+  };
+
+  // 获取文件大小，兼容两种字段名
+  const getFileSize = (attachment: UnifiedAttachment): number => {
+    return 'size' in attachment ? attachment.size : attachment.file_size;
+  };
+
   const fetchComments = async () => {
     try {
       setLoading(true);
-      const fetchedComments = await commentService.getComments(requirementId);
+      const service = getCommentService();
+      const fetchedComments = await service.getComments(requirementId);
       
       setComments(fetchedComments);
       
@@ -169,7 +191,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
         comment.attachments?.forEach(attachment => {
           if (isImageFile(attachment.mime_type)) {
             urlPromises.push(
-              commentService.getAttachmentUrl(attachment.file_path).then(url => {
+              service.getAttachmentUrl(attachment.file_path).then(url => {
                 if (url) {
                   setAttachmentUrls(prev => ({
                     ...prev,
@@ -203,8 +225,9 @@ export default function RequirementComments({ requirementId }: RequirementCommen
     
     try {
       setUploading(true);
+      const service = getCommentService();
       // 强制匿名评论
-      await commentService.addComment(
+      await service.addComment(
         requirementId, 
         user.id, 
         newComment, 
@@ -229,7 +252,8 @@ export default function RequirementComments({ requirementId }: RequirementCommen
 
   const handleDeleteComment = async (commentId: string) => {
     try {
-      await commentService.deleteComment(commentId);
+      const service = getCommentService();
+      await service.deleteComment(commentId);
       await fetchComments();
       toast({ title: '评论已删除' });
     } catch (error) {
@@ -237,7 +261,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
     }
   };
 
-  const canDelete = (comment: RequirementComment) => {
+  const canDelete = (comment: UnifiedComment) => {
     if (!user) return false;
     return isAdmin || isSuperAdmin || comment.user_id === user.id;
   };
@@ -266,9 +290,10 @@ export default function RequirementComments({ requirementId }: RequirementCommen
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAttachmentDownload = async (attachment: CommentAttachment) => {
+  const handleAttachmentDownload = async (attachment: UnifiedAttachment) => {
     try {
-      const url = await commentService.getAttachmentUrl(attachment.file_path);
+      const service = getCommentService();
+      const url = await service.getAttachmentUrl(attachment.file_path);
       if (url) {
         const link = document.createElement('a');
         link.href = url;
@@ -347,7 +372,7 @@ export default function RequirementComments({ requirementId }: RequirementCommen
                             <FileText className="h-5 w-5 text-gray-400" />
                             <div className="flex-1">
                               <p className="text-sm font-medium">{attachment.file_name}</p>
-                              <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(getFileSize(attachment))}</p>
                             </div>
                             <Download className="h-4 w-4 text-gray-400" />
                           </div>
